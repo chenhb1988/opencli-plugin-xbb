@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { cli, Strategy } from 'file:///C:/Users/chb/AppData/Roaming/npm/node_modules/@jackwener/opencli/dist/registry.js';
+import { cli, Strategy } from './opencli-registry.js';
 
 const CONFIG_DIR = path.join(os.homedir(), '.opencli', 'xbb');
 const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json');
