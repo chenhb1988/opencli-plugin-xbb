@@ -1,6 +1,6 @@
 # opencli-plugin-xbb
 
-`opencli` 的 `xbb` 插件，当前提供基于销帮帮开放平台 API 的纯 HTTP 命令。
+`opencli` 的 销帮帮CRM(xbb) 插件，当前提供基于销帮帮开放平台 API 的纯 HTTP 命令。
 
 
 ## 安装
@@ -15,16 +15,18 @@ opencli plugin install github:chenhb1988/opencli-plugin-xbb
 
 ## 当前支持的命令
 
-- `set-token.js`：把 API token 保存到本地配置文件
-- `userlist.js`：用户列表接口
-- `customerlist.js`：客户列表接口
-- `opportunitylist.js`：销售机会列表接口
-- `cluelist.js`：线索列表接口
-- `communicatelist.js`：跟进记录列表接口
-- `customeradd.js`：新建客户接口
-- `customeredit.js`：编辑客户接口
-- `customerdetail.js`：客户详情接口
-- `customeraddcouser.js`：客户添加协同人接口
+- `set-token`：把 API token 保存到本地配置文件
+- `userlist`：用户列表接口
+- `customerlist`：客户列表接口
+- `opportunitylist`：销售机会列表接口
+- `cluelist`：线索列表接口
+- `communicatelist`：跟进记录列表接口
+- `customeradd`：新建客户接口
+- `customeredit`：编辑客户接口
+- `customerdetail`：客户详情接口
+- `customeraddcouser`：客户添加协同人接口
+- `formlist`：表单模板列表接口
+- `formget`：表单模板字段解释接口
 ## 本地配置
 
 先保存 token：
@@ -34,12 +36,10 @@ opencli xbb set-token --token <YOUR_TOKEN>
 ```
 
 token 会写入：
-
 ```text
 ~\.opencli\xbb\config.json
 ```
-
-后续 `userlist` 和 `customerlist` 会默认从该文件读取 token，也可以继续通过 `--token` 显式覆盖。
+后续命令会默认从该文件读取 token，也可以继续通过 `--token` 显式覆盖。
 
 ## 命令示例
 
@@ -61,8 +61,7 @@ opencli xbb customerlist --corpid your_corpid --formId 12345 --attr text_1 --val
 opencli xbb opportunitylist --corpid your_corpid --formId 932
 
 # 线索列表（formId 必填）
-opencli xbb cluelist --corpid your_corpid --formId 19320 --del 0
-opencli xbb cluelist --corpid your_corpid --formId 19320 --attr text_1 --value apiTest.0001
+opencli xbb cluelist --corpid your_corpid --formId 19320 
 
 # 跟进记录列表
 opencli xbb communicatelist --corpid your_corpid --attr text_1 --value 310993
@@ -78,6 +77,14 @@ opencli xbb customerdetail --corpid your_corpid --dataId 310992
 
 # 客户添加协同人
 opencli xbb customeraddcouser --corpid your_corpid --dataId 310995 --businessUserIdList '["xbbTest002"]'
+
+# 表单模板列表
+opencli xbb formlist --corpid your_corpid --saasMark 1 --businessType 100
+opencli xbb formlist --corpid your_corpid --saasMark 2 --name 表单名称
+
+# 表单模板字段解释
+opencli xbb formget --corpid your_corpid --formId 19274
+opencli xbb formget --corpid your_corpid --formId 19277 --subBusinessType 100
 ```
 
 ## 实现方式
