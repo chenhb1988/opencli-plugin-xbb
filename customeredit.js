@@ -6,6 +6,7 @@ import { cli, Strategy } from './opencli-registry.js';
 
 const CONFIG_FILE = path.join(os.homedir(), '.opencli', 'xbb', 'config.json');
 const EDIT_API_URL = 'https://proapi.xbongbong.com/pro/v2/api/customer/edit';
+const DEFAULT_BASE_URL = 'https://proapi.xbongbong.com';
 
 function readConfig() {
   try {
@@ -15,8 +16,18 @@ function readConfig() {
   }
 }
 
-function getToken(kwargs) {
-  return String(kwargs.token || readConfig().token || '');
+function getRuntimeConfig(kwargs) {
+  const config = readConfig();
+  return {
+    configCorpid: String(config.corpid || '').trim(),
+    token: String(kwargs.token || config.token || '').trim(),
+    baseUrl: String(config.baseurl || DEFAULT_BASE_URL).trim(),
+  };
+}
+
+function buildApiUrl(baseUrl, defaultUrl) {
+  const apiPath = new URL(defaultUrl).pathname;
+  return `${baseUrl.replace(/\/+$/, '')}${apiPath}`;
 }
 
 function parseDataList(raw) {
@@ -69,7 +80,7 @@ function getValidationError(payload, token, parsedDataList) {
     return { code: 'NO_DATAID', msg: '缺少 --dataId' };
   }
   if (!token) {
-    return { code: 'NO_TOKEN', msg: '缺少 token；请传 --token，或先执行 opencli xbb set-token --token <TOKEN>' };
+    return { code: 'NO_TOKEN', msg: '缺少 token；请传 --token，或先执行 opencli xbb set-token --corpid <CORPID> --token <TOKEN>' };
   }
   if (parsedDataList === null) {
     return { code: 'NO_DATALIST', msg: '缺少 --dataList' };
@@ -124,7 +135,7 @@ cli({
   columns: ['dataId', 'resultCode', 'resultMsg', 'code', 'msg', 'requestBody', 'responseBody'],
   func: async (_page, kwargs) => {
     const debug = Boolean(kwargs.debug);
-    const token = getToken(kwargs);
+    const { configCorpid, token, baseUrl } = getRuntimeConfig(kwargs);
     const parsedDataList = parseDataList(kwargs.dataList);
     const payload = buildPayload(kwargs, parsedDataList);
     const body = JSON.stringify(payload);
@@ -134,8 +145,12 @@ cli({
       return makeErrorRow(validationError.code, validationError.msg, debug, body, '');
     }
 
+    if (configCorpid && payload.corpid !== configCorpid) {
+      return makeErrorRow('CORPID_MISMATCH', 'corpid与配置中不一致', debug, body, '');
+    }
+
     const sign = crypto.createHash('sha256').update(body + token).digest('hex');
-    const resp = await fetch(EDIT_API_URL, {
+    const resp = await fetch(buildApiUrl(baseUrl, EDIT_API_URL), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json;charset=UTF-8',

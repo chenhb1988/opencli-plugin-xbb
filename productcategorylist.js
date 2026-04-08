@@ -5,7 +5,7 @@ import path from 'node:path';
 import { cli, Strategy } from './opencli-registry.js';
 
 const CONFIG_FILE = path.join(os.homedir(), '.opencli', 'xbb', 'config.json');
-const DETAIL_API_URL = 'https://proapi.xbongbong.com/pro/v2/api/customer/detail';
+const PRODUCT_CATEGORY_LIST_API_URL = 'https://proapi.xbongbong.com/pro/v2/api/product/categoryList';
 const DEFAULT_BASE_URL = 'https://proapi.xbongbong.com';
 const MISSING_TOKEN_MESSAGE = '缺少 token；请传 --token，或先执行 opencli xbb set-token --corpid <CORPID> --token <TOKEN>';
 
@@ -33,7 +33,6 @@ function buildApiUrl(baseUrl, defaultUrl) {
 
 function buildPayload(kwargs) {
   const payload = {
-    dataId: Number(kwargs.dataId || 0),
     corpid: String(kwargs.corpid || ''),
   };
 
@@ -41,17 +40,10 @@ function buildPayload(kwargs) {
     payload.userId = String(kwargs.userId);
   }
 
-  if (String(kwargs.queryFlag ?? '') !== '') {
-    payload.queryFlag = Number(kwargs.queryFlag);
-  }
-
   return payload;
 }
 
 function getValidationError(payload, token) {
-  if (!payload.dataId) {
-    return { code: 'NO_DATAID', msg: '缺少 --dataId' };
-  }
   if (!payload.corpid) {
     return { code: 'NO_CORPID', msg: '缺少 --corpid' };
   }
@@ -62,13 +54,26 @@ function getValidationError(payload, token) {
   return null;
 }
 
+function flattenCategoryTree(list, rows = []) {
+  for (const item of list) {
+    rows.push(item);
+    const childList = Array.isArray(item.childList) ? item.childList : [];
+    if (childList.length) {
+      flattenCategoryTree(childList, rows);
+    }
+  }
+  return rows;
+}
+
 function makeErrorRow(code, msg, debug, body = '', responseBody = '') {
   return [{
-    dataId: '',
-    formId: '',
-    addTime: '',
-    updateTime: '',
-    data: '',
+    rank: '',
+    id: '',
+    name: '',
+    parentId: '',
+    router: '',
+    sort: '',
+    corpid: '',
     code,
     msg,
     requestBody: debug ? body : '',
@@ -76,38 +81,39 @@ function makeErrorRow(code, msg, debug, body = '', responseBody = '') {
   }];
 }
 
-function makeSuccessRow(data, debug, body, responseBody) {
-  const result = data.result || {};
-
-  return [{
-    dataId: result.dataId || '',
-    formId: result.formId || '',
-    addTime: result.addTime || '',
-    updateTime: result.updateTime || '',
-    data: JSON.stringify(result.data || {}),
-    code: data.code ?? '',
-    msg: data.msg || '',
+function makeSuccessRows(list, debug, body, kwargs) {
+  const flat = flattenCategoryTree(list);
+  const limit = Number(kwargs.limit || 50);
+  return flat.slice(0, limit).map((item, index) => ({
+    rank: index + 1,
+    id: item.id || '',
+    name: item.name || '',
+    parentId: item.parentId || '',
+    router: item.router || '',
+    sort: item.sort || '',
+    corpid: item.corpid || '',
+    code: '',
+    msg: '',
     requestBody: debug ? body : '',
-    responseBody: debug ? responseBody : '',
-  }];
+    responseBody: '',
+  }));
 }
 
 cli({
   site: 'xbb',
-  name: 'customerdetail',
-  description: '客户详情接口（纯 HTTP 版）',
+  name: 'productcategorylist',
+  description: '产品分类列表接口（纯 HTTP 版）',
   strategy: Strategy.PUBLIC,
   browser: false,
   domain: 'proapi.xbongbong.com',
   args: [
-    { name: 'dataId', type: 'int', help: '数据id（必填）' },
     { name: 'corpid', type: 'str', help: '公司id（必填）' },
     { name: 'token', type: 'str', default: '', help: 'API token（可选；默认从本地配置读取）' },
     { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
-    { name: 'queryFlag', type: 'int', default: '', help: '审批数据查询标识：0非审批，1审批中，2全部' },
+    { name: 'limit', type: 'int', default: 50, help: '最终返回条数限制（树拍平后）' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
   ],
-  columns: ['dataId', 'formId', 'addTime', 'updateTime', 'data', 'code', 'msg', 'requestBody', 'responseBody'],
+  columns: ['rank', 'id', 'name', 'parentId', 'router', 'sort', 'corpid', 'code', 'msg', 'requestBody', 'responseBody'],
   func: async function (_page, kwargs) {
     const debug = Boolean(kwargs.debug);
     const { configCorpid, token, baseUrl } = getRuntimeConfig(kwargs);
@@ -124,7 +130,7 @@ cli({
     }
 
     const sign = crypto.createHash('sha256').update(body + token).digest('hex');
-    const resp = await fetch(buildApiUrl(baseUrl, DETAIL_API_URL), {
+    const resp = await fetch(buildApiUrl(baseUrl, PRODUCT_CATEGORY_LIST_API_URL), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json;charset=UTF-8',
@@ -144,6 +150,11 @@ cli({
       return makeErrorRow(data.code ?? '', data.msg ?? '未知错误', debug, body, responseBody);
     }
 
-    return makeSuccessRow(data, debug, body, responseBody);
+    const list = Array.isArray(data.result?.list) ? data.result.list : [];
+    if (!list.length) {
+      return makeErrorRow('NO_DATA', '接口成功，但 list 为空', debug, body, responseBody);
+    }
+
+    return makeSuccessRows(list, debug, body, kwargs);
   },
 });

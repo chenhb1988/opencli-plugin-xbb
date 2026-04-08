@@ -6,6 +6,8 @@ import { cli, Strategy } from './opencli-registry.js';
 
 const CONFIG_DIR = path.join(os.homedir(), '.opencli', 'xbb');
 const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json');
+const DEFAULT_BASE_URL = 'https://proapi.xbongbong.com';
+const USER_LIST_API_PATH = '/pro/v2/api/user/list';
 
 function readConfig() {
   try {
@@ -15,8 +17,17 @@ function readConfig() {
   }
 }
 
-function getToken(kwargs) {
-  return String(kwargs.token || readConfig().token || '');
+function getRuntimeConfig(kwargs) {
+  const config = readConfig();
+  return {
+    configCorpid: String(config.corpid || '').trim(),
+    token: String(kwargs.token || config.token || '').trim(),
+    baseUrl: String(config.baseurl || DEFAULT_BASE_URL).trim(),
+  };
+}
+
+function buildApiUrl(baseUrl) {
+  return `${baseUrl.replace(/\/+$/, '')}${USER_LIST_API_PATH}`;
 }
 
 function buildPayload(kwargs) {
@@ -71,19 +82,23 @@ cli({
   columns: ['rank', 'userId', 'name', 'position', 'jobnumber', 'avatar', 'code', 'msg', 'requestBody', 'responseBody'],
   func: async (_page, kwargs) => {
     const debug = Boolean(kwargs.debug);
-    const token = getToken(kwargs);
     const payload = buildPayload(kwargs);
     const body = JSON.stringify(payload);
+    const { configCorpid, token, baseUrl } = getRuntimeConfig(kwargs);
 
     if (!payload.corpid) {
       return makeErrorRow('NO_CORPID', '缺少 --corpid', debug, body, '');
     }
     if (!token) {
-      return makeErrorRow('NO_TOKEN', '缺少 token；请传 --token，或先执行 opencli xbb set-token --token <TOKEN>', debug, body, '');
+      return makeErrorRow('NO_TOKEN', '缺少 token；请传 --token，或先执行 opencli xbb set-token --corpid <CORPID> --token <TOKEN>', debug, body, '');
+    }
+    if (configCorpid && payload.corpid !== configCorpid) {
+      return makeErrorRow('CORPID_MISMATCH', 'corpid与配置中不一致', debug, body, '');
     }
 
     const sign = crypto.createHash('sha256').update(body + token).digest('hex');
-    const resp = await fetch('https://proapi.xbongbong.com/pro/v2/api/user/list', {
+    const apiUrl = buildApiUrl(baseUrl);
+    const resp = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json;charset=UTF-8',

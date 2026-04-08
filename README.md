@@ -27,19 +27,30 @@ opencli plugin install github:chenhb1988/opencli-plugin-xbb
 - `customeraddcouser`：客户添加协同人接口
 - `formlist`：表单模板列表接口
 - `formget`：表单模板字段解释接口
-## 本地配置
+- `departmentlist`：部门列表接口
+- `contactlist`：联系人列表接口
+- `contractlist`：合同订单列表接口
+- `refundlist`：退货退款单列表接口
+- `productlist`：产品列表接口
+- `productcategorylist`：产品分类列表接口
+- `paymentlist`：应收款列表接口
+- `paymentsheetlist`：回款单列表接口
+- `workorderlist`：工单列表接口
+- `workorderproductlist`：工单配件接口
+
+## 首次使用需设置 token
 
 先保存 token：
 
 ```bash
-opencli xbb set-token --token <YOUR_TOKEN>
+opencli xbb set-token --token <YOUR_TOKEN> --corpid <YOUR_CORPID>
 ```
 
-token 会写入：
+token和corpid 会写入：
 ```text
 ~\.opencli\xbb\config.json
 ```
-后续命令会默认从该文件读取 token，也可以继续通过 `--token` 显式覆盖。
+后续命令会默认从该文件读取 token。
 
 ## 命令示例
 
@@ -85,6 +96,39 @@ opencli xbb formlist --corpid your_corpid --saasMark 2 --name 表单名称
 # 表单模板字段解释
 opencli xbb formget --corpid your_corpid --formId 19274
 opencli xbb formget --corpid your_corpid --formId 19277 --subBusinessType 100
+
+# 部门列表
+opencli xbb departmentlist --corpid your_corpid
+opencli xbb departmentlist --corpid your_corpid --nameLike 销售
+opencli xbb departmentlist --corpid your_corpid --departmentIdIn '["1","6"]'
+
+# 联系人列表
+opencli xbb contactlist --corpid your_corpid --attr text_1 --value apiTest.001
+
+# 合同订单列表（formId 必填）
+opencli xbb contractlist --corpid your_corpid --formId 19281 --attr text_1 --value apiTest.001
+
+# 退货退款单列表
+opencli xbb refundlist --corpid your_corpid --attr serialNo --value RFO.API.0001
+
+# 产品列表
+opencli xbb productlist --corpid your_corpid --attr serialNo --value CP.API.0001
+
+# 产品分类列表
+opencli xbb productcategorylist --corpid your_corpid
+
+# 应收款列表
+opencli xbb paymentlist --corpid your_corpid --attr serialNo --value PMO.API.0001
+
+# 回款单列表
+opencli xbb paymentsheetlist --corpid your_corpid --attr serialNo --value RMO.API.0001
+opencli xbb paymentsheetlist --corpid your_corpid --subBusinessType 702
+
+# 工单列表（formId 必填）
+opencli xbb workorderlist --corpid your_corpid --formId 689 --attr serialNo --value WOO.20210616001
+
+# 工单配件列表
+opencli xbb workorderproductlist --corpid your_corpid --dataId 663
 ```
 
 ## 实现方式
@@ -93,8 +137,8 @@ opencli xbb formget --corpid your_corpid --formId 19277 --subBusinessType 100
 - 接口签名规则为：`SHA256(JSON压缩后的请求体 + token)`，并将 `sign` 放入 HTTP Header。
 - 调试时可传 `--debug` 输出 `requestBody` 和 `responseBody`。
 
-## 已知要求
+## 其他说明
 
-- `userlist` 需要有效 `corpid`，目前已接入钉钉版，多平台还在接入中。
-- `customerlist` 除 `corpid` 外还需要有效的 `formId`。
-- `customerlist` 中的筛选条件通过 `--attr`、`--value`、`--symbol` 生成 `conditions` 数组；如果没有传值，则不会发送该筛选条件。
+- 所有请求需要传递有效 `corpid`，目前已接入钉钉，企微，飞书，和独立版，根据corpid自动路由。
+- 部分命令需要`corpid` 外还需要有效的 `formId`，可通过formlist先获取对应业务的formId。
+ 

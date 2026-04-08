@@ -6,6 +6,8 @@ import { cli, Strategy } from './opencli-registry.js';
 
 const CONFIG_DIR = path.join(os.homedir(), '.opencli', 'xbb');
 const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json');
+const CUSTOMER_ADD_API_URL = 'https://proapi.xbongbong.com/pro/v2/api/customer/add';
+const DEFAULT_BASE_URL = 'https://proapi.xbongbong.com';
 
 function readConfig() {
   try {
@@ -15,8 +17,18 @@ function readConfig() {
   }
 }
 
-function getToken(kwargs) {
-  return String(kwargs.token || readConfig().token || '');
+function getRuntimeConfig(kwargs) {
+  const config = readConfig();
+  return {
+    configCorpid: String(config.corpid || '').trim(),
+    token: String(kwargs.token || config.token || '').trim(),
+    baseUrl: String(config.baseurl || DEFAULT_BASE_URL).trim(),
+  };
+}
+
+function buildApiUrl(baseUrl, defaultUrl) {
+  const apiPath = new URL(defaultUrl).pathname;
+  return `${baseUrl.replace(/\/+$/, '')}${apiPath}`;
 }
 
 function makeErrorRow(code, msg, debug, body = '', responseBody = '') {
@@ -70,7 +82,7 @@ cli({
   columns: ['dataId', 'resultCode', 'resultMsg', 'code', 'msg', 'requestBody', 'responseBody'],
   func: async (_page, kwargs) => {
     const debug = Boolean(kwargs.debug);
-    const token = getToken(kwargs);
+    const { configCorpid, token, baseUrl } = getRuntimeConfig(kwargs);
 
     const payload = {
       corpid: String(kwargs.corpid || ''),
@@ -92,7 +104,11 @@ cli({
       return makeErrorRow('NO_FORMID', '缺少 --formId', debug, body, '');
     }
     if (!token) {
-      return makeErrorRow('NO_TOKEN', '缺少 token；请传 --token，或先执行 opencli xbb set-token --token <TOKEN>', debug, body, '');
+      return makeErrorRow('NO_TOKEN', '缺少 token；请传 --token，或先执行 opencli xbb set-token --corpid <CORPID> --token <TOKEN>', debug, body, '');
+    }
+
+    if (configCorpid && payload.corpid !== configCorpid) {
+      return makeErrorRow('CORPID_MISMATCH', 'corpid与配置中不一致', debug, body, '');
     }
     if (parsedDataList === null) {
       return makeErrorRow('NO_DATALIST', '缺少 --dataList', debug, body, '');
@@ -102,7 +118,7 @@ cli({
     }
 
     const sign = crypto.createHash('sha256').update(body + token).digest('hex');
-    const resp = await fetch('https://proapi.xbongbong.com/pro/v2/api/customer/add', {
+    const resp = await fetch(buildApiUrl(baseUrl, CUSTOMER_ADD_API_URL), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json;charset=UTF-8',

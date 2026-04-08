@@ -5,7 +5,7 @@ import path from 'node:path';
 import { cli, Strategy } from './opencli-registry.js';
 
 const CONFIG_FILE = path.join(os.homedir(), '.opencli', 'xbb', 'config.json');
-const DETAIL_API_URL = 'https://proapi.xbongbong.com/pro/v2/api/customer/detail';
+const WORK_ORDER_PRODUCT_LIST_API_URL = 'https://proapi.xbongbong.com/pro/v2/api/workOrder/productList';
 const DEFAULT_BASE_URL = 'https://proapi.xbongbong.com';
 const MISSING_TOKEN_MESSAGE = '缺少 token；请传 --token，或先执行 opencli xbb set-token --corpid <CORPID> --token <TOKEN>';
 
@@ -35,14 +35,12 @@ function buildPayload(kwargs) {
   const payload = {
     dataId: Number(kwargs.dataId || 0),
     corpid: String(kwargs.corpid || ''),
+    page: Number(kwargs.page || 1),
+    pageSize: Number(kwargs.pageSize || 20),
   };
 
   if (kwargs.userId) {
     payload.userId = String(kwargs.userId);
-  }
-
-  if (String(kwargs.queryFlag ?? '') !== '') {
-    payload.queryFlag = Number(kwargs.queryFlag);
   }
 
   return payload;
@@ -64,11 +62,13 @@ function getValidationError(payload, token) {
 
 function makeErrorRow(code, msg, debug, body = '', responseBody = '') {
   return [{
-    dataId: '',
-    formId: '',
-    addTime: '',
-    updateTime: '',
-    data: '',
+    rank: '',
+    text_1: '',
+    text_3: '',
+    num_1: '',
+    num_3: '',
+    businessProductId: '',
+    text_8: '',
     code,
     msg,
     requestBody: debug ? body : '',
@@ -76,38 +76,41 @@ function makeErrorRow(code, msg, debug, body = '', responseBody = '') {
   }];
 }
 
-function makeSuccessRow(data, debug, body, responseBody) {
-  const result = data.result || {};
-
-  return [{
-    dataId: result.dataId || '',
-    formId: result.formId || '',
-    addTime: result.addTime || '',
-    updateTime: result.updateTime || '',
-    data: JSON.stringify(result.data || {}),
-    code: data.code ?? '',
-    msg: data.msg || '',
+function makeSuccessRows(list, debug, body, kwargs) {
+  const limit = Number(kwargs.limit || 20);
+  return list.slice(0, limit).map((item, index) => ({
+    rank: index + 1,
+    text_1: item.text_1 || '',
+    text_3: item.text_3 || '',
+    num_1: item.num_1 || '',
+    num_3: item.num_3 || '',
+    businessProductId: item.businessProductId || '',
+    text_8: item.text_8 || '',
+    code: '',
+    msg: '',
     requestBody: debug ? body : '',
-    responseBody: debug ? responseBody : '',
-  }];
+    responseBody: '',
+  }));
 }
 
 cli({
   site: 'xbb',
-  name: 'customerdetail',
-  description: '客户详情接口（纯 HTTP 版）',
+  name: 'workorderproductlist',
+  description: '工单配件接口（纯 HTTP 版）',
   strategy: Strategy.PUBLIC,
   browser: false,
   domain: 'proapi.xbongbong.com',
   args: [
-    { name: 'dataId', type: 'int', help: '数据id（必填）' },
+    { name: 'dataId', type: 'int', help: '工单id（必填）' },
     { name: 'corpid', type: 'str', help: '公司id（必填）' },
     { name: 'token', type: 'str', default: '', help: 'API token（可选；默认从本地配置读取）' },
     { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
-    { name: 'queryFlag', type: 'int', default: '', help: '审批数据查询标识：0非审批，1审批中，2全部' },
+    { name: 'page', type: 'int', default: 1, help: '页码' },
+    { name: 'pageSize', type: 'int', default: 20, help: '每页数量' },
+    { name: 'limit', type: 'int', default: 20, help: '最终返回条数限制' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
   ],
-  columns: ['dataId', 'formId', 'addTime', 'updateTime', 'data', 'code', 'msg', 'requestBody', 'responseBody'],
+  columns: ['rank', 'text_1', 'text_3', 'num_1', 'num_3', 'businessProductId', 'text_8', 'code', 'msg', 'requestBody', 'responseBody'],
   func: async function (_page, kwargs) {
     const debug = Boolean(kwargs.debug);
     const { configCorpid, token, baseUrl } = getRuntimeConfig(kwargs);
@@ -124,7 +127,7 @@ cli({
     }
 
     const sign = crypto.createHash('sha256').update(body + token).digest('hex');
-    const resp = await fetch(buildApiUrl(baseUrl, DETAIL_API_URL), {
+    const resp = await fetch(buildApiUrl(baseUrl, WORK_ORDER_PRODUCT_LIST_API_URL), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json;charset=UTF-8',
@@ -144,6 +147,11 @@ cli({
       return makeErrorRow(data.code ?? '', data.msg ?? '未知错误', debug, body, responseBody);
     }
 
-    return makeSuccessRow(data, debug, body, responseBody);
+    const list = Array.isArray(data.result?.list) ? data.result.list : [];
+    if (!list.length) {
+      return makeErrorRow('NO_DATA', '接口成功，但 list 为空', debug, body, responseBody);
+    }
+
+    return makeSuccessRows(list, debug, body, kwargs);
   },
 });

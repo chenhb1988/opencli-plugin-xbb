@@ -1,13 +1,13 @@
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import crypto from 'node:crypto';
 import { cli, Strategy } from './opencli-registry.js';
 
-const CONFIG_DIR = path.join(os.homedir(), '.opencli', 'xbb');
-const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json');
-const CUSTOMER_LIST_API_URL = 'https://proapi.xbongbong.com/pro/v2/api/customer/list';
+const CONFIG_FILE = path.join(os.homedir(), '.opencli', 'xbb', 'config.json');
+const PAYMENT_SHEET_LIST_API_URL = 'https://proapi.xbongbong.com/pro/v2/api/paymentSheet/list';
 const DEFAULT_BASE_URL = 'https://proapi.xbongbong.com';
+const MISSING_TOKEN_MESSAGE = '缺少 token；请传 --token，或先执行 opencli xbb set-token --corpid <CORPID> --token <TOKEN>';
 
 function readConfig() {
   try {
@@ -32,31 +32,61 @@ function buildApiUrl(baseUrl, defaultUrl) {
 }
 
 function buildConditions(kwargs) {
-  const conditions = [];
-  if (kwargs.attr && kwargs.value) {
-    conditions.push({
-      attr: String(kwargs.attr),
-      value: [String(kwargs.value)],
-      symbol: String(kwargs.symbol || 'equal'),
-    });
+  if (!(kwargs.attr && kwargs.value)) {
+    return [];
   }
-  return conditions;
+
+  return [{
+    attr: String(kwargs.attr),
+    value: [String(kwargs.value)],
+    symbol: String(kwargs.symbol || 'equal'),
+  }];
 }
 
 function buildPayload(kwargs) {
   const payload = {
     corpid: String(kwargs.corpid || ''),
-    formId: Number(kwargs.formId || 0),
     page: Number(kwargs.page || 1),
     pageSize: Number(kwargs.pageSize || 20),
   };
-  if (kwargs.userId) payload.userId = String(kwargs.userId);
-  if (String(kwargs.isPublic ?? '') !== '') payload.isPublic = Number(kwargs.isPublic);
-  if (Number(kwargs.del || 0)) payload.del = Number(kwargs.del);
-  if (String(kwargs.viewApproval || '') !== '') payload.viewApproval = String(kwargs.viewApproval);
+
+  const userId = String(kwargs.userId || '');
+  if (userId) {
+    payload.userId = userId;
+  }
+
+  const listGroupId = String(kwargs.listGroupId ?? '');
+  if (listGroupId !== '') {
+    payload.listGroupId = Number(kwargs.listGroupId);
+  }
+
+  const subBusinessType = String(kwargs.subBusinessType ?? '');
+  if (subBusinessType !== '') {
+    payload.subBusinessType = Number(kwargs.subBusinessType);
+  }
+
+  const viewApproval = String(kwargs.viewApproval ?? '');
+  if (viewApproval !== '') {
+    payload.viewApproval = viewApproval;
+  }
+
   const conditions = buildConditions(kwargs);
-  if (conditions.length) payload.conditions = conditions;
+  if (conditions.length) {
+    payload.conditions = conditions;
+  }
+
   return payload;
+}
+
+function getValidationError(payload, token) {
+  if (!payload.corpid) {
+    return { code: 'NO_CORPID', msg: '缺少 --corpid' };
+  }
+  if (!token) {
+    return { code: 'NO_TOKEN', msg: MISSING_TOKEN_MESSAGE };
+  }
+
+  return null;
 }
 
 function makeErrorRow(code, msg, debug, body = '', responseBody = '') {
@@ -64,11 +94,16 @@ function makeErrorRow(code, msg, debug, body = '', responseBody = '') {
     rank: '',
     dataId: '',
     formId: '',
-    name: '',
+    serialNo: '',
+    customerIds: '',
+    contractIds: '',
+    receivableIds: '',
+    receivedAmount: '',
     ownerId: '',
-    mobile: '',
+    creatorId: '',
     addTime: '',
     updateTime: '',
+    data: '',
     code,
     msg,
     requestBody: debug ? body : '',
@@ -76,22 +111,44 @@ function makeErrorRow(code, msg, debug, body = '', responseBody = '') {
   }];
 }
 
+function makeSuccessRows(list, debug, body, kwargs) {
+  const limit = Number(kwargs.limit || 20);
+  return list.slice(0, limit).map((item, index) => ({
+    rank: index + 1,
+    dataId: item.dataId || '',
+    formId: item.formId || '',
+    serialNo: item.data?.serialNo || '',
+    customerIds: JSON.stringify(item.data?.text_4 || []),
+    contractIds: JSON.stringify(item.data?.text_5 || []),
+    receivableIds: JSON.stringify(item.data?.text_5 || []),
+    receivedAmount: item.data?.num_1 || '',
+    ownerId: item.data?.ownerId || '',
+    creatorId: item.data?.creatorId || '',
+    addTime: item.addTime || '',
+    updateTime: item.updateTime || '',
+    data: JSON.stringify(item.data || {}),
+    code: '',
+    msg: '',
+    requestBody: debug ? body : '',
+    responseBody: '',
+  }));
+}
+
 cli({
   site: 'xbb',
-  name: 'customerlist',
-  description: '客户列表接口（纯 HTTP 版）',
+  name: 'paymentsheetlist',
+  description: '回款单列表接口（纯 HTTP 版）',
   strategy: Strategy.PUBLIC,
   browser: false,
   domain: 'proapi.xbongbong.com',
   args: [
     { name: 'corpid', type: 'str', help: '公司id（必填）' },
-    { name: 'formId', type: 'int', help: '表单id（必填）' },
     { name: 'token', type: 'str', default: '', help: 'API token（可选；默认从本地配置读取）' },
     { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
-    { name: 'isPublic', type: 'int', default: '', help: '是否公海客户：0非公海，1公海，不传表示全部' },
-    { name: 'del', type: 'int', default: 0, help: '0客户列表，1回收站数据' },
+    { name: 'listGroupId', type: 'int', default: '', help: '分组类型（可选），如 110 红冲退款，111 坏账回款' },
+    { name: 'subBusinessType', type: 'int', default: '', help: '业务子类型（可选），如 702 父回款单' },
     { name: 'viewApproval', type: 'str', default: '', help: '是否查询审批中数据，1是，0否' },
-    { name: 'attr', type: 'str', default: '', help: '筛选字段 attr，例如 text_1' },
+    { name: 'attr', type: 'str', default: '', help: '筛选字段 attr，例如 serialNo' },
     { name: 'value', type: 'str', default: '', help: '筛选值，和 --attr 配合使用' },
     { name: 'symbol', type: 'str', default: 'equal', help: '筛选操作符，默认 equal' },
     { name: 'page', type: 'int', default: 1, help: '页码' },
@@ -99,21 +156,16 @@ cli({
     { name: 'limit', type: 'int', default: 20, help: '最终返回条数限制' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
   ],
-  columns: ['rank', 'dataId', 'formId', 'name', 'ownerId', 'mobile', 'addTime', 'updateTime', 'code', 'msg', 'requestBody', 'responseBody'],
-  func: async (_page, kwargs) => {
+  columns: ['rank', 'dataId', 'formId', 'serialNo', 'customerIds', 'contractIds', 'receivableIds', 'receivedAmount', 'ownerId', 'creatorId', 'addTime', 'updateTime', 'data', 'code', 'msg', 'requestBody', 'responseBody'],
+  func: async function (_page, kwargs) {
     const debug = Boolean(kwargs.debug);
     const { configCorpid, token, baseUrl } = getRuntimeConfig(kwargs);
     const payload = buildPayload(kwargs);
     const body = JSON.stringify(payload);
 
-    if (!payload.corpid) {
-      return makeErrorRow('NO_CORPID', '缺少 --corpid', debug, body, '');
-    }
-    if (!payload.formId) {
-      return makeErrorRow('NO_FORMID', '缺少 --formId', debug, body, '');
-    }
-    if (!token) {
-      return makeErrorRow('NO_TOKEN', '缺少 token；请传 --token，或先执行 opencli xbb set-token --corpid <CORPID> --token <TOKEN>', debug, body, '');
+    const validationError = getValidationError(payload, token);
+    if (validationError) {
+      return makeErrorRow(validationError.code, validationError.msg, debug, body, '');
     }
 
     if (configCorpid && payload.corpid !== configCorpid) {
@@ -121,7 +173,7 @@ cli({
     }
 
     const sign = crypto.createHash('sha256').update(body + token).digest('hex');
-    const resp = await fetch(buildApiUrl(baseUrl, CUSTOMER_LIST_API_URL), {
+    const resp = await fetch(buildApiUrl(baseUrl, PAYMENT_SHEET_LIST_API_URL), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json;charset=UTF-8',
@@ -146,19 +198,6 @@ cli({
       return makeErrorRow('NO_DATA', '接口成功，但 list 为空', debug, body, responseBody);
     }
 
-    return list.slice(0, Number(kwargs.limit || 20)).map((item, index) => ({
-      rank: index + 1,
-      dataId: item.dataId || '',
-      formId: item.formId || '',
-      name: item.data?.text_1 || '',
-      ownerId: item.data?.text_16 || '',
-      mobile: item.data?.text_2 || '',
-      addTime: item.addTime || '',
-      updateTime: item.updateTime || '',
-      code: '',
-      msg: '',
-      requestBody: debug ? body : '',
-      responseBody: '',
-    }));
+    return makeSuccessRows(list, debug, body, kwargs);
   },
 });
