@@ -19,7 +19,12 @@ opencli plugin install github:chenhb1988/opencli-plugin-xbb
 - `userlist.js`：用户列表接口
 - `customerlist.js`：客户列表接口
 - `opportunitylist.js`：销售机会列表接口
-- 
+- `cluelist.js`：线索列表接口
+- `communicatelist.js`：跟进记录列表接口
+- `customeradd.js`：新建客户接口
+- `customeredit.js`：编辑客户接口
+- `customerdetail.js`：客户详情接口
+- `customeraddcouser.js`：客户添加协同人接口
 ## 本地配置
 
 先保存 token：
@@ -51,6 +56,28 @@ opencli xbb userlist --corpid your_corpid --nameLike 张三
 opencli xbb customerlist --corpid your_corpid --formId 12345
 opencli xbb customerlist --corpid your_corpid --formId 12345 --debug
 opencli xbb customerlist --corpid your_corpid --formId 12345 --attr text_1 --value apiTest.001
+
+# 销售机会列表（formId 必填）
+opencli xbb opportunitylist --corpid your_corpid --formId 932
+
+# 线索列表（formId 必填）
+opencli xbb cluelist --corpid your_corpid --formId 19320 --del 0
+opencli xbb cluelist --corpid your_corpid --formId 19320 --attr text_1 --value apiTest.0001
+
+# 跟进记录列表
+opencli xbb communicatelist --corpid your_corpid --attr text_1 --value 310993
+
+# 新建客户
+opencli xbb customeradd --corpid your_corpid --formId 19274 --dataList '{"text_1":"apiTest.001"}'
+
+# 编辑客户
+opencli xbb customeredit --corpid your_corpid --formId 19274 --dataId 310992 --dataList '{"text_1":"apiTest.001-编辑"}'
+
+# 客户详情
+opencli xbb customerdetail --corpid your_corpid --dataId 310992
+
+# 客户添加协同人
+opencli xbb customeraddcouser --corpid your_corpid --dataId 310995 --businessUserIdList '["xbbTest002"]'
 ```
 
 ## 实现方式
