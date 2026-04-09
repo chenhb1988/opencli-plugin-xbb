@@ -27,6 +27,11 @@ opencli plugin install github:chenhb1988/opencli-plugin-xbb
 - `customeraddcouser`：客户添加协同人接口
 - `formlist`：表单模板列表接口
 - `formget`：表单模板字段解释接口
+- `formdatalist`：自定义表单数据列表接口
+- `formdatadetail`：自定义表单数据详情接口
+- `formdataadd`：新建自定义表单数据接口
+- `formdataedit`：编辑自定义表单数据接口
+- `formdatadel`：删除自定义表单数据接口
 - `departmentlist`：部门列表接口
 - `contactlist`：联系人列表接口
 - `contractlist`：合同订单列表接口
@@ -96,6 +101,22 @@ opencli xbb formlist --corpid your_corpid --saasMark 2 --name 表单名称
 # 表单模板字段解释
 opencli xbb formget --corpid your_corpid --formId 19274
 opencli xbb formget --corpid your_corpid --formId 19277 --subBusinessType 100
+
+# 自定义表单数据列表（formId 必填）
+opencli xbb formdatalist --corpid your_corpid --formId 19274
+opencli xbb formdatalist --corpid your_corpid --formId 19274 --attr text_1 --value apiTest.001
+
+# 自定义表单数据详情
+opencli xbb formdatadetail --corpid your_corpid --dataId 310992
+
+# 新建自定义表单数据
+opencli xbb formdataadd --corpid your_corpid --formId 19274 --dataList '{"text_1":"apiTest.001"}'
+
+# 编辑自定义表单数据
+opencli xbb formdataedit --corpid your_corpid --dataId 310992 --dataList '{"text_1":"apiTest.001-编辑"}'
+
+# 删除自定义表单数据
+opencli xbb formdatadel --corpid your_corpid --dataId 310992
 
 # 部门列表
 opencli xbb departmentlist --corpid your_corpid
