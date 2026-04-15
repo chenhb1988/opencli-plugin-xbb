@@ -117,7 +117,7 @@ function makeSuccessRows(list, debug, requestBody, kwargs) {
 cli({
   site: 'xbb',
   name: 'formdatalist',
-  description: '自定义表单数据列表接口（纯 HTTP 版）',
+  description: '自定义表单数据列表接口',
   strategy: Strategy.PUBLIC,
   browser: false,
   domain: 'proapi.xbongbong.com',

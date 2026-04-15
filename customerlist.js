@@ -79,7 +79,7 @@ function makeErrorRow(code, msg, debug, body = '', responseBody = '') {
 cli({
   site: 'xbb',
   name: 'customerlist',
-  description: '客户列表接口（纯 HTTP 版）',
+  description: '客户列表接口',
   strategy: Strategy.PUBLIC,
   browser: false,
   domain: 'proapi.xbongbong.com',

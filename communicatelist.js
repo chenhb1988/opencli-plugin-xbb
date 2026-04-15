@@ -123,7 +123,7 @@ function makeSuccessRows(list, debug, body) {
 cli({
   site: 'xbb',
   name: 'communicatelist',
-  description: '跟进记录列表接口（纯 HTTP 版）',
+  description: '跟进记录列表接口',
   strategy: Strategy.PUBLIC,
   browser: false,
   domain: 'proapi.xbongbong.com',

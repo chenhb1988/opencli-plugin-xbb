@@ -57,6 +57,18 @@ token和corpid 会写入：
 ```
 后续命令会默认从该文件读取 token。
 
+`set-token` 执行成功后，还会自动执行以下两个命令并合并结果：
+```bash
+opencli xbb formlist --corpid <YOUR_CORPID> --saasMark 2 -f json
+opencli xbb formlist --corpid <YOUR_CORPID> --saasMark 1 -f json
+```
+合并后的结果会写入与 `config.json` 同目录的：
+```text
+~\.opencli\xbb\<corpid>.formlist.json
+```
+其他命令在请求时，formId如果是必填字段，根据本次命令的{corpid}，优先在本地文件 {corpid}.formlist.json中查找是否有可用formId（注意corpid要对应），如果没找到再进行远程获取
+
+
 ## 命令示例
 
 ```bash
@@ -95,6 +107,8 @@ opencli xbb customerdetail --corpid your_corpid --dataId 310992
 opencli xbb customeraddcouser --corpid your_corpid --dataId 310995 --businessUserIdList '["xbbTest002"]'
 
 # 表单模板列表
+# 不传 --businessType 时，请求体不会带 businessType 字段
+opencli xbb formlist --corpid your_corpid --saasMark 1
 opencli xbb formlist --corpid your_corpid --saasMark 1 --businessType 100
 opencli xbb formlist --corpid your_corpid --saasMark 2 --name 表单名称
 

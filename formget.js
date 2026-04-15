@@ -101,7 +101,7 @@ function makeSuccessRows(explainList, debug, body, kwargs) {
 cli({
   site: 'xbb',
   name: 'formget',
-  description: '表单模板字段解释接口（纯 HTTP 版）',
+  description: '表单模板字段解释接口',
   strategy: Strategy.PUBLIC,
   browser: false,
   domain: 'proapi.xbongbong.com',

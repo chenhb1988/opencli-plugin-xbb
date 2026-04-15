@@ -119,7 +119,7 @@ function makeSuccessRow(data, debug, body, responseBody) {
 cli({
   site: 'xbb',
   name: 'customeredit',
-  description: '编辑客户接口（纯 HTTP 版）',
+  description: '编辑客户接口',
   strategy: Strategy.PUBLIC,
   browser: false,
   domain: 'proapi.xbongbong.com',

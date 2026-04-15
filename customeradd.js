@@ -67,7 +67,7 @@ function parseDataList(raw) {
 cli({
   site: 'xbb',
   name: 'customeradd',
-  description: '新建客户接口（纯 HTTP 版）',
+  description: '新建客户接口',
   strategy: Strategy.PUBLIC,
   browser: false,
   domain: 'proapi.xbongbong.com',

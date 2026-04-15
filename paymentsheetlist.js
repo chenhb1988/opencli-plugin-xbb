@@ -137,7 +137,7 @@ function makeSuccessRows(list, debug, body, kwargs) {
 cli({
   site: 'xbb',
   name: 'paymentsheetlist',
-  description: '回款单列表接口（纯 HTTP 版）',
+  description: '回款单列表接口',
   strategy: Strategy.PUBLIC,
   browser: false,
   domain: 'proapi.xbongbong.com',

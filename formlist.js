@@ -31,6 +31,11 @@ function buildApiUrl(baseUrl, defaultUrl) {
   return `${baseUrl.replace(/\/+$/, '')}${apiPath}`;
 }
 
+function hasCliArg(name) {
+  const flag = `--${name}`;
+  return process.argv.some((arg) => arg === flag || arg.startsWith(`${flag}=`));
+}
+
 function buildPayload(kwargs) {
   const payload = {
     corpid: String(kwargs.corpid || ''),
@@ -43,7 +48,7 @@ function buildPayload(kwargs) {
   if (kwargs.name) {
     payload.name = String(kwargs.name);
   }
-  if (String(kwargs.businessType ?? '') !== '') {
+  if (hasCliArg('businessType')) {
     payload.businessType = Number(kwargs.businessType);
   }
 
@@ -100,7 +105,7 @@ function makeSuccessRows(list, debug, body, kwargs) {
 cli({
   site: 'xbb',
   name: 'formlist',
-  description: '表单模板列表接口（纯 HTTP 版）',
+  description: '表单模板列表接口',
   strategy: Strategy.PUBLIC,
   browser: false,
   domain: 'proapi.xbongbong.com',

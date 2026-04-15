@@ -134,7 +134,7 @@ function makeSuccessRows(list, debug, body) {
 cli({
   site: 'xbb',
   name: 'cluelist',
-  description: '线索列表接口（纯 HTTP 版）',
+  description: '线索列表接口',
   strategy: Strategy.PUBLIC,
   browser: false,
   domain: 'proapi.xbongbong.com',

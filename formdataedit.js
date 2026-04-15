@@ -116,7 +116,7 @@ function makeSuccessRow(data, debug, requestBody, responseBody) {
 cli({
   site: 'xbb',
   name: 'formdataedit',
-  description: '编辑自定义表单数据接口（纯 HTTP 版）',
+  description: '编辑自定义表单数据接口',
   strategy: Strategy.PUBLIC,
   browser: false,
   domain: 'proapi.xbongbong.com',

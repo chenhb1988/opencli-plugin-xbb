@@ -125,7 +125,7 @@ function makeSuccessRows(depList, debug, body, kwargs) {
 cli({
   site: 'xbb',
   name: 'departmentlist',
-  description: '部门列表接口（纯 HTTP 版）',
+  description: '部门列表接口',
   strategy: Strategy.PUBLIC,
   browser: false,
   domain: 'proapi.xbongbong.com',

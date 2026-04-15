@@ -127,7 +127,7 @@ function makeSuccessRows(list, debug, body, kwargs) {
 cli({
   site: 'xbb',
   name: 'contactlist',
-  description: '联系人列表接口（纯 HTTP 版）',
+  description: '联系人列表接口',
   strategy: Strategy.PUBLIC,
   browser: false,
   domain: 'proapi.xbongbong.com',

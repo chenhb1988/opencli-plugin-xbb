@@ -102,7 +102,7 @@ function makeSuccessRows(list, debug, body, kwargs) {
 cli({
   site: 'xbb',
   name: 'productcategorylist',
-  description: '产品分类列表接口（纯 HTTP 版）',
+  description: '产品分类列表接口',
   strategy: Strategy.PUBLIC,
   browser: false,
   domain: 'proapi.xbongbong.com',

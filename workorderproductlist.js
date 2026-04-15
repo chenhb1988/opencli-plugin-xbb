@@ -96,7 +96,7 @@ function makeSuccessRows(list, debug, body, kwargs) {
 cli({
   site: 'xbb',
   name: 'workorderproductlist',
-  description: '工单配件接口（纯 HTTP 版）',
+  description: '工单配件接口',
   strategy: Strategy.PUBLIC,
   browser: false,
   domain: 'proapi.xbongbong.com',
