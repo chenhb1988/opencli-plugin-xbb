@@ -121,6 +121,7 @@ cli({
   name: 'customeredit',
   description: '编辑客户接口',
   strategy: Strategy.PUBLIC,
+  access: 'write',
   browser: false,
   domain: 'proapi.xbongbong.com',
   args: [
@@ -133,7 +134,7 @@ cli({
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
   ],
   columns: ['dataId', 'resultCode', 'resultMsg', 'code', 'msg', 'requestBody', 'responseBody'],
-  func: async (_page, kwargs) => {
+  func: async (kwargs) => {
     const debug = Boolean(kwargs.debug);
     const { configCorpid, token, baseUrl } = getRuntimeConfig(kwargs);
     const parsedDataList = parseDataList(kwargs.dataList);

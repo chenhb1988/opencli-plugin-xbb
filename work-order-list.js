@@ -5,7 +5,7 @@ import path from 'node:path';
 import { cli, Strategy } from './opencli-registry.js';
 
 const CONFIG_FILE = path.join(os.homedir(), '.opencli', 'xbb', 'config.json');
-const FORM_DATA_LIST_API_URL = 'https://proapi.xbongbong.com/pro/v2/api/paas/list';
+const WORK_ORDER_LIST_API_URL = 'https://proapi.xbongbong.com/pro/v2/api/workOrderV2/list';
 const DEFAULT_BASE_URL = 'https://proapi.xbongbong.com';
 const MISSING_TOKEN_MESSAGE = '缺少 token；请传 --token，或先执行 opencli xbb set-token --corpid <CORPID> --token <TOKEN>';
 
@@ -26,12 +26,34 @@ function getRuntimeConfig(kwargs) {
   };
 }
 
-function buildApiUrl(baseUrl, apiUrl) {
-  const apiPath = new URL(apiUrl).pathname;
+function buildApiUrl(baseUrl, defaultUrl) {
+  const apiPath = new URL(defaultUrl).pathname;
   return `${baseUrl.replace(/\/+$/, '')}${apiPath}`;
 }
 
+function parseOptionalInteger(value, code, msg) {
+  if (String(value ?? '') === '') {
+    return null;
+  }
+
+  const parsed = Number(value);
+  if (Number.isNaN(parsed)) {
+    throw new Error(`${code}:${msg}`);
+  }
+
+  return parsed;
+}
+
 function buildConditions(kwargs) {
+  const conditions = kwargs.conditions;
+  if (typeof conditions === 'string' && conditions.trim()) {
+    const parsed = JSON.parse(conditions);
+    if (!Array.isArray(parsed)) {
+      throw new Error('INVALID_CONDITIONS:conditions 必须是 JSON 数组');
+    }
+    return parsed;
+  }
+
   if (!(kwargs.attr && kwargs.value)) {
     return [];
   }
@@ -47,17 +69,25 @@ function buildPayload(kwargs) {
   const payload = {
     corpid: String(kwargs.corpid || ''),
     formId: Number(kwargs.formId || 0),
-    page: Number(kwargs.page || 1),
-    pageSize: Number(kwargs.pageSize || 20),
   };
+
+  const page = parseOptionalInteger(kwargs.page, 'INVALID_PAGE', 'page 必须是数字');
+  if (page !== null) {
+    payload.page = page;
+  }
+
+  const pageSize = parseOptionalInteger(kwargs.pageSize, 'INVALID_PAGE_SIZE', 'pageSize 必须是数字');
+  if (pageSize !== null) {
+    payload.pageSize = pageSize;
+  }
 
   const userId = String(kwargs.userId || '');
   if (userId) {
     payload.userId = userId;
   }
 
-  const viewApproval = String(kwargs.viewApproval ?? '');
-  if (viewApproval !== '') {
+  const viewApproval = parseOptionalInteger(kwargs.viewApproval, 'INVALID_VIEW_APPROVAL', 'viewApproval 必须是数字');
+  if (viewApproval !== null) {
     payload.viewApproval = viewApproval;
   }
 
@@ -83,41 +113,58 @@ function getValidationError(payload, token) {
   return null;
 }
 
-function makeErrorRow(code, msg, debug, requestBody = '', responseBody = '') {
+function makeErrorRow(code, msg, debug, body = '', responseBody = '') {
   return [{
     rank: '',
     dataId: '',
     formId: '',
+    serialNo: '',
+    customerId: '',
+    ownerId: '',
+    status: '',
+    creatorId: '',
     addTime: '',
     updateTime: '',
     data: '',
     code,
     msg,
-    requestBody: debug ? requestBody : '',
+    requestBody: debug ? body : '',
     responseBody: debug ? responseBody : '',
   }];
 }
 
-function makeSuccessRows(list, debug, requestBody, kwargs) {
+function stringifyValue(value) {
+  if (Array.isArray(value) || (value && typeof value === 'object')) {
+    return JSON.stringify(value);
+  }
+  return value ?? '';
+}
+
+function makeSuccessRows(list, debug, body, kwargs) {
   const limit = Number(kwargs.limit || 20);
   return list.slice(0, limit).map((item, index) => ({
     rank: index + 1,
     dataId: item.dataId || '',
     formId: item.formId || '',
+    serialNo: item.data?.serialNo || '',
+    customerId: stringifyValue(item.data?.text_2),
+    ownerId: stringifyValue(item.data?.ownerId),
+    status: stringifyValue(item.data?.text_4),
+    creatorId: stringifyValue(item.data?.creatorId),
     addTime: item.addTime || '',
     updateTime: item.updateTime || '',
     data: JSON.stringify(item.data || {}),
     code: '',
     msg: '',
-    requestBody: debug ? requestBody : '',
+    requestBody: debug ? body : '',
     responseBody: '',
   }));
 }
 
 cli({
   site: 'xbb',
-  name: 'formdatalist',
-  description: '自定义表单数据列表接口',
+  name: 'work-order-list',
+  description: '工单列表接口',
   strategy: Strategy.PUBLIC,
   access: 'read',
   browser: false,
@@ -128,56 +175,67 @@ cli({
     { name: 'token', type: 'str', default: '', help: 'API token（可选；默认从本地配置读取）' },
     { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
     { name: 'viewApproval', type: 'str', default: '', help: '是否查询审批中数据，1是，0否' },
+    { name: 'conditions', type: 'str', default: '', help: '条件集合 JSON 字符串' },
     { name: 'attr', type: 'str', default: '', help: '筛选字段 attr，例如 text_1' },
     { name: 'value', type: 'str', default: '', help: '筛选值，和 --attr 配合使用' },
     { name: 'symbol', type: 'str', default: 'equal', help: '筛选操作符，默认 equal' },
-    { name: 'page', type: 'int', default: 1, help: '页码' },
-    { name: 'pageSize', type: 'int', default: 20, help: '每页数量（最大100）' },
+    { name: 'page', type: 'str', default: '', help: '页码（可选）' },
+    { name: 'pageSize', type: 'str', default: '', help: '每页数量（可选，最大 100）' },
     { name: 'limit', type: 'int', default: 20, help: '最终返回条数限制' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
   ],
-  columns: ['rank', 'dataId', 'formId', 'addTime', 'updateTime', 'data', 'code', 'msg', 'requestBody', 'responseBody'],
+  columns: ['rank', 'dataId', 'formId', 'serialNo', 'customerId', 'ownerId', 'status', 'creatorId', 'addTime', 'updateTime', 'data', 'code', 'msg', 'requestBody', 'responseBody'],
   func: async function (kwargs) {
     const debug = Boolean(kwargs.debug);
+    let payload;
+    try {
+      payload = buildPayload(kwargs);
+    } catch (error) {
+      const message = String(error?.message || error);
+      const separatorIndex = message.indexOf(':');
+      const code = separatorIndex > 0 ? message.slice(0, separatorIndex) : 'INVALID_PAYLOAD';
+      const detail = separatorIndex > 0 ? message.slice(separatorIndex + 1) : message;
+      return makeErrorRow(code, detail, debug, '', detail);
+    }
+
     const { configCorpid, token, baseUrl } = getRuntimeConfig(kwargs);
-    const payload = buildPayload(kwargs);
-    const requestBody = JSON.stringify(payload);
+    const body = JSON.stringify(payload);
 
     const validationError = getValidationError(payload, token);
     if (validationError) {
-      return makeErrorRow(validationError.code, validationError.msg, debug, requestBody, '');
+      return makeErrorRow(validationError.code, validationError.msg, debug, body, '');
     }
 
     if (configCorpid && payload.corpid !== configCorpid) {
-      return makeErrorRow('CORPID_MISMATCH', 'corpid与配置中不一致', debug, requestBody, '');
+      return makeErrorRow('CORPID_MISMATCH', 'corpid与配置中不一致', debug, body, '');
     }
 
-    const sign = crypto.createHash('sha256').update(requestBody + token).digest('hex');
-    const resp = await fetch(buildApiUrl(baseUrl, FORM_DATA_LIST_API_URL), {
+    const sign = crypto.createHash('sha256').update(body + token).digest('hex');
+    const resp = await fetch(buildApiUrl(baseUrl, WORK_ORDER_LIST_API_URL), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json;charset=UTF-8',
         sign,
       },
-      body: requestBody,
+      body,
     });
 
     if (!resp.ok) {
       const responseText = await resp.text();
-      return makeErrorRow(resp.status, `HTTP ${resp.status} ${resp.statusText}`, debug, requestBody, responseText);
+      return makeErrorRow(resp.status, `HTTP ${resp.status} ${resp.statusText}`, debug, body, responseText);
     }
 
     const data = await resp.json();
     const responseBody = JSON.stringify(data);
     if (data.code !== 1) {
-      return makeErrorRow(data.code ?? '', data.msg ?? '未知错误', debug, requestBody, responseBody);
+      return makeErrorRow(data.code ?? '', data.msg ?? '未知错误', debug, body, responseBody);
     }
 
     const list = Array.isArray(data.result?.list) ? data.result.list : [];
     if (!list.length) {
-      return makeErrorRow('NO_DATA', '接口成功，但 list 为空', debug, requestBody, responseBody);
+      return makeErrorRow('NO_DATA', '接口成功，但 list 为空', debug, body, responseBody);
     }
 
-    return makeSuccessRows(list, debug, requestBody, kwargs);
+    return makeSuccessRows(list, debug, body, kwargs);
   },
 });

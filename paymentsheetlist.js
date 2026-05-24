@@ -139,6 +139,7 @@ cli({
   name: 'paymentsheetlist',
   description: '回款单列表接口',
   strategy: Strategy.PUBLIC,
+  access: 'read',
   browser: false,
   domain: 'proapi.xbongbong.com',
   args: [
@@ -157,7 +158,7 @@ cli({
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
   ],
   columns: ['rank', 'dataId', 'formId', 'serialNo', 'customerIds', 'contractIds', 'receivableIds', 'receivedAmount', 'ownerId', 'creatorId', 'addTime', 'updateTime', 'data', 'code', 'msg', 'requestBody', 'responseBody'],
-  func: async function (_page, kwargs) {
+  func: async function (kwargs) {
     const debug = Boolean(kwargs.debug);
     const { configCorpid, token, baseUrl } = getRuntimeConfig(kwargs);
     const payload = buildPayload(kwargs);

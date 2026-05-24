@@ -5,7 +5,7 @@ import path from 'node:path';
 import { cli, Strategy } from './opencli-registry.js';
 
 const CONFIG_FILE = path.join(os.homedir(), '.opencli', 'xbb', 'config.json');
-const FORM_DATA_DETAIL_API_URL = 'https://proapi.xbongbong.com/pro/v2/api/paas/detail';
+const WORK_TIME_RECORD_DETAIL_API_URL = 'https://proapi.xbongbong.com/pro/v2/api/workTimeRecord/detail';
 const DEFAULT_BASE_URL = 'https://proapi.xbongbong.com';
 const MISSING_TOKEN_MESSAGE = '缺少 token；请传 --token，或先执行 opencli xbb set-token --corpid <CORPID> --token <TOKEN>';
 
@@ -37,11 +37,14 @@ function buildPayload(kwargs) {
     corpid: String(kwargs.corpid || ''),
   };
 
-  if (kwargs.userId) {
-    payload.userId = String(kwargs.userId);
+  const userId = String(kwargs.userId || '');
+  if (userId) {
+    payload.userId = userId;
   }
-  if (String(kwargs.queryFlag ?? '') !== '') {
-    payload.queryFlag = Number(kwargs.queryFlag);
+
+  const queryFlag = String(kwargs.queryFlag ?? '');
+  if (queryFlag !== '') {
+    payload.queryFlag = Number(queryFlag);
   }
 
   return payload;
@@ -65,6 +68,10 @@ function makeErrorRow(code, msg, debug, requestBody = '', responseBody = '') {
   return [{
     dataId: '',
     formId: '',
+    serialNo: '',
+    creatorId: '',
+    ownerId: '',
+    coUserId: '',
     addTime: '',
     updateTime: '',
     data: '',
@@ -80,6 +87,10 @@ function makeSuccessRow(data, debug, requestBody, responseBody) {
   return [{
     dataId: result.dataId || '',
     formId: result.formId || '',
+    serialNo: result.data?.serialNo || '',
+    creatorId: result.data?.creatorId ? JSON.stringify(result.data.creatorId) : '',
+    ownerId: Array.isArray(result.data?.ownerId) ? JSON.stringify(result.data.ownerId) : (result.data?.ownerId || ''),
+    coUserId: Array.isArray(result.data?.coUserId) ? JSON.stringify(result.data.coUserId) : (result.data?.coUserId || ''),
     addTime: result.addTime || '',
     updateTime: result.updateTime || '',
     data: JSON.stringify(result.data || {}),
@@ -92,8 +103,8 @@ function makeSuccessRow(data, debug, requestBody, responseBody) {
 
 cli({
   site: 'xbb',
-  name: 'formdatadetail',
-  description: '自定义表单数据详情接口',
+  name: 'worktimerecorddetail',
+  description: '工时记录详情接口',
   strategy: Strategy.PUBLIC,
   access: 'read',
   browser: false,
@@ -106,7 +117,7 @@ cli({
     { name: 'queryFlag', type: 'int', default: '', help: '是否查询审批数据：0非审批，1审批中，2全部' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
   ],
-  columns: ['dataId', 'formId', 'addTime', 'updateTime', 'data', 'code', 'msg', 'requestBody', 'responseBody'],
+  columns: ['dataId', 'formId', 'serialNo', 'creatorId', 'ownerId', 'coUserId', 'addTime', 'updateTime', 'data', 'code', 'msg', 'requestBody', 'responseBody'],
   func: async function (kwargs) {
     const debug = Boolean(kwargs.debug);
     const { configCorpid, token, baseUrl } = getRuntimeConfig(kwargs);
@@ -123,7 +134,7 @@ cli({
     }
 
     const sign = crypto.createHash('sha256').update(requestBody + token).digest('hex');
-    const resp = await fetch(buildApiUrl(baseUrl, FORM_DATA_DETAIL_API_URL), {
+    const resp = await fetch(buildApiUrl(baseUrl, WORK_TIME_RECORD_DETAIL_API_URL), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json;charset=UTF-8',

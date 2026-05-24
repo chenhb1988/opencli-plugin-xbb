@@ -98,6 +98,7 @@ cli({
   name: 'workorderproductlist',
   description: '工单配件接口',
   strategy: Strategy.PUBLIC,
+  access: 'read',
   browser: false,
   domain: 'proapi.xbongbong.com',
   args: [
@@ -111,7 +112,7 @@ cli({
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
   ],
   columns: ['rank', 'text_1', 'text_3', 'num_1', 'num_3', 'businessProductId', 'text_8', 'code', 'msg', 'requestBody', 'responseBody'],
-  func: async function (_page, kwargs) {
+  func: async function (kwargs) {
     const debug = Boolean(kwargs.debug);
     const { configCorpid, token, baseUrl } = getRuntimeConfig(kwargs);
     const payload = buildPayload(kwargs);

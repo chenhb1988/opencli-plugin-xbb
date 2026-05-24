@@ -86,7 +86,7 @@ function makeErrorRow(code, msg, debug, body = '', responseBody = '') {
 }
 
 function makeSuccessRows(list, debug, body, kwargs) {
-  const limit = Number(kwargs.limit || 20);
+  const limit = Number(kwargs.limit || 200);
   return list.slice(0, limit).map((item, index) => ({
     rank: index + 1,
     formId: item.formId || '',
@@ -107,6 +107,7 @@ cli({
   name: 'formlist',
   description: '表单模板列表接口',
   strategy: Strategy.PUBLIC,
+  access: 'read',
   browser: false,
   domain: 'proapi.xbongbong.com',
   args: [
@@ -116,11 +117,11 @@ cli({
     { name: 'name', type: 'str', default: '', help: '模板名称模糊查询（可选）' },
     { name: 'token', type: 'str', default: '', help: 'API token（可选；默认从本地配置读取）' },
     { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
-    { name: 'limit', type: 'int', default: 20, help: '最终返回条数限制' },
+    { name: 'limit', type: 'int', default: 200, help: '最终返回条数限制' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
   ],
   columns: ['rank', 'formId', 'appId', 'menuId', 'businessType', 'isProcessForm', 'name', 'code', 'msg', 'requestBody', 'responseBody'],
-  func: async function (_page, kwargs) {
+  func: async function (kwargs) {
     const debug = Boolean(kwargs.debug);
     const { configCorpid, token, baseUrl } = getRuntimeConfig(kwargs);
     const payload = buildPayload(kwargs);

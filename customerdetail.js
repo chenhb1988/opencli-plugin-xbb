@@ -97,6 +97,7 @@ cli({
   name: 'customerdetail',
   description: '客户详情接口',
   strategy: Strategy.PUBLIC,
+  access: 'read',
   browser: false,
   domain: 'proapi.xbongbong.com',
   args: [
@@ -108,7 +109,7 @@ cli({
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
   ],
   columns: ['dataId', 'formId', 'addTime', 'updateTime', 'data', 'code', 'msg', 'requestBody', 'responseBody'],
-  func: async function (_page, kwargs) {
+  func: async function (kwargs) {
     const debug = Boolean(kwargs.debug);
     const { configCorpid, token, baseUrl } = getRuntimeConfig(kwargs);
     const payload = buildPayload(kwargs);

@@ -92,7 +92,7 @@ function createResult(status, message, corpid, baseurl, formlistFile = '') {
   }];
 }
 
-async function setToken(_page, kwargs) {
+async function setToken(kwargs) {
   const corpid = normalizeArg(kwargs.corpid);
   const token = normalizeArg(kwargs.token);
 
@@ -129,6 +129,7 @@ cli({
   name: 'set-token',
   description: '保存 xbb API token,corpid,formId清单 到本地配置文件，其他命令需要formId时，可以先查询表单模板缓存文件',
   strategy: Strategy.PUBLIC,
+  access: 'write',
   browser: false,
   args: [
     { name: 'corpid', type: 'str', help: '公司id（必填）' },
