@@ -65,28 +65,82 @@ opencli xbb formlist --corpid <CORPID> --saasMark 1 -f json
 - `customeradd`：新增客户
 - `customeredit`：编辑客户
 - `customeraddcouser`：客户添加协同人
+- `customer-del`：删除客户
+- `customer-back`：客户退回公海
+- `customer-handover`：客户移交
+- `customer-distribution`：客户分配
+- `customer-delete-mainuser`：客户删除负责人
+- `customer-delete-couser`：客户删除协同人
 - `cluelist`：线索列表
-- `communicatelist`：跟进记录列表
 - `contactlist`：联系人列表
+
+
+
+### 销售机会操作
+
+- `opportunity-add`：新建销售机会
+- `opportunity-edit`：编辑销售机会
 - `opportunitylist`：销售机会列表
+- `opportunity-detail`：销售机会详情
+- `opportunity-del`：删除销售机会
+- `opportunity-handover`：销售机会移交
+- `opportunity-add-mainuser`：销售机会添加负责人
+- `opportunity-delete-mainuser`：销售机会删除负责人
+- `opportunity-add-couser`：销售机会添加协同人
+- `opportunity-delete-couser`：销售机会删除协同人
+
+### 合同订单操作
+
+- `contract-add`：新建合同订单
+- `contract-edit`：编辑合同订单
 - `contractlist`：合同订单列表
+- `contract-detail`：合同订单详情
+- `contract-del`：删除合同订单
+- `contract-handover`：合同订单移交
+- `contract-add-mainuser`：合同订单添加负责人
+- `contract-delete-mainuser`：合同订单删除负责人
+- `contract-add-couser`：合同订单添加协同人
+- `contract-delete-couser`：合同订单删除协同人
+
+### 跟进记录操作
+
+- `communicate-add`：新建跟进记录
+- `communicate-edit`：编辑跟进记录
+- `communicatelist`：跟进记录列表
+- `communicate-detail`：跟进记录详情
+- `communicate-del`：删除跟进记录
 
 ### 表单相关
 
 - `formlist`：表单模板列表
-- `formget`：表单模板字段定义
+- `formget`：表单模板字段定义，在填充参数时不清楚参数含义/下拉框可选项值，调用本接口获取form解释
 - `formdatalist`：自定义表单数据列表
 - `formdatadetail`：自定义表单数据详情
 - `formdataadd`：新增自定义表单数据
 - `formdataedit`：编辑自定义表单数据
 - `formdatadel`：删除自定义表单数据
 
-### 产品与回款
+### 产品
 
 - `productlist`：产品列表
 - `productdetail`：产品详情
 - `productcategorylist`：产品分类列表
+
+### 应收款操作
+
 - `paymentlist`：应收款列表
+- `payment-add`：新建应收款
+- `payment-edit`：编辑应收款
+- `payment-detail`：应收款详情
+- `payment-del`：删除应收款
+- `payment-handover`：应收款移交
+- `payment-add-mainuser`：应收款添加负责人
+- `payment-delete-mainuser`：应收款删除负责人
+- `payment-add-couser`：应收款添加协同人
+- `payment-delete-couser`：应收款删除协同人
+
+### 回款与退款
+
 - `paymentsheetlist`：回款单列表
 - `refundlist`：退货退款单列表
 
@@ -97,6 +151,9 @@ opencli xbb formlist --corpid <CORPID> --saasMark 1 -f json
 - `work-order-edit`：编辑工单
 - `work-order-del`：删除工单
 - `work-order-operate`：工单流转
+- `workorder-handover`：移交工单负责人
+- `workorder-add-couser`：添加工单协同人
+- `workorder-delete-couser`：删除工单协同人
 
 
 ### 旧工单（已过时，不建议使用）
@@ -125,6 +182,7 @@ opencli xbb formlist --corpid <CORPID> --saasMark 1 -f json
 - `--limit` 是在响应映射之后截断结果
 - 失败时返回的是带 `code` / `msg` 的结果行，不抛异常
 - 加 `--debug` 可以输出 `requestBody` 和 `responseBody`
+- 在填充参数时不清楚参数含义/下拉框可选项值，调用 formget命令获取form解释
 
 ## 常用示例
 
