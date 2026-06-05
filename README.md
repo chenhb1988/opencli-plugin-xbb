@@ -1,179 +1,239 @@
 # opencli-plugin-xbb
 
-`opencli` 的 销帮帮CRM(xbb) 插件，当前提供基于销帮帮开放平台 API 的纯 HTTP 命令。
-
+`opencli` 的销帮帮 CRM (`xbb`) 插件。当前命令全部走 HTTP API，不依赖浏览器。
 
 ## 安装
 
 ```bash
-# 先安装opencli
 npm install -g @jackwener/opencli
-
-# 再安装本插件
 opencli plugin install github:chenhb1988/opencli-plugin-xbb
 ```
 
+## 初始化配置
+
+首次使用先保存 `corpid` 和 `token`：
+
+```bash
+opencli xbb set-token --corpid <CORPID> --token <TOKEN>
+```
+
+执行后会写入：
+
+```text
+~/.opencli/xbb/config.json
+```
+
+文件内容包含：
+
+- `corpid`
+- `token`
+- `baseurl`
+
+同时会自动拉取两份表单清单并合并缓存到：
+
+```text
+~/.opencli/xbb/<corpid>.formlist.json
+```
+
+内部等价于执行：
+
+```bash
+opencli xbb formlist --corpid <CORPID> --saasMark 2 -f json
+opencli xbb formlist --corpid <CORPID> --saasMark 1 -f json
+```
+
+`baseurl` 路由规则：
+
+- `corpid` 以 `ding` 开头，或包含 `$$ding` 时，使用 `https://proapi.xbongbong.com`
+- 其他 `corpid` 使用 `https://appapi.xbongbong.com`
+
 ## 当前支持的命令
 
-- `set-token`：把 API token 保存到本地配置文件
-- `userlist`：用户列表接口
-- `customerlist`：客户列表接口
-- `opportunitylist`：销售机会列表接口
-- `cluelist`：线索列表接口
-- `communicatelist`：跟进记录列表接口
-- `customeradd`：新建客户接口
-- `customeredit`：编辑客户接口
-- `customerdetail`：客户详情接口
-- `customeraddcouser`：客户添加协同人接口
-- `formlist`：表单模板列表接口
-- `formget`：表单模板字段解释接口
-- `formdatalist`：自定义表单数据列表接口
-- `formdatadetail`：自定义表单数据详情接口
-- `formdataadd`：新建自定义表单数据接口
-- `formdataedit`：编辑自定义表单数据接口
-- `formdatadel`：删除自定义表单数据接口
-- `departmentlist`：部门列表接口
-- `contactlist`：联系人列表接口
-- `contractlist`：合同订单列表接口
-- `refundlist`：退货退款单列表接口
-- `productlist`：产品列表接口
-- `productcategorylist`：产品分类列表接口
-- `paymentlist`：应收款列表接口
-- `paymentsheetlist`：回款单列表接口
-- `workorderlist`：工单列表接口
-- `workorderproductlist`：工单配件接口
+### 配置
 
-## 首次使用需设置 token
+- `set-token`：保存 `corpid`、`token`、`baseurl`，并刷新本地表单缓存
 
-先保存 token：
+### 组织与人员
+
+- `userlist`：用户列表
+- `departmentlist`：部门列表
+
+### CRM 主数据
+
+- `customerlist`：客户列表
+- `customerdetail`：客户详情
+- `customeradd`：新增客户
+- `customeredit`：编辑客户
+- `customeraddcouser`：客户添加协同人
+- `cluelist`：线索列表
+- `communicatelist`：跟进记录列表
+- `contactlist`：联系人列表
+- `opportunitylist`：销售机会列表
+- `contractlist`：合同订单列表
+
+### 表单相关
+
+- `formlist`：表单模板列表
+- `formget`：表单模板字段定义
+- `formdatalist`：自定义表单数据列表
+- `formdatadetail`：自定义表单数据详情
+- `formdataadd`：新增自定义表单数据
+- `formdataedit`：编辑自定义表单数据
+- `formdatadel`：删除自定义表单数据
+
+### 产品与回款
+
+- `productlist`：产品列表
+- `productdetail`：产品详情
+- `productcategorylist`：产品分类列表
+- `paymentlist`：应收款列表
+- `paymentsheetlist`：回款单列表
+- `refundlist`：退货退款单列表
+
+### 新版工单（服务云）
+- `work-order-list`：新版工单列表命令
+- `work-order-detail`：工单详情
+- `work-order-add`：新增工单
+- `work-order-edit`：编辑工单
+- `work-order-del`：删除工单
+- `work-order-operate`：工单流转
+
+
+### 旧工单（已过时，不建议使用）
+- `workorderlist`：旧版工单列表命令
+- `workorderproductlist`：工单配件列表
+- `worktimerecordlist`：工时记录列表
+- `worktimerecorddetail`：工时记录详情
+
+## 命名说明
+
+仓库里现在同时保留两套工单命名：
+
+- 旧命名：`workorderlist`、`workorderproductlist`
+- 新命名：`work-order-list`、`work-order-detail`、`work-order-add`、`work-order-edit`、`work-order-del`、`work-order-operate`
+
+建议新接入优先使用带连字符的 `work-order-*` 命令。`workorderlist` 仍保留，主要用于兼容旧功能。
+
+## 通用行为
+
+- 所有命令都要求有效的 `--corpid`
+- 如果命令行传入的 `--corpid` 与本地配置中的 `corpid` 不一致，会返回 `CORPID_MISMATCH`
+- 大部分命令会优先从 `~/.opencli/xbb/config.json` 读取 `token`
+- 大部分命令需要formId参数，可以根据业务名称或businessType从~/.opencli/xbb/<corpid>.formlist.json中获取formId
+- 未传入的可选参数不会进入请求体
+- `--attr` 和 `--value` 只有同时提供时才会拼入查询条件
+- `--limit` 是在响应映射之后截断结果
+- 失败时返回的是带 `code` / `msg` 的结果行，不抛异常
+- 加 `--debug` 可以输出 `requestBody` 和 `responseBody`
+
+## 常用示例
+
+### 基础配置/初始化
 
 ```bash
-opencli xbb set-token --token <YOUR_TOKEN> --corpid <YOUR_CORPID>
-```
-
-token和corpid 会写入：
-```text
-~\.opencli\xbb\config.json
-```
-后续命令会默认从该文件读取 token。
-
-`set-token` 执行成功后，还会自动执行以下两个命令并合并结果：
-```bash
-opencli xbb formlist --corpid <YOUR_CORPID> --saasMark 2 -f json
-opencli xbb formlist --corpid <YOUR_CORPID> --saasMark 1 -f json
-```
-合并后的结果会写入与 `config.json` 同目录的：
-```text
-~\.opencli\xbb\<corpid>.formlist.json
-```
-其他命令在请求时，formId如果是必填字段，根据本次命令的{corpid}，优先在本地文件 {corpid}.formlist.json中查找是否有可用formId（注意corpid要对应），如果没找到再进行远程获取
+opencli xbb set-token --corpid your_corpid --token your_token
 
 
-## 命令示例
+### 员工信息
 
 ```bash
-# 保存 token
-opencli xbb set-token --token your_token
-
-# 用户列表
 opencli xbb userlist --corpid your_corpid
-opencli xbb userlist --corpid your_corpid --debug
-opencli xbb userlist --corpid your_corpid --nameLike 张三
+opencli xbb userlist --corpid your_corpid --nameLike 张三 --debug
+```
 
-# 客户列表（formId 必填）
-opencli xbb customerlist --corpid your_corpid --formId 12345
-opencli xbb customerlist --corpid your_corpid --formId 12345 --debug
-opencli xbb customerlist --corpid your_corpid --formId 12345 --attr text_1 --value apiTest.001
+### 表单查询
 
-# 销售机会列表（formId 必填）
-opencli xbb opportunitylist --corpid your_corpid --formId 932
-
-# 线索列表（formId 必填）
-opencli xbb cluelist --corpid your_corpid --formId 19320 
-
-# 跟进记录列表
-opencli xbb communicatelist --corpid your_corpid --attr text_1 --value 310993
-
-# 新建客户
-opencli xbb customeradd --corpid your_corpid --formId 19274 --dataList '{"text_1":"apiTest.001"}'
-
-# 编辑客户
-opencli xbb customeredit --corpid your_corpid --formId 19274 --dataId 310992 --dataList '{"text_1":"apiTest.001-编辑"}'
-
-# 客户详情
-opencli xbb customerdetail --corpid your_corpid --dataId 310992
-
-# 客户添加协同人
-opencli xbb customeraddcouser --corpid your_corpid --dataId 310995 --businessUserIdList '["xbbTest002"]'
-
-# 表单模板列表
-# 不传 --businessType 时，请求体不会带 businessType 字段
+```bash
 opencli xbb formlist --corpid your_corpid --saasMark 1
 opencli xbb formlist --corpid your_corpid --saasMark 1 --businessType 100
-opencli xbb formlist --corpid your_corpid --saasMark 2 --name 表单名称
+opencli xbb formlist --corpid your_corpid --saasMark 2 --name 工单
 
-# 表单模板字段解释
 opencli xbb formget --corpid your_corpid --formId 19274
 opencli xbb formget --corpid your_corpid --formId 19277 --subBusinessType 100
-
-# 自定义表单数据列表（formId 必填）
-opencli xbb formdatalist --corpid your_corpid --formId 19274
-opencli xbb formdatalist --corpid your_corpid --formId 19274 --attr text_1 --value apiTest.001
-
-# 自定义表单数据详情
-opencli xbb formdatadetail --corpid your_corpid --dataId 310992
-
-# 新建自定义表单数据
-opencli xbb formdataadd --corpid your_corpid --formId 19274 --dataList '{"text_1":"apiTest.001"}'
-
-# 编辑自定义表单数据
-opencli xbb formdataedit --corpid your_corpid --dataId 310992 --dataList '{"text_1":"apiTest.001-编辑"}'
-
-# 删除自定义表单数据
-opencli xbb formdatadel --corpid your_corpid --dataId 310992
-
-# 部门列表
-opencli xbb departmentlist --corpid your_corpid
-opencli xbb departmentlist --corpid your_corpid --nameLike 销售
-opencli xbb departmentlist --corpid your_corpid --departmentIdIn '["1","6"]'
-
-# 联系人列表
-opencli xbb contactlist --corpid your_corpid --attr text_1 --value apiTest.001
-
-# 合同订单列表（formId 必填）
-opencli xbb contractlist --corpid your_corpid --formId 19281 --attr text_1 --value apiTest.001
-
-# 退货退款单列表
-opencli xbb refundlist --corpid your_corpid --attr serialNo --value RFO.API.0001
-
-# 产品列表
-opencli xbb productlist --corpid your_corpid --attr serialNo --value CP.API.0001
-
-# 产品分类列表
-opencli xbb productcategorylist --corpid your_corpid
-
-# 应收款列表
-opencli xbb paymentlist --corpid your_corpid --attr serialNo --value PMO.API.0001
-
-# 回款单列表
-opencli xbb paymentsheetlist --corpid your_corpid --attr serialNo --value RMO.API.0001
-opencli xbb paymentsheetlist --corpid your_corpid --subBusinessType 702
-
-# 工单列表（formId 必填）
-opencli xbb workorderlist --corpid your_corpid --formId 689 --attr serialNo --value WOO.20210616001
-
-# 工单配件列表
-opencli xbb workorderproductlist --corpid your_corpid --dataId 663
 ```
 
-## 实现方式
+### 客户
 
-- 当前命令均为 `browser: false` 的纯 HTTP 实现。
-- 接口签名规则为：`SHA256(JSON压缩后的请求体 + token)`，并将 `sign` 放入 HTTP Header。
-- 调试时可传 `--debug` 输出 `requestBody` 和 `responseBody`。
+```bash
+opencli xbb customerlist --corpid your_corpid --formId 12345
+opencli xbb customerlist --corpid your_corpid --formId 12345 --attr text_1 --value apiTest.001
 
-## 其他说明
+opencli xbb customeradd --corpid your_corpid --formId 19274 --dataList '{"text_1":"apiTest.001"}'
+opencli xbb customeredit --corpid your_corpid --formId 19274 --dataId 310992 --dataList '{"text_1":"apiTest.001-编辑"}'
+opencli xbb customerdetail --corpid your_corpid --dataId 310992
+opencli xbb customeraddcouser --corpid your_corpid --dataId 310995 --businessUserIdList '["xbbTest002"]'
 
-- 所有请求需要传递有效 `corpid`，目前已接入钉钉，企微，飞书，和独立版，根据corpid自动路由。
-- 部分命令需要`corpid` 外还需要有效的 `formId`，可通过formlist先获取对应业务的formId。
- 
+### 表单模型/业务数据
+
+```bash
+opencli xbb formdatalist --corpid your_corpid --formId 19274
+opencli xbb formdatadetail --corpid your_corpid --dataId 310992
+opencli xbb formdataadd --corpid your_corpid --formId 19274 --dataList '{"text_1":"apiTest.001"}'
+opencli xbb formdataedit --corpid your_corpid --dataId 310992 --dataList '{"text_1":"apiTest.001-编辑"}'
+opencli xbb formdatadel --corpid your_corpid --dataId 310992
+```
+
+### 产品、回款、退款
+
+```bash
+opencli xbb productlist --corpid your_corpid --attr serialNo --value CP.API.0001
+opencli xbb productdetail --corpid your_corpid --dataId 10001
+opencli xbb productcategorylist --corpid your_corpid
+
+opencli xbb paymentlist --corpid your_corpid --attr serialNo --value PMO.API.0001
+opencli xbb paymentsheetlist --corpid your_corpid --attr serialNo --value RMO.API.0001
+opencli xbb paymentsheetlist --corpid your_corpid --subBusinessType 702
+opencli xbb refundlist --corpid your_corpid --attr serialNo --value RFO.API.0001
+```
+
+### 工单新命名
+
+```bash
+opencli xbb work-order-list --corpid your_corpid --formId 7526034
+opencli xbb work-order-list --corpid your_corpid --formId 7526034 --attr serialNo --value WOO.20210616001
+opencli xbb work-order-list --corpid your_corpid --formId 7526034 --conditions "[{\"attr\":\"text_4\",\"value\":[4],\"symbol\":\"in\"},{\"attr\":\"ownerId\",\"value\":[\"02415643151585\"],\"symbol\":\"equal\"}]"
+
+opencli xbb work-order-detail --corpid your_corpid --dataId 663
+opencli xbb work-order-add --corpid your_corpid --formId 7526034 --dataList '{"text_1":"测试工单"}'
+opencli xbb work-order-edit --corpid your_corpid --dataId 663 --dataList '{"text_1":"测试工单-更新"}'
+opencli xbb work-order-del --corpid your_corpid --dataId 663
+opencli xbb work-order-operate --corpid your_corpid --dataId 663 --operateType 12 --userId "02415643151585"
+opencli xbb work-order-operate --corpid your_corpid --dataId 663 --operateType 1 --data '{"cancelReason":"测试取消"}'
+```
+
+### 工单旧命名与工时
+
+```bash
+opencli xbb workorderlist --corpid your_corpid --formId 689 --attr serialNo --value WOO.20210616001
+opencli xbb workorderproductlist --corpid your_corpid --dataId 663
+
+opencli xbb worktimerecordlist --corpid your_corpid
+opencli xbb worktimerecordlist --corpid your_corpid --conditions "[{\"attr\":\"ownerId\",\"value\":[\"02415643151585\"],\"symbol\":\"equal\"}]"
+opencli xbb worktimerecorddetail --corpid your_corpid --dataId 10001
+```
+
+## 参数约定
+
+- `dataList`：JSON 对象字符串，例如 `{"text_1":"value"}`
+- `conditions`：JSON 数组字符串，例如 `[{"attr":"text_4","value":[4],"symbol":"in"}]`
+- `businessUserIdList`：支持 JSON 数组或逗号分隔字符串
+- `operateType` 常见值：
+  - `1` 取消
+  - `2` 重启
+  - `3` 移交
+  - `4` 分配
+  - `8` 接受
+  - `10` 开始
+  - `11` 签到
+  - `12` 完成
+  - `13` 签退
+  - `15` 回退
+  - `16` 结算
+  - `17` 回访
+  - `18` 指派
+  - `19` 自由节点完成
+  - `20` 编辑回执单
+
+## 调试
+
+命令加 `--debug` 后，会把请求体和原始响应一起带回结果列，便于排查签名、参数拼装和接口返回问题。
