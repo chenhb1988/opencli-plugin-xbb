@@ -23,6 +23,7 @@ function getRuntimeConfig(kwargs) {
     configCorpid: String(config.corpid || '').trim(),
     token: String(kwargs.token || config.token || '').trim(),
     baseUrl: String(config.baseurl || DEFAULT_BASE_URL).trim(),
+    userId: String(config.userId || '').trim(),
   };
 }
 
@@ -129,7 +130,7 @@ cli({
   columns: ['dataId', 'code', 'msg', 'requestBody', 'responseBody'],
   func: async function (kwargs) {
     const debug = Boolean(kwargs.debug);
-    const { configCorpid, token, baseUrl } = getRuntimeConfig(kwargs);
+    const { configCorpid, token, baseUrl, userId } = getRuntimeConfig(kwargs);
     const parsedData = parseData(kwargs.data);
     const payload = buildPayload(kwargs, parsedData);
     const requestBody = JSON.stringify(payload);
@@ -146,10 +147,10 @@ cli({
     const sign = crypto.createHash('sha256').update(requestBody + token).digest('hex');
     const resp = await fetch(buildApiUrl(baseUrl, WORK_ORDER_OPERATE_API_URL), {
       method: 'POST',
-      headers: {
+      headers: Object.assign({
         'Content-Type': 'application/json;charset=UTF-8',
         sign,
-      },
+      }, userId ? { userId } : {}),
       body: requestBody,
     });
 

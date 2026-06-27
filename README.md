@@ -11,10 +11,10 @@ opencli plugin install github:chenhb1988/opencli-plugin-xbb
 
 ## 初始化配置
 
-首次使用先保存 `corpid` 和 `token`：
+首次使用先保存 `corpid`、`token` 和 `userId`：
 
 ```bash
-opencli xbb set-token --corpid <CORPID> --token <TOKEN>
+opencli xbb set-token --corpid <CORPID> --token <TOKEN> --userId <USERID>
 ```
 
 执行后会写入：
@@ -28,6 +28,7 @@ opencli xbb set-token --corpid <CORPID> --token <TOKEN>
 - `corpid`
 - `token`
 - `baseurl`
+- `userId`
 
 同时会自动拉取两份表单清单并合并缓存到：
 
@@ -51,7 +52,7 @@ opencli xbb formlist --corpid <CORPID> --saasMark 1 -f json
 
 ### 配置
 
-- `set-token`：保存 `corpid`、`token`、`baseurl`，并刷新本地表单缓存
+- `set-token`：保存 `corpid`、`token`、`userId`、`baseurl`，并刷新本地表单缓存
 
 ### 组织与人员
 
@@ -176,6 +177,7 @@ opencli xbb formlist --corpid <CORPID> --saasMark 1 -f json
 - 所有命令都要求有效的 `--corpid`
 - 如果命令行传入的 `--corpid` 与本地配置中的 `corpid` 不一致，会返回 `CORPID_MISMATCH`
 - 大部分命令会优先从 `~/.opencli/xbb/config.json` 读取 `token`
+- 所有命令会从配置中读取 `userId` 并附加到请求 header 中
 - 大部分命令需要formId参数，可以根据业务名称或businessType从~/.opencli/xbb/<corpid>.formlist.json中获取formId
 - 未传入的可选参数不会进入请求体
 - `--attr` 和 `--value` 只有同时提供时才会拼入查询条件
@@ -189,8 +191,8 @@ opencli xbb formlist --corpid <CORPID> --saasMark 1 -f json
 ### 基础配置/初始化
 
 ```bash
-opencli xbb set-token --corpid your_corpid --token your_token
-
+opencli xbb set-token --corpid your_corpid --token your_token --userId your_userid
+```
 
 ### 员工信息
 
@@ -220,6 +222,7 @@ opencli xbb customeradd --corpid your_corpid --formId 19274 --dataList '{"text_1
 opencli xbb customeredit --corpid your_corpid --formId 19274 --dataId 310992 --dataList '{"text_1":"apiTest.001-编辑"}'
 opencli xbb customerdetail --corpid your_corpid --dataId 310992
 opencli xbb customeraddcouser --corpid your_corpid --dataId 310995 --businessUserIdList '["xbbTest002"]'
+```
 
 ### 表单模型/业务数据
 

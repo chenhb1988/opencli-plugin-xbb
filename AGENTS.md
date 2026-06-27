@@ -16,22 +16,9 @@ opencli xbb set-token --corpid <CORPID> --token <TOKEN>
 
 Credentials are stored in `~/.opencli/xbb/config.json`. `set-token` also writes a formlist cache to `~/.opencli/xbb/<corpid>.formlist.json`.
 
-After editing, sync files to the live plugin directory:
+## Verification
 
-```bash
-xcopy /e D:\github\opencli-plugin-xbb\*.js C:\Users\chb\.opencli\plugins\opencli-plugin-xbb\
-```
-
-## Verification (No Automated Tests)
-
-After changing a command, run one minimal real call against the actual API:
-
-```bash
-opencli xbb userlist --corpid <CORPID> --limit 1
-opencli xbb formlist --corpid <CORPID> --saasMark 1
-```
-
-Add `--debug` to see the serialized request body and raw response.
+No automated tests. After changing a command, run it with `--debug` against the real API to inspect the serialized request body and raw response.
 
 ## Code Style Rules
 
@@ -58,7 +45,7 @@ Every command file follows this structure (see `userlist.js`, `customerlist.js` 
 - **Errors return a synthetic row** (`[{code, msg}]`), never thrown exceptions.
 - **`--limit` is applied after response mapping** — changing field mapping affects truncated output.
 - **Optional numeric fields**: use `String(kwargs.field ?? '') !== ''` to distinguish "not provided" from "provided as 0". Many xbb API endpoints treat these differently.
-- **`--attr`/`--value` conditions**: only added to the request body when *both* are present.
+- **`--attr`/`--value` conditions**: only added to the request body when *both* are present. Some list commands also accept `--conditions` (JSON array string) which takes precedence over `--attr`/`--value`.
 - **corpid mismatch**: most commands validate CLI `--corpid` against `config.json`; mismatch returns `CORPID_MISMATCH` error row.
 - **Base URL routing**: Dingtalk corpids (starts with `ding` or contains `$$ding`) → `https://proapi.xbongbong.com`; others → `https://appapi.xbongbong.com`. Most commands derive the final URL from the saved `baseurl` + their own pathname.
 - **`columns` output contract is stable** — changing request body fields is safer than renaming output columns.
@@ -66,4 +53,4 @@ Every command file follows this structure (see `userlist.js`, `customerlist.js` 
 
 ## Workflow: formId-Dependent Commands
 
-`formlist` → `formget` → data commands (`customeradd`, `formdataadd`, etc.) is the standard dependency chain. `dataList` is passed as a JSON string and parsed inside the command.
+`formlist` → `formget` → data commands (`customeradd`, `formdataadd`, etc.) is the standard dependency chain. `dataList` is passed as a JSON object string and parsed inside the command. When field names or dropdown values are unknown, use `formget --formId <ID>` to retrieve the form schema before building `dataList`.

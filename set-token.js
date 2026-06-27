@@ -81,13 +81,14 @@ function writeFormlistFile(corpid) {
   return formlistFile;
 }
 
-function createResult(status, message, corpid, baseurl, formlistFile = '') {
+function createResult(status, message, corpid, baseurl, userId, formlistFile = '') {
   return [{
     status,
     message,
     configFile: CONFIG_FILE,
     corpid,
     baseurl,
+    userId,
     formlistFile,
   }];
 }
@@ -95,30 +96,36 @@ function createResult(status, message, corpid, baseurl, formlistFile = '') {
 async function setToken(kwargs) {
   const corpid = normalizeArg(kwargs.corpid);
   const token = normalizeArg(kwargs.token);
+  const userId = normalizeArg(kwargs.userId);
 
   if (!corpid) {
-    return createResult('error', '缺少 --corpid', '', '');
+    return createResult('error', '缺少 --corpid', '', '', '');
   }
 
   if (!token) {
-    return createResult('error', '缺少 --token', corpid, '');
+    return createResult('error', '缺少 --token', corpid, '', '');
+  }
+
+  if (!userId) {
+    return createResult('error', '缺少 --userId', corpid, '', '');
   }
 
   const baseurl = resolveBaseUrl(corpid);
-  const config = { corpid, token, baseurl };
+  const config = { corpid, token, baseurl, userId };
 
   fs.mkdirSync(CONFIG_DIR, { recursive: true });
   fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2) + '\n', 'utf8');
 
   try {
     const formlistFile = writeFormlistFile(corpid);
-    return createResult('ok', '已保存 corpid、token、baseurl，并同步表单模板缓存文件', corpid, baseurl, formlistFile);
+    return createResult('ok', '已保存 corpid、token、baseurl、userId，并同步表单模板缓存文件', corpid, baseurl, userId, formlistFile);
   } catch (error) {
     return createResult(
       'partial',
-      `已保存 corpid、token、baseurl，但同步表单模板缓存失败：${error.message}`,
+      `已保存 corpid、token、baseurl、userId，但同步表单模板缓存失败：${error.message}`,
       corpid,
       baseurl,
+      userId,
       getFormlistFile(corpid),
     );
   }
@@ -134,7 +141,8 @@ cli({
   args: [
     { name: 'corpid', type: 'str', help: '公司id（必填）' },
     { name: 'token', type: 'str', help: '要保存的 API token' },
+    { name: 'userId', type: 'str', help: '操作人id（必填）' },
   ],
-  columns: ['status', 'message', 'configFile', 'corpid', 'baseurl', 'formlistFile'],
+  columns: ['status', 'message', 'configFile', 'corpid', 'baseurl', 'userId', 'formlistFile'],
   func: setToken,
 });

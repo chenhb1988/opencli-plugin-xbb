@@ -23,6 +23,7 @@ function getRuntimeConfig(kwargs) {
     configCorpid: String(config.corpid || '').trim(),
     token: String(kwargs.token || config.token || '').trim(),
     baseUrl: String(config.baseurl || DEFAULT_BASE_URL).trim(),
+    userId: String(config.userId || '').trim(),
   };
 }
 
@@ -85,7 +86,7 @@ cli({
     const debug = Boolean(kwargs.debug);
     const payload = buildPayload(kwargs);
     const body = JSON.stringify(payload);
-    const { configCorpid, token, baseUrl } = getRuntimeConfig(kwargs);
+    const { configCorpid, token, baseUrl, userId } = getRuntimeConfig(kwargs);
 
     if (!payload.corpid) {
       return makeErrorRow('NO_CORPID', '缺少 --corpid', debug, body, '');
@@ -98,13 +99,15 @@ cli({
     }
 
     const sign = crypto.createHash('sha256').update(body + token).digest('hex');
+    const headers = {
+      'Content-Type': 'application/json;charset=UTF-8',
+      sign,
+    };
+    if (userId) headers.userId = userId;
     const apiUrl = buildApiUrl(baseUrl);
     const resp = await fetch(apiUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json;charset=UTF-8',
-        sign,
-      },
+      headers,
       body,
     });
 

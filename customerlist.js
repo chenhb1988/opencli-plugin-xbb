@@ -23,6 +23,7 @@ function getRuntimeConfig(kwargs) {
     configCorpid: String(config.corpid || '').trim(),
     token: String(kwargs.token || config.token || '').trim(),
     baseUrl: String(config.baseurl || DEFAULT_BASE_URL).trim(),
+    userId: String(config.userId || '').trim(),
   };
 }
 
@@ -32,15 +33,24 @@ function buildApiUrl(baseUrl, defaultUrl) {
 }
 
 function buildConditions(kwargs) {
-  const conditions = [];
-  if (kwargs.attr && kwargs.value) {
-    conditions.push({
-      attr: String(kwargs.attr),
-      value: [String(kwargs.value)],
-      symbol: String(kwargs.symbol || 'equal'),
-    });
+  const conditions = kwargs.conditions;
+  if (typeof conditions === 'string' && conditions.trim()) {
+    const parsed = JSON.parse(conditions);
+    if (!Array.isArray(parsed)) {
+      throw new Error('INVALID_CONDITIONS:conditions 必须是 JSON 数组');
+    }
+    return parsed;
   }
-  return conditions;
+
+  if (!(kwargs.attr && kwargs.value)) {
+    return [];
+  }
+
+  return [{
+    attr: String(kwargs.attr),
+    value: [String(kwargs.value)],
+    symbol: String(kwargs.symbol || 'equal'),
+  }];
 }
 
 function buildPayload(kwargs) {
@@ -92,7 +102,8 @@ cli({
     { name: 'isPublic', type: 'int', default: '', help: '是否公海客户：0非公海，1公海，不传表示全部' },
     { name: 'del', type: 'int', default: 0, help: '0客户列表，1回收站数据' },
     { name: 'viewApproval', type: 'str', default: '', help: '是否查询审批中数据，1是，0否' },
-    { name: 'attr', type: 'str', default: '', help: '筛选字段 attr，例如 text_1' },
+    { name: 'conditions', type: 'str', default: '', help: '条件集合 JSON 字符串' },
+    { name: 'attr', type: 'str', default: '', help: '筛选字段 attr，例如 text_1(客户名称)' },
     { name: 'value', type: 'str', default: '', help: '筛选值，和 --attr 配合使用' },
     { name: 'symbol', type: 'str', default: 'equal', help: '筛选操作符，默认 equal' },
     { name: 'page', type: 'int', default: 1, help: '页码' },
@@ -103,8 +114,17 @@ cli({
   columns: ['rank', 'dataId', 'formId', 'name', 'ownerId', 'mobile', 'addTime', 'updateTime', 'code', 'msg', 'requestBody', 'responseBody'],
   func: async (kwargs) => {
     const debug = Boolean(kwargs.debug);
-    const { configCorpid, token, baseUrl } = getRuntimeConfig(kwargs);
-    const payload = buildPayload(kwargs);
+    const { configCorpid, token, baseUrl, userId } = getRuntimeConfig(kwargs);
+    let payload;
+    try {
+      payload = buildPayload(kwargs);
+    } catch (error) {
+      const message = String(error?.message || error);
+      const separatorIndex = message.indexOf(':');
+      const code = separatorIndex > 0 ? message.slice(0, separatorIndex) : 'INVALID_PAYLOAD';
+      const detail = separatorIndex > 0 ? message.slice(separatorIndex + 1) : message;
+      return makeErrorRow(code, detail, debug, '', detail);
+    }
     const body = JSON.stringify(payload);
 
     if (!payload.corpid) {
@@ -124,10 +144,10 @@ cli({
     const sign = crypto.createHash('sha256').update(body + token).digest('hex');
     const resp = await fetch(buildApiUrl(baseUrl, CUSTOMER_LIST_API_URL), {
       method: 'POST',
-      headers: {
+      headers: Object.assign({
         'Content-Type': 'application/json;charset=UTF-8',
         sign,
-      },
+      }, userId ? { userId } : {}),
       body,
     });
 

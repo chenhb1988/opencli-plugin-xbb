@@ -23,6 +23,7 @@ function getRuntimeConfig(kwargs) {
     configCorpid: String(config.corpid || '').trim(),
     token: String(kwargs.token || config.token || '').trim(),
     baseUrl: String(config.baseurl || DEFAULT_BASE_URL).trim(),
+    userId: String(config.userId || '').trim(),
   };
 }
 
@@ -147,7 +148,7 @@ cli({
       return makeErrorRow(code, detail, debug, '', detail);
     }
 
-    const { configCorpid, token, baseUrl } = getRuntimeConfig(kwargs);
+    const { configCorpid, token, baseUrl, userId } = getRuntimeConfig(kwargs);
     const requestBody = JSON.stringify(payload);
 
     const validationError = getValidationError(payload, token);
@@ -162,10 +163,10 @@ cli({
     const sign = crypto.createHash('sha256').update(requestBody + token).digest('hex');
     const resp = await fetch(buildApiUrl(baseUrl, PRODUCT_DETAIL_API_URL), {
       method: 'POST',
-      headers: {
+      headers: Object.assign({
         'Content-Type': 'application/json;charset=UTF-8',
         sign,
-      },
+      }, userId ? { userId } : {}),
       body: requestBody,
     });
 
