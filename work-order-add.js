@@ -7,7 +7,7 @@ import { cli, Strategy } from './opencli-registry.js';
 const CONFIG_FILE = path.join(os.homedir(), '.opencli', 'xbb', 'config.json');
 const WORK_ORDER_ADD_API_URL = 'https://proapi.xbongbong.com/pro/v2/api/workOrderV2/add';
 const DEFAULT_BASE_URL = 'https://proapi.xbongbong.com';
-const MISSING_TOKEN_MESSAGE = '缺少 token；请传 --token，或先执行 opencli xbb set-token --corpid <CORPID> --token <TOKEN>';
+const MISSING_TOKEN_MESSAGE = '缺少 token；请先执行 opencli xbb set-token --corpid <CORPID> --token <TOKEN> --userId <USERID>';
 
 function readConfig() {
   try {
@@ -21,7 +21,7 @@ function getRuntimeConfig(kwargs) {
   const config = readConfig();
   return {
     configCorpid: String(config.corpid || '').trim(),
-    token: String(kwargs.token || config.token || '').trim(),
+    token: String(config.token || '').trim(),
     baseUrl: String(config.baseurl || DEFAULT_BASE_URL).trim(),
     userId: String(config.userId || '').trim(),
   };
@@ -126,7 +126,6 @@ cli({
     { name: 'corpid', type: 'str', help: '公司id（必填）' },
     { name: 'formId', type: 'int', help: '表单模板id（必填）' },
     { name: 'dataList', type: 'str', help: '表单数据JSON字符串（必填）' },
-    { name: 'token', type: 'str', default: '', help: 'API token（可选；默认从本地配置读取）' },
     { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
   ],

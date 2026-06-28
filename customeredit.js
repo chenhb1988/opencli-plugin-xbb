@@ -20,7 +20,7 @@ function getRuntimeConfig(kwargs) {
   const config = readConfig();
   return {
     configCorpid: String(config.corpid || '').trim(),
-    token: String(kwargs.token || config.token || '').trim(),
+    token: String(config.token || '').trim(),
     baseUrl: String(config.baseurl || DEFAULT_BASE_URL).trim(),
     userId: String(config.userId || '').trim(),
   };
@@ -81,7 +81,7 @@ function getValidationError(payload, token, parsedDataList) {
     return { code: 'NO_DATAID', msg: '缺少 --dataId' };
   }
   if (!token) {
-    return { code: 'NO_TOKEN', msg: '缺少 token；请传 --token，或先执行 opencli xbb set-token --corpid <CORPID> --token <TOKEN>' };
+    return { code: 'NO_TOKEN', msg: '缺少 token；请先执行 opencli xbb set-token --corpid <CORPID> --token <TOKEN> --userId <USERID>' };
   }
   if (parsedDataList === null) {
     return { code: 'NO_DATALIST', msg: '缺少 --dataList' };
@@ -130,7 +130,6 @@ cli({
     { name: 'formId', type: 'int', help: '表单id（必填）' },
     { name: 'dataId', type: 'int', help: '表单数据id（必填）' },
     { name: 'dataList', type: 'str', help: '表单数据JSON字符串（必填）' },
-    { name: 'token', type: 'str', default: '', help: 'API token（可选；默认从本地配置读取）' },
     { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
   ],

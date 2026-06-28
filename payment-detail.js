@@ -21,7 +21,7 @@ function getRuntimeConfig(kwargs) {
   const config = readConfig();
   return {
     configCorpid: String(config.corpid || '').trim(),
-    token: String(kwargs.token || config.token || '').trim(),
+    token: String(config.token || '').trim(),
     baseUrl: String(config.baseurl || DEFAULT_BASE_URL).trim(),
     userId: String(config.userId || '').trim(),
   };
@@ -57,7 +57,6 @@ cli({
   args: [
     { name: 'corpid', type: 'str', help: '公司id（必填）' },
     { name: 'dataId', type: 'int', help: '数据id（必填）' },
-    { name: 'token', type: 'str', default: '', help: 'API token（可选；默认从本地配置读取）' },
     { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
     { name: 'queryFlag', type: 'int', default: '', help: '是否查询审批数据：0非审批数据，1审批数据，2不论是否审批中都查询，默认0（可选）' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
@@ -83,7 +82,7 @@ cli({
       return makeErrorRow('NO_DATAID', '缺少 --dataId', debug, body, '');
     }
     if (!token) {
-      return makeErrorRow('NO_TOKEN', '缺少 token；请传 --token，或先执行 opencli xbb set-token --corpid <CORPID> --token <TOKEN>', debug, body, '');
+      return makeErrorRow('NO_TOKEN', '缺少 token；请先执行 opencli xbb set-token --corpid <CORPID> --token <TOKEN> --userId <USERID>', debug, body, '');
     }
     if (configCorpid && payload.corpid !== configCorpid) {
       return makeErrorRow('CORPID_MISMATCH', 'corpid与配置中不一致', debug, body, '');
