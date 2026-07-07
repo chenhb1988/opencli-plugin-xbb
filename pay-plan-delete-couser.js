@@ -1,0 +1,84 @@
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import crypto from 'node:crypto';
+import { cli, Strategy } from './opencli-registry.js';
+
+const CONFIG_DIR = path.join(os.homedir(), '.opencli', 'xbb');
+const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json');
+const API_URL = 'https://proapi.xbongbong.com/pro/v2/api/payPlan/deleteCoUser';
+const DEFAULT_BASE_URL = 'https://proapi.xbongbong.com';
+
+function readConfig() {
+  try {
+    return JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
+  } catch {
+    return {};
+  }
+}
+
+function getRuntimeConfig() {
+  const config = readConfig();
+  return {
+    configCorpid: String(config.corpid || '').trim(),
+    token: String(config.token || '').trim(),
+    baseUrl: String(config.baseurl || DEFAULT_BASE_URL).trim(),
+    userId: String(config.userId || '').trim(),
+  };
+}
+
+function buildApiUrl(baseUrl, defaultUrl) {
+  const apiPath = new URL(defaultUrl).pathname;
+  return `${baseUrl.replace(/\/+$/, '')}${apiPath}`;
+}
+
+function makeErrorRow(code, msg, debug, requestBody = '', responseBody = '') {
+  return [{ resultCode: '', resultMsg: '', messageList: '', code, msg, requestBody: debug ? requestBody : '', responseBody: debug ? responseBody : '' }];
+}
+
+cli({
+  site: 'xbb',
+  name: 'pay-plan-delete-couser',
+  description: '付款计划删除协同人接口',
+  strategy: Strategy.PUBLIC,
+  access: 'write',
+  browser: false,
+  domain: 'proapi.xbongbong.com',
+  args: [
+    { name: 'dataId', type: 'int', help: '付款计划id（必填）' },
+    { name: 'businessUserIdList', type: 'str', help: '需删除的协同人id列表，JSON数组字符串（必填）' },
+    { name: 'corpid', type: 'str', help: '公司id（必填）' },
+    { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
+    { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
+  ],
+  columns: ['resultCode', 'resultMsg', 'messageList', 'code', 'msg', 'requestBody', 'responseBody'],
+  func: async (kwargs) => {
+    const debug = Boolean(kwargs.debug);
+    const { configCorpid, token, baseUrl, userId } = getRuntimeConfig();
+    const payload = { dataId: Number(kwargs.dataId || 0), corpid: String(kwargs.corpid || '') };
+    if (kwargs.userId) payload.userId = String(kwargs.userId);
+
+    let businessUserIdList;
+    try {
+      businessUserIdList = JSON.parse(String(kwargs.businessUserIdList || ''));
+    } catch {
+      businessUserIdList = null;
+    }
+    if (Array.isArray(businessUserIdList)) payload.businessUserIdList = businessUserIdList;
+
+    const requestBody = JSON.stringify(payload);
+    if (!payload.dataId) return makeErrorRow('NO_DATAID', '缺少 --dataId', debug, requestBody, '');
+    if (!payload.corpid) return makeErrorRow('NO_CORPID', '缺少 --corpid', debug, requestBody, '');
+    if (!Array.isArray(businessUserIdList) || !businessUserIdList.length) return makeErrorRow('NO_USERIDLIST', '缺少 --businessUserIdList 或格式不正确，需为JSON数组', debug, requestBody, '');
+    if (!token) return makeErrorRow('NO_TOKEN', '缺少 token；请先执行 opencli xbb set-token --corpid <CORPID> --token <TOKEN> --userId <USERID>', debug, requestBody, '');
+    if (configCorpid && payload.corpid !== configCorpid) return makeErrorRow('CORPID_MISMATCH', 'corpid与配置中不一致', debug, requestBody, '');
+
+    const sign = crypto.createHash('sha256').update(requestBody + token).digest('hex');
+    const resp = await fetch(buildApiUrl(baseUrl, API_URL), { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json;charset=UTF-8', sign }, userId ? { userId } : {}), body: requestBody });
+    if (!resp.ok) return makeErrorRow(resp.status, `HTTP ${resp.status} ${resp.statusText}`, debug, requestBody, await resp.text());
+    const data = await resp.json();
+    const responseBody = JSON.stringify(data);
+    if (data.code !== 1) return makeErrorRow(data.code ?? '', data.msg ?? '未知错误', debug, requestBody, responseBody);
+    return [{ resultCode: data.code ?? '', resultMsg: data.msg || '', messageList: JSON.stringify(data.result?.messageList || []), code: data.code ?? '', msg: data.msg || '', requestBody: debug ? requestBody : '', responseBody: debug ? responseBody : '' }];
+  },
+});

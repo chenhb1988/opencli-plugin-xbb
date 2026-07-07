@@ -29,7 +29,7 @@ No automated tests. After changing a command, run it with `--debug` against the 
 
 ## Command Module Pattern
 
-Every command file follows this structure (see `userlist.js`, `customerlist.js` as canonical examples):
+Every command file follows this structure (see `user-list.js`, `customer-list.js` as canonical examples):
 
 1. Hardcoded API URL constant + config path (`~/.opencli/xbb/config.json`)
 2. `readConfig()` — parse config file, return `{}` on failure
@@ -49,8 +49,8 @@ Every command file follows this structure (see `userlist.js`, `customerlist.js` 
 - **corpid mismatch**: most commands validate CLI `--corpid` against `config.json`; mismatch returns `CORPID_MISMATCH` error row.
 - **Base URL routing**: Dingtalk corpids (starts with `ding` or contains `$$ding`) → `https://proapi.xbongbong.com`; others → `https://appapi.xbongbong.com`. Most commands derive the final URL from the saved `baseurl` + their own pathname.
 - **`columns` output contract is stable** — changing request body fields is safer than renaming output columns.
-- **Command filenames are stable** — each `*.js` maps to a live CLI entry point; do not rename files.
+- **Command filenames are hyphenated** — each `*.js` maps to a live CLI entry point; keep filenames aligned with the command name, except the `workorder`/`work-order` conflict cases already preserved in this repo.
 
 ## Workflow: formId-Dependent Commands
 
-`formlist` → `formget` → data commands (`customeradd`, `formdataadd`, etc.) is the standard dependency chain. `dataList` is passed as a JSON object string and parsed inside the command. When field names or dropdown values are unknown, use `formget --formId <ID>` to retrieve the form schema before building `dataList`.
+`form-list` → `form-get` → data commands (`customer-add`, `form-data-add`, etc.) is the standard dependency chain. `dataList` is passed as a JSON object string and parsed inside the command. When field names or dropdown values are unknown, use `form-get --formId <ID>` to retrieve the form schema before building `dataList`.

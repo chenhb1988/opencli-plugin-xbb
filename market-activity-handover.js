@@ -1,0 +1,84 @@
+import crypto from 'node:crypto';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { cli, Strategy } from './opencli-registry.js';
+
+const CONFIG_FILE = path.join(os.homedir(), '.opencli', 'xbb', 'config.json');
+const API_URL = 'https://proapi.xbongbong.com/pro/v2/api/marketActivity/handover';
+const DEFAULT_BASE_URL = 'https://proapi.xbongbong.com';
+const MISSING_TOKEN_MESSAGE = '缺少 token；请先执行 opencli xbb set-token --corpid <CORPID> --token <TOKEN> --userId <USERID>';
+
+function readConfig() {
+  try {
+    return JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
+  } catch {
+    return {};
+  }
+}
+
+function getRuntimeConfig() {
+  const config = readConfig();
+  return {
+    configCorpid: String(config.corpid || '').trim(),
+    token: String(config.token || '').trim(),
+    baseUrl: String(config.baseurl || DEFAULT_BASE_URL).trim(),
+    userId: String(config.userId || '').trim(),
+  };
+}
+
+function buildApiUrl(baseUrl, defaultUrl) {
+  const apiPath = new URL(defaultUrl).pathname;
+  return `${baseUrl.replace(/\/+$/, '')}${apiPath}`;
+}
+
+function makeErrorRow(code, msg, debug, body = '', responseBody = '') {
+  return [{ resultType: '', resultMsg: '', code, msg, requestBody: debug ? body : '', responseBody: debug ? responseBody : '' }];
+}
+
+cli({
+  site: 'xbb',
+  name: 'market-activity-handover',
+  description: '市场活动移交接口',
+  strategy: Strategy.PUBLIC,
+  access: 'write',
+  browser: false,
+  domain: 'proapi.xbongbong.com',
+  args: [
+    { name: 'dataIdList', type: 'str', help: '市场活动id列表，JSON数组字符串（必填）' },
+    { name: 'businessUserId', type: 'str', help: '移交目标人员id（必填）' },
+    { name: 'corpid', type: 'str', help: '公司id（必填）' },
+    { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
+    { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
+  ],
+  columns: ['resultType', 'resultMsg', 'code', 'msg', 'requestBody', 'responseBody'],
+  func: async (kwargs) => {
+    const debug = Boolean(kwargs.debug);
+    const { configCorpid, token, baseUrl, userId } = getRuntimeConfig();
+    const payload = { corpid: String(kwargs.corpid || ''), businessUserId: String(kwargs.businessUserId || '') };
+    if (kwargs.userId) payload.userId = String(kwargs.userId);
+
+    let dataIdList;
+    try {
+      dataIdList = JSON.parse(String(kwargs.dataIdList || ''));
+    } catch {
+      dataIdList = null;
+    }
+    if (Array.isArray(dataIdList)) payload.dataIdList = dataIdList;
+
+    const body = JSON.stringify(payload);
+    if (!payload.corpid) return makeErrorRow('NO_CORPID', '缺少 --corpid', debug, body, '');
+    if (!Array.isArray(dataIdList) || !dataIdList.length) return makeErrorRow('NO_DATAIDLIST', '缺少 --dataIdList 或格式不正确，需为JSON数组', debug, body, '');
+    if (!payload.businessUserId) return makeErrorRow('NO_BUSINESSUSERID', '缺少 --businessUserId', debug, body, '');
+    if (!token) return makeErrorRow('NO_TOKEN', MISSING_TOKEN_MESSAGE, debug, body, '');
+    if (configCorpid && payload.corpid !== configCorpid) return makeErrorRow('CORPID_MISMATCH', 'corpid与配置中不一致', debug, body, '');
+
+    const sign = crypto.createHash('sha256').update(body + token).digest('hex');
+    const resp = await fetch(buildApiUrl(baseUrl, API_URL), { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json;charset=UTF-8', sign }, userId ? { userId } : {}), body });
+    if (!resp.ok) return makeErrorRow(resp.status, `HTTP ${resp.status} ${resp.statusText}`, debug, body, await resp.text());
+    const data = await resp.json();
+    const responseBody = JSON.stringify(data);
+    if (data.code !== 1) return makeErrorRow(data.code ?? '', data.msg ?? '未知错误', debug, body, responseBody);
+    return [{ resultType: data.result?.resultType || '', resultMsg: data.result?.resultMsg || '', code: data.code ?? '', msg: data.msg || '', requestBody: debug ? body : '', responseBody: debug ? responseBody : '' }];
+  },
+});

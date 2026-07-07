@@ -50,7 +50,7 @@ function runOpenCliJson(args) {
 function getFormlistRows(corpid, saasMark) {
   const rows = runOpenCliJson([
     'xbb',
-    'formlist',
+    'form-list',
     '--corpid',
     corpid,
     '--saasMark',
@@ -60,12 +60,12 @@ function getFormlistRows(corpid, saasMark) {
   ]);
 
   if (!Array.isArray(rows)) {
-    throw new Error(`formlist 返回结果不是数组：saasMark=${saasMark}`);
+    throw new Error(`form-list 返回结果不是数组：saasMark=${saasMark}`);
   }
 
   const errorRow = rows.find((item) => item && item.code);
   if (errorRow) {
-    throw new Error(`formlist 获取失败（saasMark=${saasMark}）：${errorRow.code} ${errorRow.msg || ''}`.trim());
+    throw new Error(`form-list 获取失败（saasMark=${saasMark}）：${errorRow.code} ${errorRow.msg || ''}`.trim());
   }
 
   return rows;
