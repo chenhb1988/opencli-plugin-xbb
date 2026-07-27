@@ -69,7 +69,6 @@ cli({
     { name: 'viewApproval', type: 'int', default: '', help: '是否查询审批中数据，1:是，0:否' },
     { name: 'page', type: 'int', default: 1, help: '页码' },
     { name: 'pageSize', type: 'int', default: 20, help: '每页数量（最大100）' },
-    { name: 'limit', type: 'int', default: 20, help: '最终返回条数限制' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
   ],
   columns: ['rank', 'dataId', 'formId', 'addTime', 'updateTime', 'data', 'code', 'msg', 'requestBody', 'responseBody'],
@@ -106,6 +105,6 @@ cli({
     if (data.code !== 1) return makeErrorRow(data.code ?? '', data.msg ?? '未知错误', debug, requestBody, responseBody);
     const list = Array.isArray(data.result?.list) ? data.result.list : [];
     if (!list.length) return makeErrorRow('NO_DATA', '接口成功，但 list 为空', debug, requestBody, responseBody);
-    return list.slice(0, Number(kwargs.limit || 20)).map((item, index) => ({ rank: index + 1, dataId: item.dataId || '', formId: item.formId || '', addTime: item.addTime || '', updateTime: item.updateTime || '', data: JSON.stringify(item.data || {}), code: '', msg: '', requestBody: debug ? requestBody : '', responseBody: '' }));
+    return list.map((item, index) => ({ rank: index + 1, dataId: item.dataId || '', formId: item.formId || '', addTime: item.addTime || '', updateTime: item.updateTime || '', data: JSON.stringify(item.data || {}), code: '', msg: '', requestBody: debug ? requestBody : '', responseBody: '' }));
   },
 });

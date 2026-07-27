@@ -142,8 +142,7 @@ function stringifyValue(value) {
 }
 
 function makeSuccessRows(list, debug, body, kwargs) {
-  const limit = Number(kwargs.limit || 20);
-  return list.slice(0, limit).map((item, index) => ({
+  return list.map((item, index) => ({
     rank: index + 1,
     dataId: item.dataId || '',
     formId: item.formId || '',
@@ -181,7 +180,6 @@ cli({
     { name: 'symbol', type: 'str', default: 'equal', help: '筛选操作符，默认 equal' },
     { name: 'page', type: 'str', default: '', help: '页码（可选）' },
     { name: 'pageSize', type: 'str', default: '', help: '每页数量（可选，最大 100）' },
-    { name: 'limit', type: 'int', default: 20, help: '最终返回条数限制' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
   ],
   columns: ['rank', 'dataId', 'formId', 'serialNo', 'customerId', 'ownerId', 'status', 'creatorId', 'addTime', 'updateTime', 'data', 'code', 'msg', 'requestBody', 'responseBody'],

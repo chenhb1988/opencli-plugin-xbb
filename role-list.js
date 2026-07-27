@@ -48,7 +48,6 @@ cli({
     { name: 'corpid', type: 'str', help: '公司id（必填）' },
     { name: 'roleNameLike', type: 'str', default: '', help: '角色名称模糊检索（可选）' },
     { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
-    { name: 'limit', type: 'int', default: 100, help: '最终返回条数限制' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
   ],
   columns: ['rank', 'id', 'roleName', 'code', 'msg', 'requestBody', 'responseBody'],
@@ -70,6 +69,6 @@ cli({
     if (data.code !== 1) return makeErrorRow(data.code ?? '', data.msg ?? '未知错误', debug, requestBody, responseBody);
     const list = Array.isArray(data.result?.roleList) ? data.result.roleList : [];
     if (!list.length) return makeErrorRow('NO_DATA', '接口成功，但 roleList 为空', debug, requestBody, responseBody);
-    return list.slice(0, Number(kwargs.limit || 100)).map((item, index) => ({ rank: index + 1, id: item.id || '', roleName: item.roleName || '', code: '', msg: '', requestBody: debug ? requestBody : '', responseBody: '' }));
+    return list.map((item, index) => ({ rank: index + 1, id: item.id || '', roleName: item.roleName || '', code: '', msg: '', requestBody: debug ? requestBody : '', responseBody: '' }));
   },
 });

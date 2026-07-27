@@ -81,8 +81,7 @@ function makeErrorRow(code, msg, debug, body = '', responseBody = '') {
 }
 
 function makeSuccessRows(explainList, debug, body, kwargs) {
-  const limit = Number(kwargs.limit || 50);
-  return explainList.slice(0, limit).map((item, index) => ({
+  return explainList.map((item, index) => ({
     rank: index + 1,
     attr: item.attr || '',
     attrName: item.attrName || '',
@@ -112,7 +111,6 @@ cli({
     { name: 'corpid', type: 'str', help: '公司id（必填）' },
     { name: 'subBusinessType', type: 'int', default: '', help: '表单业务子类型（可选）' },
     { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
-    { name: 'limit', type: 'int', default: 50, help: '最终返回条数限制' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
   ],
   columns: ['rank', 'attr', 'attrName', 'fieldType', 'required', 'noRepeat', 'showType', 'dateType', 'items', 'code', 'msg', 'requestBody', 'responseBody'],

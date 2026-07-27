@@ -69,8 +69,7 @@ function makeErrorRow(code, msg, debug, body = '', responseBody = '') {
 }
 
 function makeSuccessRows(list, debug, body, kwargs) {
-  const limit = Number(kwargs.limit || 50);
-  return list.slice(0, limit).map((item, index) => ({
+  return list.map((item, index) => ({
     rank: index + 1,
     formId: item.formId || '',
     isEnable: item.isEnable ?? '',
@@ -93,7 +92,6 @@ cli({
   args: [
     { name: 'corpid', type: 'str', help: '公司id（必填）' },
     { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
-    { name: 'limit', type: 'int', default: 50, help: '最终返回条数限制' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
   ],
   columns: ['rank', 'formId', 'isEnable', 'name', 'code', 'msg', 'requestBody', 'responseBody'],

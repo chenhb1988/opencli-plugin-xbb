@@ -138,8 +138,8 @@ cli({
     { name: 'symbol', type: 'str', default: 'equal', help: '筛选操作符，默认 equal' },
     { name: 'page', type: 'int', default: 1, help: '页码' },
     { name: 'pageSize', type: 'int', default: 20, help: '每页数量（最大100）' },
-    { name: 'limit', type: 'int', default: 20, help: '最终返回条数限制' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
+    { name: 'raw', type: 'bool', default: false, help: '输出接口返回的原文' },
   ],
   columns: ['rank', 'dataId', 'formId', 'relatedDataId', 'communicateType', 'communicateMethod', 'content', 'creatorId', 'addTime', 'updateTime', 'data', 'code', 'msg', 'requestBody', 'responseBody'],
   func: async function (kwargs) {
@@ -174,6 +174,9 @@ cli({
 
     const data = await resp.json();
     const responseBody = JSON.stringify(data);
+    if (kwargs.raw) {
+      return [{ raw: responseBody }];
+    }
     if (data.code !== 1) {
       return makeErrorRow(data.code ?? '', data.msg ?? '未知错误', debug, body, responseBody);
     }
@@ -183,7 +186,6 @@ cli({
       return makeErrorRow('NO_DATA', '接口成功，但 list 为空', debug, body, responseBody);
     }
 
-    const limit = Number(kwargs.limit || 20);
-    return makeSuccessRows(list.slice(0, limit), debug, body);
+    return makeSuccessRows(list, debug, body);
   },
 });

@@ -77,7 +77,6 @@ cli({
     { name: 'delIgnore', type: 'int', default: 0, help: '是否查询已离职员工，0不查/1查询' },
     { name: 'page', type: 'int', default: 1, help: '页码' },
     { name: 'pageSize', type: 'int', default: 20, help: '每页数量（最大100）' },
-    { name: 'limit', type: 'int', default: 20, help: '最终返回条数限制' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
   ],
   columns: ['rank', 'userId', 'name', 'position', 'jobnumber', 'avatar', 'code', 'msg', 'requestBody', 'responseBody'],
@@ -126,7 +125,7 @@ cli({
       return makeErrorRow('NO_DATA', '接口成功，但 userList 为空', debug, body, responseBody);
     }
 
-    return list.slice(0, Number(kwargs.limit || 20)).map((item, index) => ({
+    return list.map((item, index) => ({
       rank: index + 1,
       userId: item.userId || '',
       name: item.name || '',

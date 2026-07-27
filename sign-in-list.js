@@ -99,7 +99,6 @@ cli({
     { name: 'linkBusinessType', type: 'int', default: '', help: '签到对象业务类型（可选）' },
     { name: 'startOutTime', type: 'str', default: '', help: '开始签退时间（可选）' },
     { name: 'endOutTime', type: 'str', default: '', help: '结束签退时间（可选）' },
-    { name: 'limit', type: 'int', default: 20, help: '最终返回条数限制' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
   ],
   columns: ['rank', 'userId', 'userName', 'customerId', 'customerName', 'status', 'inTime', 'outTime', 'address', 'outAddress', 'data', 'code', 'msg', 'requestBody', 'responseBody'],
@@ -121,6 +120,6 @@ cli({
     if (data.code !== 1) return makeErrorRow(data.code ?? '', data.msg ?? '未知错误', debug, body, responseBody);
     const list = Array.isArray(data.result?.signInList) ? data.result.signInList : [];
     if (!list.length) return makeErrorRow('NO_DATA', '接口成功，但 signInList 为空', debug, body, responseBody);
-    return list.slice(0, Number(kwargs.limit || 20)).map((item, index) => ({ rank: index + 1, userId: item.userId || '', userName: item.userName || '', customerId: item.customerId || '', customerName: item.customerName || '', status: item.status ?? '', inTime: item.inTime || '', outTime: item.outTime || '', address: item.address || '', outAddress: item.outAddress || '', data: JSON.stringify(item || {}), code: '', msg: '', requestBody: debug ? body : '', responseBody: '' }));
+    return list.map((item, index) => ({ rank: index + 1, userId: item.userId || '', userName: item.userName || '', customerId: item.customerId || '', customerName: item.customerName || '', status: item.status ?? '', inTime: item.inTime || '', outTime: item.outTime || '', address: item.address || '', outAddress: item.outAddress || '', data: JSON.stringify(item || {}), code: '', msg: '', requestBody: debug ? body : '', responseBody: '' }));
   },
 });

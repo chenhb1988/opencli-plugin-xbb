@@ -84,8 +84,7 @@ function makeErrorRow(code, msg, debug, body = '', responseBody = '') {
 
 function makeSuccessRows(list, debug, body, kwargs) {
   const flat = flattenCategoryTree(list);
-  const limit = Number(kwargs.limit || 50);
-  return flat.slice(0, limit).map((item, index) => ({
+  return flat.map((item, index) => ({
     rank: index + 1,
     id: item.id || '',
     name: item.name || '',
@@ -111,7 +110,6 @@ cli({
   args: [
     { name: 'corpid', type: 'str', help: '公司id（必填）' },
     { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
-    { name: 'limit', type: 'int', default: 50, help: '最终返回条数限制（树拍平后）' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
   ],
   columns: ['rank', 'id', 'name', 'parentId', 'router', 'sort', 'corpid', 'code', 'msg', 'requestBody', 'responseBody'],

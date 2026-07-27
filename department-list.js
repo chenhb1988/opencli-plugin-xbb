@@ -108,8 +108,7 @@ function makeErrorRow(code, msg, debug, body = '', responseBody = '') {
 }
 
 function makeSuccessRows(depList, debug, body, kwargs) {
-  const limit = Number(kwargs.limit || 20);
-  return depList.slice(0, limit).map((item, index) => ({
+  return depList.map((item, index) => ({
     rank: index + 1,
     id: item.id || '',
     name: item.name || '',
@@ -138,7 +137,6 @@ cli({
     { name: 'nameLike', type: 'str', default: '', help: '部门名模糊查询（可选）' },
     { name: 'page', type: 'int', default: 1, help: '页码' },
     { name: 'pageSize', type: 'int', default: 20, help: '每页数量（最大100）' },
-    { name: 'limit', type: 'int', default: 20, help: '最终返回条数限制' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
   ],
   columns: ['rank', 'id', 'name', 'parentId', 'depIdRouter', 'sort', 'code', 'msg', 'requestBody', 'responseBody'],
