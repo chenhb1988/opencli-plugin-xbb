@@ -48,8 +48,8 @@ function buildPayload(kwargs) {
   const payload = {
     corpid: String(kwargs.corpid || ''),
     formId: Number(kwargs.formId || 0),
-    page: Number(kwargs.page || 1),
-    pageSize: Number(kwargs.pageSize || 20),
+    ...(String(kwargs.page ?? '') !== '' ? { page: Number(kwargs.page) } : {}),
+    ...(String(kwargs.pageSize ?? '') !== '' ? { pageSize: Number(kwargs.pageSize) } : {}),
   };
 
   const userId = String(kwargs.userId || '');
@@ -130,9 +130,10 @@ cli({
     { name: 'attr', type: 'str', default: '', help: '筛选字段 attr，例如 text_1' },
     { name: 'value', type: 'str', default: '', help: '筛选值，和 --attr 配合使用' },
     { name: 'symbol', type: 'str', default: 'equal', help: '筛选操作符，默认 equal' },
-    { name: 'page', type: 'int', default: 1, help: '页码' },
-    { name: 'pageSize', type: 'int', default: 20, help: '每页数量（最大100）' },
+    { name: 'page', type: 'str', default: '', help: '页码（可选）' },
+    { name: 'pageSize', type: 'str', default: '', help: '每页数量（可选）' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
+    { name: 'raw', type: 'bool', default: false, help: '输出接口返回的原文' },
   ],
   columns: ['rank', 'dataId', 'formId', 'addTime', 'updateTime', 'data', 'code', 'msg', 'requestBody', 'responseBody'],
   func: async function (kwargs) {
@@ -167,6 +168,7 @@ cli({
 
     const data = await resp.json();
     const responseBody = JSON.stringify(data);
+    if (kwargs.raw) return [{ raw: responseBody }];
     if (data.code !== 1) {
       return makeErrorRow(data.code ?? '', data.msg ?? '未知错误', debug, requestBody, responseBody);
     }

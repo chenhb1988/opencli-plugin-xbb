@@ -181,6 +181,7 @@ cli({
     { name: 'page', type: 'str', default: '', help: '页码（可选）' },
     { name: 'pageSize', type: 'str', default: '', help: '每页数量（可选，最大 100）' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
+    { name: 'raw', type: 'bool', default: false, help: '输出接口返回的原文' },
   ],
   columns: ['rank', 'dataId', 'formId', 'serialNo', 'customerId', 'ownerId', 'status', 'creatorId', 'addTime', 'updateTime', 'data', 'code', 'msg', 'requestBody', 'responseBody'],
   func: async function (kwargs) {
@@ -225,6 +226,7 @@ cli({
 
     const data = await resp.json();
     const responseBody = JSON.stringify(data);
+    if (kwargs.raw) return [{ raw: responseBody }];
     if (data.code !== 1) {
       return makeErrorRow(data.code ?? '', data.msg ?? '未知错误', debug, body, responseBody);
     }

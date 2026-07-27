@@ -117,6 +117,7 @@ cli({
     { name: 'name', type: 'str', default: '', help: '模板名称模糊查询（可选）' },
     { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
+    { name: 'raw', type: 'bool', default: false, help: '输出接口返回的原文' },
   ],
   columns: ['rank', 'formId', 'appId', 'menuId', 'businessType', 'isProcessForm', 'name', 'code', 'msg', 'requestBody', 'responseBody'],
   func: async function (kwargs) {
@@ -151,6 +152,7 @@ cli({
 
     const data = await resp.json();
     const responseBody = JSON.stringify(data);
+    if (kwargs.raw) return [{ raw: responseBody }];
     if (data.code !== 1) {
       return makeErrorRow(data.code ?? '', data.msg ?? '未知错误', debug, body, responseBody);
     }

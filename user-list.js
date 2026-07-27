@@ -34,8 +34,8 @@ function buildApiUrl(baseUrl) {
 function buildPayload(kwargs) {
   const payload = {
     corpid: String(kwargs.corpid || ''),
-    page: Number(kwargs.page || 1),
-    pageSize: Number(kwargs.pageSize || 20),
+    ...(String(kwargs.page ?? '') !== '' ? { page: Number(kwargs.page) } : {}),
+    ...(String(kwargs.pageSize ?? '') !== '' ? { pageSize: Number(kwargs.pageSize) } : {}),
   };
   if (kwargs.userId) payload.userId = String(kwargs.userId);
   if (kwargs.name) payload.name = String(kwargs.name);
@@ -75,9 +75,10 @@ cli({
     { name: 'nameLike', type: 'str', default: '', help: '员工姓名模糊查询（可选）' },
     { name: 'departmentId', type: 'int', default: 0, help: '部门id筛选（可选）' },
     { name: 'delIgnore', type: 'int', default: 0, help: '是否查询已离职员工，0不查/1查询' },
-    { name: 'page', type: 'int', default: 1, help: '页码' },
-    { name: 'pageSize', type: 'int', default: 20, help: '每页数量（最大100）' },
+    { name: 'page', type: 'str', default: '', help: '页码（可选）' },
+    { name: 'pageSize', type: 'str', default: '', help: '每页数量（可选）' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
+    { name: 'raw', type: 'bool', default: false, help: '输出接口返回的原文' },
   ],
   columns: ['rank', 'userId', 'name', 'position', 'jobnumber', 'avatar', 'code', 'msg', 'requestBody', 'responseBody'],
   func: async (kwargs) => {
@@ -116,6 +117,7 @@ cli({
 
     const data = await resp.json();
     const responseBody = JSON.stringify(data);
+    if (kwargs.raw) return [{ raw: responseBody }];
     if (data.code !== 1) {
       return makeErrorRow(data.code ?? '', data.msg ?? '未知错误', debug, body, responseBody);
     }

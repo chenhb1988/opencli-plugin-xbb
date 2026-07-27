@@ -86,8 +86,8 @@ cli({
     { name: 'district', type: 'str', default: '', help: '签到区县（可选）' },
     { name: 'address', type: 'str', default: '', help: '签到详情地址（可选）' },
     { name: 'nameLike', type: 'str', default: '', help: '客户名称模糊查询（可选）' },
-    { name: 'page', type: 'int', default: '', help: '页码（可选）' },
-    { name: 'pageSize', type: 'int', default: '', help: '每页数量（可选）' },
+    { name: 'page', type: 'str', default: '', help: '页码（可选）' },
+    { name: 'pageSize', type: 'str', default: '', help: '每页数量（可选）' },
     { name: 'startAddTime', type: 'str', default: '', help: '开始签到时间（可选）' },
     { name: 'endAddTime', type: 'str', default: '', help: '结束签到时间（可选）' },
     { name: 'outCountry', type: 'str', default: '', help: '签退国家（可选）' },
@@ -100,6 +100,7 @@ cli({
     { name: 'startOutTime', type: 'str', default: '', help: '开始签退时间（可选）' },
     { name: 'endOutTime', type: 'str', default: '', help: '结束签退时间（可选）' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
+    { name: 'raw', type: 'bool', default: false, help: '输出接口返回的原文' },
   ],
   columns: ['rank', 'userId', 'userName', 'customerId', 'customerName', 'status', 'inTime', 'outTime', 'address', 'outAddress', 'data', 'code', 'msg', 'requestBody', 'responseBody'],
   func: async (kwargs) => {
@@ -117,6 +118,7 @@ cli({
     if (!resp.ok) return makeErrorRow(resp.status, `HTTP ${resp.status} ${resp.statusText}`, debug, body, await resp.text());
     const data = await resp.json();
     const responseBody = JSON.stringify(data);
+    if (kwargs.raw) return [{ raw: responseBody }];
     if (data.code !== 1) return makeErrorRow(data.code ?? '', data.msg ?? '未知错误', debug, body, responseBody);
     const list = Array.isArray(data.result?.signInList) ? data.result.signInList : [];
     if (!list.length) return makeErrorRow('NO_DATA', '接口成功，但 signInList 为空', debug, body, responseBody);

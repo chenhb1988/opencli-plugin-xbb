@@ -49,6 +49,7 @@ cli({
     { name: 'roleNameLike', type: 'str', default: '', help: '角色名称模糊检索（可选）' },
     { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
+    { name: 'raw', type: 'bool', default: false, help: '输出接口返回的原文' },
   ],
   columns: ['rank', 'id', 'roleName', 'code', 'msg', 'requestBody', 'responseBody'],
   func: async function (kwargs) {
@@ -66,6 +67,7 @@ cli({
     if (!resp.ok) return makeErrorRow(resp.status, `HTTP ${resp.status} ${resp.statusText}`, debug, requestBody, await resp.text());
     const data = await resp.json();
     const responseBody = JSON.stringify(data);
+    if (kwargs.raw) return [{ raw: responseBody }];
     if (data.code !== 1) return makeErrorRow(data.code ?? '', data.msg ?? '未知错误', debug, requestBody, responseBody);
     const list = Array.isArray(data.result?.roleList) ? data.result.roleList : [];
     if (!list.length) return makeErrorRow('NO_DATA', '接口成功，但 roleList 为空', debug, requestBody, responseBody);

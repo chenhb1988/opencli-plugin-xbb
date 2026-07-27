@@ -111,6 +111,7 @@ cli({
     { name: 'corpid', type: 'str', help: '公司id（必填）' },
     { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
+    { name: 'raw', type: 'bool', default: false, help: '输出接口返回的原文' },
   ],
   columns: ['rank', 'id', 'name', 'parentId', 'router', 'sort', 'corpid', 'code', 'msg', 'requestBody', 'responseBody'],
   func: async function (kwargs) {
@@ -145,6 +146,7 @@ cli({
 
     const data = await resp.json();
     const responseBody = JSON.stringify(data);
+    if (kwargs.raw) return [{ raw: responseBody }];
     if (data.code !== 1) {
       return makeErrorRow(data.code ?? '', data.msg ?? '未知错误', debug, body, responseBody);
     }
