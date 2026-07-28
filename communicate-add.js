@@ -73,7 +73,7 @@ cli({
     { name: 'corpid', type: 'str', help: '公司id（必填）' },
     { name: 'dataList', type: 'str', help: '表单数据JSON字符串（必填）' },
     { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
-    { name: 'subBusinessType', type: 'int', default: '', help: '子业务类型，传8000为线索跟进记录，不传为客户跟进记录（可选）' },
+    { name: 'subBusinessType', type: 'str', default: '', help: '子业务类型，传8000为线索跟进记录，不传为客户跟进记录（可选）' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
   ],
   columns: ['dataId', 'resultCode', 'resultMsg', 'code', 'msg', 'requestBody', 'responseBody'],

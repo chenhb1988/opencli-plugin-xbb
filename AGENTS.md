@@ -1,12 +1,12 @@
 # AGENTS.md
 
-This file provides guidance to the AI agent when working with code in this repository.
+本文件为 AI Agent 在该仓库中工作时提供指引。
 
-## What This Repo Is
+## 仓库说明
 
-This is the `xbb` (销帮帮 CRM) plugin for `opencli`. Every top-level `*.js` file registers one `opencli xbb <command>` via `opencli-registry.js`. There is no build step, no linter, and no test framework.
+这是 `opencli` 的销帮帮 CRM（`xbb`）插件。每个顶层 `*.js` 文件通过 `opencli-registry.js` 注册一条 `opencli xbb <command>` 命令。无构建步骤、无 lint、无测试框架。
 
-## Setup
+## 安装
 
 ```bash
 npm install -g @jackwener/opencli
@@ -14,43 +14,45 @@ opencli plugin install github:chenhb1988/opencli-plugin-xbb
 opencli xbb set-token --corpid <CORPID> --token <TOKEN>
 ```
 
-Credentials are stored in `~/.opencli/xbb/config.json`. `set-token` also writes a formlist cache to `~/.opencli/xbb/<corpid>.formlist.json`.
+凭证保存在 `~/.opencli/xbb/config.json`。`set-token` 同时会将表单列表缓存写入 `~/.opencli/xbb/<corpid>.formlist.json`。
 
-## Verification
+## 验证方式
 
-No automated tests. After changing a command, run it with `--debug` against the real API to inspect the serialized request body and raw response.
+无自动化测试。修改命令后，加 `--debug` 对真实 API 运行，检查序列化后的请求体和原始响应。
 
-## Code Style Rules
+## 代码风格规范
 
-- **ESM only** — `"type": "module"` in `package.json`; always use `import`/`export`.
-- **Node built-ins use `node:` prefix** — `node:fs`, `node:path`, `node:crypto`, etc.
-- **All commands import from `./opencli-registry.js`**, never directly from `@jackwener/opencli`.
-- **No shared utility modules** — duplicate code across files rather than introducing shared abstractions, unless the same change is needed in multiple files for the same reason.
+- **仅使用 ESM** — `package.json` 中 `"type": "module"`，始终使用 `import`/`export`。
+- **Node 内置模块加 `node:` 前缀** — `node:fs`、`node:path`、`node:crypto` 等。
+- **所有命令从 `./opencli-registry.js` 导入**，不直接引用 `@jackwener/opencli`。
+- **不引入共享工具模块** — 跨文件复制代码，而非抽象共享，除非同一改动需同时应用于多个文件。
 
-## Command Module Pattern
+## 命令模块结构
 
-Every command file follows this structure (see `user-list.js`, `customer-list.js` as canonical examples):
+每个命令文件遵循以下结构（参考 `user-list.js`、`customer-list.js` 作为标准示例）：
 
-1. Hardcoded API URL constant + config path (`~/.opencli/xbb/config.json`)
-2. `readConfig()` — parse config file, return `{}` on failure
-3. `getRuntimeConfig(kwargs)` — merge CLI args with config file
-4. `buildPayload(kwargs)` — omit `undefined` fields; never send them
-5. `getValidationError(payload, token)` — return `{code, msg}` or `null`
-6. `makeErrorRow(...)` / `makeSuccessRows(...)` — return object arrays (never throw)
-7. `cli({...})` — register with `site: 'xbb'`, `strategy: Strategy.PUBLIC`, `browser: false`
-8. HTTP: `POST`, `Content-Type: application/json;charset=UTF-8`, sign header = `SHA256(JSON.stringify(body) + token)`
+1. 硬编码 API URL 常量 + 配置路径（`~/.opencli/xbb/config.json`）
+2. `readConfig()` — 解析配置文件，失败返回 `{}`
+3. `getRuntimeConfig(kwargs)` — 合并 CLI 参数与配置文件
+4. `buildPayload(kwargs)` — 忽略 `undefined` 字段，不发送未提供的参数
+5. `getValidationError(payload, token)` — 返回 `{code, msg}` 或 `null`
+6. `makeErrorRow(...)` / `makeSuccessRows(...)` — 返回对象数组（不抛异常）
+7. `cli({...})` — 注册时使用 `site: 'xbb'`、`strategy: Strategy.PUBLIC`、`browser: false`
+8. HTTP：`POST`，`Content-Type: application/json;charset=UTF-8`，签名 header = `SHA256(JSON.stringify(body) + token)`
 
-## Critical Constraints
+## 关键约束
 
-- **Errors return a synthetic row** (`[{code, msg}]`), never thrown exceptions.
-- **`--limit` is applied after response mapping** — changing field mapping affects truncated output.
-- **Optional numeric fields**: use `String(kwargs.field ?? '') !== ''` to distinguish "not provided" from "provided as 0". Many xbb API endpoints treat these differently.
-- **`--attr`/`--value` conditions**: only added to the request body when *both* are present. Some list commands also accept `--conditions` (JSON array string) which takes precedence over `--attr`/`--value`.
-- **corpid mismatch**: most commands validate CLI `--corpid` against `config.json`; mismatch returns `CORPID_MISMATCH` error row.
-- **Base URL routing**: Dingtalk corpids (starts with `ding` or contains `$$ding`) → `https://proapi.xbongbong.com`; others → `https://appapi.xbongbong.com`. Most commands derive the final URL from the saved `baseurl` + their own pathname.
-- **`columns` output contract is stable** — changing request body fields is safer than renaming output columns.
-- **Command filenames are hyphenated** — each `*.js` maps to a live CLI entry point; keep filenames aligned with the command name, except the `workorder`/`work-order` conflict cases already preserved in this repo.
+- **错误返回合成行**（`[{code, msg}]`），不抛异常。
+- **`--limit` 在响应映射后截断** — 修改字段映射会影响截断后的输出。
+- **可选数值字段**：用 `String(kwargs.field ?? '') !== ''` 区分"未提供"和"提供了 0"。许多 xbb 接口对二者处理不同。
+- **可选数值参数必须使用 `type: 'str'`** — 将可选数值参数声明为 `type: 'int'` 时，框架会把空字符串默认值强制转为 `0`，导致 `String(kwargs.field ?? '') !== ''` 为 `true`，用户未传值也会把该字段写入请求体。可选数值参数统一声明为 `type: 'str', default: ''`，在 `buildPayload` 中通过检查后再 `Number()` 转换。
+- **`--attr`/`--value` 条件**：只有两者同时存在时才拼入请求体。部分 list 命令还支持 `--conditions`（JSON 数组字符串），优先级高于 `--attr`/`--value`。
+- **corpid 不一致**：大多数命令会校验 CLI 传入的 `--corpid` 与 `config.json` 中的值，不一致时返回 `CORPID_MISMATCH` 错误行。
+- **Base URL 路由**：corpid 以 `ding` 开头或包含 `$$ding` 时使用 `https://proapi.xbongbong.com`，其他使用 `https://appapi.xbongbong.com`。大多数命令从保存的 `baseurl` + 各自路径拼出最终 URL。
+- **`--raw` 参数模式** — 所有 list 命令均支持 `--raw`。在 `args` 中声明为 `{ name: 'raw', type: 'bool', default: false, help: '输出接口返回的原文' }`。在 `func` 中，于 `const responseBody = JSON.stringify(data);` 之后、`data.code !== 1` 判断之前插入 `if (kwargs.raw) return [{ raw: responseBody }];`。**不要**将 `raw` 加入 `columns`——框架会动态输出，加入会在 table/csv 格式下产生空列。
+- **命令文件名使用连字符** — 每个 `*.js` 对应一个实际 CLI 入口；文件名与命令名保持一致，`workorder`/`work-order` 冲突情况除外（已在仓库中保留）。
+- **`columns` 输出契约保持稳定** — 修改请求体字段比重命名输出列更安全。
 
-## Workflow: formId-Dependent Commands
+## 工作流：依赖 formId 的命令
 
-`form-list` → `form-get` → data commands (`customer-add`, `form-data-add`, etc.) is the standard dependency chain. `dataList` is passed as a JSON object string and parsed inside the command. When field names or dropdown values are unknown, use `form-get --formId <ID>` to retrieve the form schema before building `dataList`.
+`form-list` → `form-get` → 数据命令（`customer-add`、`form-data-add` 等）是标准依赖链。`dataList` 以 JSON 对象字符串传入，在命令内部解析。当字段名或下拉框可选值未知时，先用 `form-get --formId <ID>` 获取表单 schema，再构建 `dataList`。

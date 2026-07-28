@@ -114,7 +114,7 @@ cli({
     { name: 'dataId', type: 'int', help: '数据id（必填）' },
     { name: 'corpid', type: 'str', help: '公司id（必填）' },
     { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
-    { name: 'queryFlag', type: 'int', default: '', help: '是否查询审批数据：0非审批，1审批中，2全部' },
+    { name: 'queryFlag', type: 'str', default: '', help: '是否查询审批数据：0非审批，1审批中，2全部' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
   ],
   columns: ['dataId', 'formId', 'serialNo', 'creatorId', 'ownerId', 'coUserId', 'addTime', 'updateTime', 'data', 'code', 'msg', 'requestBody', 'responseBody'],

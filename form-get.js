@@ -109,7 +109,7 @@ cli({
   args: [
     { name: 'formId', type: 'int', help: '表单id（必填）' },
     { name: 'corpid', type: 'str', help: '公司id（必填）' },
-    { name: 'subBusinessType', type: 'int', default: '', help: '表单业务子类型（可选）' },
+    { name: 'subBusinessType', type: 'str', default: '', help: '表单业务子类型（可选）' },
     { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
   ],

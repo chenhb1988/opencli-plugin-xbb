@@ -48,7 +48,7 @@ cli({
     { name: 'corpid', type: 'str', help: '公司id（必填）' },
     { name: 'dataIdList', type: 'str', help: '线索id列表，JSON数组字符串（必填）' },
     { name: 'businessUserId', type: 'str', help: '被分配员工id（必填）' },
-    { name: 'subBusinessType', type: 'int', default: '', help: '子业务类型：8001非公海线索，8002公海线索（可选）' },
+    { name: 'subBusinessType', type: 'str', default: '', help: '子业务类型：8001非公海线索，8002公海线索（可选）' },
     { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
   ],

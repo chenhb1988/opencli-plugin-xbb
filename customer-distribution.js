@@ -56,7 +56,7 @@ cli({
     { name: 'dataIdList', type: 'str', help: '客户id列表，JSON数组字符串（必填）' },
     { name: 'businessUserId', type: 'str', help: '被分配员工id（必填）' },
     { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
-    { name: 'subBusinessType', type: 'int', default: '', help: '子业务类型：101非公海客户，105公海客户，默认101（可选）' },
+    { name: 'subBusinessType', type: 'str', default: '', help: '子业务类型：101非公海客户，105公海客户，默认101（可选）' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
   ],
   columns: ['resultType', 'resultMsg', 'code', 'msg', 'requestBody', 'responseBody'],

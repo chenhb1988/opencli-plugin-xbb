@@ -145,8 +145,8 @@ cli({
   args: [
     { name: 'corpid', type: 'str', help: '公司id（必填）' },
     { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
-    { name: 'listGroupId', type: 'int', default: '', help: '分组类型（可选），如 110 红冲退款，111 坏账回款' },
-    { name: 'subBusinessType', type: 'int', default: '', help: '业务子类型（可选），如 702 父回款单' },
+    { name: 'listGroupId', type: 'str', default: '', help: '分组类型（可选），如 110 红冲退款，111 坏账回款' },
+    { name: 'subBusinessType', type: 'str', default: '', help: '业务子类型（可选），如 702 父回款单' },
     { name: 'viewApproval', type: 'str', default: '', help: '是否查询审批中数据，1是，0否' },
     { name: 'attr', type: 'str', default: '', help: '筛选字段 attr，例如 serialNo' },
     { name: 'value', type: 'str', default: '', help: '筛选值，和 --attr 配合使用' },

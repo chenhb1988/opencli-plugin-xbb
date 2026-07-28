@@ -304,6 +304,7 @@ opencli xbb form-list --corpid <CORPID> --saasMark 1 -f json
 - `--limit` 是在响应映射之后截断结果
 - 失败时返回的是带 `code` / `msg` 的结果行，不抛异常
 - 加 `--debug` 可以输出 `requestBody` 和 `responseBody`
+- 加 `--raw` 可以输出接口返回的原始 JSON 字符串（所有 list 命令均支持）
 - 在填充参数时不清楚参数含义/下拉框可选项值，调用 `form-get` 命令获取 form 解释
 
 ## 常用示例
@@ -426,3 +427,5 @@ opencli xbb worktimerecorddetail --corpid your_corpid --dataId 10001
 ## 调试
 
 命令加 `--debug` 后，会把请求体和原始响应一起带回结果列，便于排查签名、参数拼装和接口返回问题。
+
+命令加 `--raw` 后，直接返回接口原始 JSON 字符串（单行 `{ raw: "..." }`），适合管道处理或人工检查响应结构。所有 list 命令均支持该参数。
