@@ -139,6 +139,7 @@ cli({
   columns: ['dataId', 'formId', 'serialNo', 'creatorId', 'ownerId', 'coUserId', 'addTime', 'updateTime', 'data', 'code', 'msg', 'requestBody', 'responseBody'],
   func: async function (kwargs) {
     const debug = Boolean(kwargs.debug);
+    const { corpid, token, baseUrl, userId } = getRuntimeConfig();
     let payload;
     try {
       payload = buildPayload(kwargs, corpid);
@@ -150,7 +151,6 @@ cli({
       return makeErrorRow(code, detail, debug, '', detail);
     }
 
-    const { corpid, token, baseUrl, userId } = getRuntimeConfig();
     const requestBody = JSON.stringify(payload);
 
     const validationError = getValidationError(payload, token);

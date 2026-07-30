@@ -53,7 +53,7 @@ function parseDataList(raw) {
   }
 }
 
-function buildPayload(kwargs, parsedDataList) {
+function buildPayload(kwargs, parsedDataList, corpid) {
   const payload = {
     corpid,
     dataId: Number(kwargs.dataId || 0),
@@ -133,7 +133,7 @@ cli({
     const debug = Boolean(kwargs.debug);
     const { corpid, token, baseUrl, userId } = getRuntimeConfig();
     const parsedDataList = parseDataList(kwargs.dataList);
-    const payload = buildPayload(kwargs, parsedDataList);
+    const payload = buildPayload(kwargs, parsedDataList, corpid);
     const requestBody = JSON.stringify(payload);
 
     const validationError = getValidationError(payload, token, parsedDataList);
