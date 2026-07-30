@@ -16,10 +16,10 @@ function readConfig() {
   }
 }
 
-function getRuntimeConfig(kwargs) {
+function getRuntimeConfig() {
   const config = readConfig();
   return {
-    configCorpid: String(config.corpid || '').trim(),
+    corpid: String(config.corpid || '').trim(),
     token: String(config.token || '').trim(),
     baseUrl: String(config.baseurl || DEFAULT_BASE_URL).trim(),
     userId: String(config.userId || '').trim(),
@@ -54,7 +54,7 @@ function parseDataList(raw) {
 
 function buildPayload(kwargs, parsedDataList) {
   const payload = {
-    corpid: String(kwargs.corpid || ''),
+    corpid,
     formId: Number(kwargs.formId || 0),
     dataId: Number(kwargs.dataId || 0),
   };
@@ -72,7 +72,7 @@ function buildPayload(kwargs, parsedDataList) {
 
 function getValidationError(payload, token, parsedDataList) {
   if (!payload.corpid) {
-    return { code: 'NO_CORPID', msg: '缺少 --corpid' };
+    return { code: 'NO_CORPID', msg: '缺少本地 corpid；请先执行 opencli xbb set-token --corpid <CORPID> --token <TOKEN> --userId <USERID>' };
   }
   if (!payload.formId) {
     return { code: 'NO_FORMID', msg: '缺少 --formId' };
@@ -126,7 +126,6 @@ cli({
   browser: false,
   domain: 'proapi.xbongbong.com',
   args: [
-    { name: 'corpid', type: 'str', help: '公司id（必填）' },
     { name: 'formId', type: 'int', help: '表单id（必填）' },
     { name: 'dataId', type: 'int', help: '表单数据id（必填）' },
     { name: 'dataList', type: 'str', help: '表单数据JSON字符串（必填）' },
@@ -136,7 +135,7 @@ cli({
   columns: ['dataId', 'resultCode', 'resultMsg', 'code', 'msg', 'requestBody', 'responseBody'],
   func: async (kwargs) => {
     const debug = Boolean(kwargs.debug);
-    const { configCorpid, token, baseUrl, userId } = getRuntimeConfig(kwargs);
+    const { corpid, token, baseUrl, userId } = getRuntimeConfig();
     const parsedDataList = parseDataList(kwargs.dataList);
     const payload = buildPayload(kwargs, parsedDataList);
     const body = JSON.stringify(payload);
@@ -144,10 +143,6 @@ cli({
     const validationError = getValidationError(payload, token, parsedDataList);
     if (validationError) {
       return makeErrorRow(validationError.code, validationError.msg, debug, body, '');
-    }
-
-    if (configCorpid && payload.corpid !== configCorpid) {
-      return makeErrorRow('CORPID_MISMATCH', 'corpid与配置中不一致', debug, body, '');
     }
 
     const sign = crypto.createHash('sha256').update(body + token).digest('hex');

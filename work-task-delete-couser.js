@@ -20,7 +20,7 @@ function readConfig() {
 function getRuntimeConfig() {
   const config = readConfig();
   return {
-    configCorpid: String(config.corpid || '').trim(),
+    corpid: String(config.corpid || '').trim(),
     token: String(config.token || '').trim(),
     baseUrl: String(config.baseurl || DEFAULT_BASE_URL).trim(),
     userId: String(config.userId || '').trim(),
@@ -45,7 +45,6 @@ cli({
   browser: false,
   domain: 'proapi.xbongbong.com',
   args: [
-    { name: 'corpid', type: 'str', help: '公司id（必填）' },
     { name: 'dataId', type: 'int', help: '任务id（必填）' },
     { name: 'businessUserIdList', type: 'str', help: '需删除的协同人id列表，JSON数组字符串（必填）' },
     { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
@@ -54,8 +53,8 @@ cli({
   columns: ['resultCode', 'resultMsg', 'code', 'msg', 'requestBody', 'responseBody'],
   func: async (kwargs) => {
     const debug = Boolean(kwargs.debug);
-    const { configCorpid, token, baseUrl, userId } = getRuntimeConfig();
-    const payload = { corpid: String(kwargs.corpid || ''), dataId: Number(kwargs.dataId || 0) };
+    const { corpid, token, baseUrl, userId } = getRuntimeConfig();
+    const payload = { corpid, dataId: Number(kwargs.dataId || 0) };
     if (kwargs.userId) payload.userId = String(kwargs.userId);
     let userIdList;
     try {
@@ -65,11 +64,10 @@ cli({
     }
     if (Array.isArray(userIdList)) payload.businessUserIdList = userIdList;
     const body = JSON.stringify(payload);
-    if (!payload.corpid) return makeErrorRow('NO_CORPID', '缺少 --corpid', debug, body, '');
+    if (!payload.corpid) return makeErrorRow('NO_CORPID', '缺少本地 corpid；请先执行 opencli xbb set-token --corpid <CORPID> --token <TOKEN> --userId <USERID>', debug, body, '');
     if (!payload.dataId) return makeErrorRow('NO_DATAID', '缺少 --dataId', debug, body, '');
     if (!Array.isArray(userIdList) || !userIdList.length) return makeErrorRow('NO_USERIDLIST', '缺少 --businessUserIdList 或格式不正确，需为JSON数组', debug, body, '');
     if (!token) return makeErrorRow('NO_TOKEN', MISSING_TOKEN_MESSAGE, debug, body, '');
-    if (configCorpid && payload.corpid !== configCorpid) return makeErrorRow('CORPID_MISMATCH', 'corpid与配置中不一致', debug, body, '');
     const sign = crypto.createHash('sha256').update(body + token).digest('hex');
     const resp = await fetch(buildApiUrl(baseUrl, API_URL), { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json;charset=UTF-8', sign }, userId ? { userId } : {}), body });
     if (!resp.ok) return makeErrorRow(resp.status, `HTTP ${resp.status} ${resp.statusText}`, debug, body, await resp.text());

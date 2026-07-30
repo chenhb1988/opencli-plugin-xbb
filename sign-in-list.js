@@ -17,10 +17,10 @@ function readConfig() {
   }
 }
 
-function getRuntimeConfig(kwargs) {
+function getRuntimeConfig() {
   const config = readConfig();
   return {
-    configCorpid: String(config.corpid || '').trim(),
+    corpid: String(config.corpid || '').trim(),
     token: String(config.token || '').trim(),
     baseUrl: String(config.baseurl || DEFAULT_BASE_URL).trim(),
     userId: String(config.userId || '').trim(),
@@ -43,8 +43,8 @@ function parseArray(raw) {
   }
 }
 
-function buildPayload(kwargs) {
-  const payload = { corpid: String(kwargs.corpid || '') };
+function buildPayload(kwargs, corpid) {
+  const payload = { corpid };
   const stringFields = ['userId', 'signInUserId', 'signInUserName', 'country', 'province', 'city', 'district', 'address', 'nameLike', 'startAddTime', 'endAddTime', 'outCountry', 'outProvince', 'outCity', 'outDistrict', 'outAddress', 'startOutTime', 'endOutTime'];
   for (const field of stringFields) {
     if (String(kwargs[field] ?? '') !== '') payload[field] = String(kwargs[field]);
@@ -73,7 +73,6 @@ cli({
   browser: false,
   domain: 'proapi.xbongbong.com',
   args: [
-    { name: 'corpid', type: 'str', help: '公司id（必填）' },
     { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
     { name: 'signInUserId', type: 'str', default: '', help: '签到人userId（可选）' },
     { name: 'signInUserName', type: 'str', default: '', help: '签到人姓名精确匹配（可选）' },
@@ -105,14 +104,13 @@ cli({
   columns: ['rank', 'userId', 'userName', 'customerId', 'customerName', 'status', 'inTime', 'outTime', 'address', 'outAddress', 'data', 'code', 'msg', 'requestBody', 'responseBody'],
   func: async (kwargs) => {
     const debug = Boolean(kwargs.debug);
-    const { configCorpid, token, baseUrl, userId } = getRuntimeConfig(kwargs);
-    const payload = buildPayload(kwargs);
+    const { corpid, token, baseUrl, userId } = getRuntimeConfig();
+    const payload = buildPayload(kwargs, corpid);
     const body = JSON.stringify(payload);
-    if (!payload.corpid) return makeErrorRow('NO_CORPID', '缺少 --corpid', debug, body, '');
+    if (!payload.corpid) return makeErrorRow('NO_CORPID', '缺少本地 corpid；请先执行 opencli xbb set-token --corpid <CORPID> --token <TOKEN> --userId <USERID>', debug, body, '');
     if (!token) return makeErrorRow('NO_TOKEN', MISSING_TOKEN_MESSAGE, debug, body, '');
     if (String(kwargs.signInUserIdIn ?? '').trim() && !Array.isArray(parseArray(kwargs.signInUserIdIn))) return makeErrorRow('INVALID_SIGNINUSERIDIN', '--signInUserIdIn 必须是 JSON 数组字符串', debug, body, '');
     if (String(kwargs.signInCustomerIdIn ?? '').trim() && !Array.isArray(parseArray(kwargs.signInCustomerIdIn))) return makeErrorRow('INVALID_SIGNINCUSTOMERIDIN', '--signInCustomerIdIn 必须是 JSON 数组字符串', debug, body, '');
-    if (configCorpid && payload.corpid !== configCorpid) return makeErrorRow('CORPID_MISMATCH', 'corpid与配置中不一致', debug, body, '');
     const sign = crypto.createHash('sha256').update(body + token).digest('hex');
     const resp = await fetch(buildApiUrl(baseUrl, API_URL), { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json;charset=UTF-8', sign }, userId ? { userId } : {}), body });
     if (!resp.ok) return makeErrorRow(resp.status, `HTTP ${resp.status} ${resp.statusText}`, debug, body, await resp.text());

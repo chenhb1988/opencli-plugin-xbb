@@ -11,10 +11,10 @@
 ```bash
 npm install -g @jackwener/opencli
 opencli plugin install github:chenhb1988/opencli-plugin-xbb
-opencli xbb set-token --corpid <CORPID> --token <TOKEN>
+opencli xbb set-token --corpid <CORPID> --token <TOKEN> --userId <USERID>
 ```
 
-凭证保存在 `~/.opencli/xbb/config.json`。`set-token` 同时会将表单列表缓存写入 `~/.opencli/xbb/<corpid>.formlist.json`。
+凭证保存在 `~/.opencli/xbb/config.json`。`set-token` 同时会将表单列表缓存写入 `~/.opencli/xbb/<corpid>.formlist.json`。除 `set-token` 外，其余命令都会从该配置读取 `corpid`。
 
 ## 验证方式
 
@@ -47,7 +47,6 @@ opencli xbb set-token --corpid <CORPID> --token <TOKEN>
 - **可选数值字段**：用 `String(kwargs.field ?? '') !== ''` 区分"未提供"和"提供了 0"。许多 xbb 接口对二者处理不同。
 - **可选数值参数必须使用 `type: 'str'`** — 将可选数值参数声明为 `type: 'int'` 时，框架会把空字符串默认值强制转为 `0`，导致 `String(kwargs.field ?? '') !== ''` 为 `true`，用户未传值也会把该字段写入请求体。可选数值参数统一声明为 `type: 'str', default: ''`，在 `buildPayload` 中通过检查后再 `Number()` 转换。
 - **`--attr`/`--value` 条件**：只有两者同时存在时才拼入请求体。部分 list 命令还支持 `--conditions`（JSON 数组字符串），优先级高于 `--attr`/`--value`。
-- **corpid 不一致**：大多数命令会校验 CLI 传入的 `--corpid` 与 `config.json` 中的值，不一致时返回 `CORPID_MISMATCH` 错误行。
 - **Base URL 路由**：corpid 以 `ding` 开头或包含 `$$ding` 时使用 `https://proapi.xbongbong.com`，其他使用 `https://appapi.xbongbong.com`。大多数命令从保存的 `baseurl` + 各自路径拼出最终 URL。
 - **`--raw` 参数模式** — 所有 list 命令均支持 `--raw`。在 `args` 中声明为 `{ name: 'raw', type: 'bool', default: false, help: '输出接口返回的原文' }`。在 `func` 中，于 `const responseBody = JSON.stringify(data);` 之后、`data.code !== 1` 判断之前插入 `if (kwargs.raw) return [{ raw: responseBody }];`。**不要**将 `raw` 加入 `columns`——框架会动态输出，加入会在 table/csv 格式下产生空列。
 - **命令文件名使用连字符** — 每个 `*.js` 对应一个实际 CLI 入口；文件名与命令名保持一致，`workorder`/`work-order` 冲突情况除外（已在仓库中保留）。

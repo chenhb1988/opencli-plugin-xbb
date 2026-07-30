@@ -17,10 +17,10 @@ function readConfig() {
   }
 }
 
-function getRuntimeConfig(kwargs) {
+function getRuntimeConfig() {
   const config = readConfig();
   return {
-    configCorpid: String(config.corpid || '').trim(),
+    corpid: String(config.corpid || '').trim(),
     token: String(config.token || '').trim(),
     baseUrl: String(config.baseurl || DEFAULT_BASE_URL).trim(),
     userId: String(config.userId || '').trim(),
@@ -52,7 +52,6 @@ cli({
   browser: false,
   domain: 'proapi.xbongbong.com',
   args: [
-    { name: 'corpid', type: 'str', help: '公司id（必填）' },
     { name: 'dataIdList', type: 'str', help: '应收款id列表，JSON数组字符串，最多200条（必填）' },
     { name: 'businessUserId', type: 'str', help: '移交目标人员id（必填）' },
     { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
@@ -61,10 +60,10 @@ cli({
   columns: ['resultMsg', 'resultType', 'code', 'msg', 'requestBody', 'responseBody'],
   func: async (kwargs) => {
     const debug = Boolean(kwargs.debug);
-    const { configCorpid, token, baseUrl, userId } = getRuntimeConfig(kwargs);
+    const { corpid, token, baseUrl, userId } = getRuntimeConfig();
 
     const payload = {
-      corpid: String(kwargs.corpid || ''),
+      corpid,
       businessUserId: String(kwargs.businessUserId || ''),
     };
     if (kwargs.userId) payload.userId = String(kwargs.userId);
@@ -82,7 +81,7 @@ cli({
     const body = JSON.stringify(payload);
 
     if (!payload.corpid) {
-      return makeErrorRow('NO_CORPID', '缺少 --corpid', debug, body, '');
+      return makeErrorRow('NO_CORPID', '缺少本地 corpid；请先执行 opencli xbb set-token --corpid <CORPID> --token <TOKEN> --userId <USERID>', debug, body, '');
     }
     if (!Array.isArray(dataIdList) || !dataIdList.length) {
       return makeErrorRow('NO_DATAIDLIST', '缺少 --dataIdList 或格式不正确，需为JSON数组', debug, body, '');
@@ -92,9 +91,6 @@ cli({
     }
     if (!token) {
       return makeErrorRow('NO_TOKEN', '缺少 token；请先执行 opencli xbb set-token --corpid <CORPID> --token <TOKEN> --userId <USERID>', debug, body, '');
-    }
-    if (configCorpid && payload.corpid !== configCorpid) {
-      return makeErrorRow('CORPID_MISMATCH', 'corpid与配置中不一致', debug, body, '');
     }
 
     const sign = crypto.createHash('sha256').update(body + token).digest('hex');

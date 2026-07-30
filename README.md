@@ -39,8 +39,8 @@ opencli xbb set-token --corpid <CORPID> --token <TOKEN> --userId <USERID>
 内部等价于执行：
 
 ```bash
-opencli xbb form-list --corpid <CORPID> --saasMark 2 -f json
-opencli xbb form-list --corpid <CORPID> --saasMark 1 -f json
+opencli xbb form-list --saasMark 2 -f json
+opencli xbb form-list --saasMark 1 -f json
 ```
 
 `baseurl` 路由规则：
@@ -294,11 +294,11 @@ opencli xbb form-list --corpid <CORPID> --saasMark 1 -f json
 
 ## 通用行为
 
-- 所有命令都要求有效的 `--corpid`
-- 如果命令行传入的 `--corpid` 与本地配置中的 `corpid` 不一致，会返回 `CORPID_MISMATCH`
-- 大部分命令会优先从 `~/.opencli/xbb/config.json` 读取 `token`
+- 先执行一次 `set-token` 保存有效的 `corpid`、`token`、`userId`
+- 除 `set-token` 外，其余命令都会从 `~/.opencli/xbb/config.json` 读取 `corpid`
+- 大部分命令会从 `~/.opencli/xbb/config.json` 读取 `token`
 - 所有命令会从配置中读取 `userId` 并附加到请求 header 中
-- 大部分命令需要formId参数，可以根据业务名称或businessType从~/.opencli/xbb/<corpid>.formlist.json中获取formId
+- 大部分命令需要 formId 参数，可以根据业务名称或 businessType 从 `~/.opencli/xbb/<corpid>.formlist.json` 中获取 formId
 - 未传入的可选参数不会进入请求体
 - `--attr` 和 `--value` 只有同时提供时才会拼入查询条件
 - `--limit` 是在响应映射之后截断结果
@@ -318,88 +318,88 @@ opencli xbb set-token --corpid your_corpid --token your_token --userId your_user
 ### 员工信息
 
 ```bash
-opencli xbb user-list --corpid your_corpid
-opencli xbb user-list --corpid your_corpid --nameLike 张三 --debug
+opencli xbb user-list
+opencli xbb user-list --nameLike 张三 --debug
 ```
 
 ### 表单查询
 
 ```bash
-opencli xbb form-list --corpid your_corpid --saasMark 1
-opencli xbb form-list --corpid your_corpid --saasMark 1 --businessType 100
-opencli xbb form-list --corpid your_corpid --saasMark 2 --name 工单
+opencli xbb form-list --saasMark 1
+opencli xbb form-list --saasMark 1 --businessType 100
+opencli xbb form-list --saasMark 2 --name 工单
 
-opencli xbb form-get --corpid your_corpid --formId 19274
-opencli xbb form-get --corpid your_corpid --formId 19277 --subBusinessType 100
+opencli xbb form-get --formId 19274
+opencli xbb form-get --formId 19277 --subBusinessType 100
 ```
 
 ### 客户
 
 ```bash
-opencli xbb customer-list --corpid your_corpid --formId 12345
-opencli xbb customer-list --corpid your_corpid --formId 12345 --attr text_1 --value apiTest.001
+opencli xbb customer-list --formId 12345
+opencli xbb customer-list --formId 12345 --attr text_1 --value apiTest.001
 
-opencli xbb customer-add --corpid your_corpid --formId 19274 --dataList '{"text_1":"apiTest.001"}'
-opencli xbb customer-edit --corpid your_corpid --formId 19274 --dataId 310992 --dataList '{"text_1":"apiTest.001-编辑"}'
-opencli xbb customer-detail --corpid your_corpid --dataId 310992
-opencli xbb customer-add-couser --corpid your_corpid --dataId 310995 --businessUserIdList '["xbbTest002"]'
+opencli xbb customer-add --formId 19274 --dataList '{"text_1":"apiTest.001"}'
+opencli xbb customer-edit --formId 19274 --dataId 310992 --dataList '{"text_1":"apiTest.001-编辑"}'
+opencli xbb customer-detail --dataId 310992
+opencli xbb customer-add-couser --dataId 310995 --businessUserIdList '["xbbTest002"]'
 ```
 
 ### 表单模型/业务数据
 
 ```bash
-opencli xbb form-data-list --corpid your_corpid --formId 19274
-opencli xbb form-data-detail --corpid your_corpid --dataId 310992
-opencli xbb form-data-add --corpid your_corpid --formId 19274 --dataList '{"text_1":"apiTest.001"}'
-opencli xbb form-data-edit --corpid your_corpid --dataId 310992 --dataList '{"text_1":"apiTest.001-编辑"}'
-opencli xbb form-data-del --corpid your_corpid --dataId 310992
+opencli xbb form-data-list --formId 19274
+opencli xbb form-data-detail --dataId 310992
+opencli xbb form-data-add --formId 19274 --dataList '{"text_1":"apiTest.001"}'
+opencli xbb form-data-edit --dataId 310992 --dataList '{"text_1":"apiTest.001-编辑"}'
+opencli xbb form-data-del --dataId 310992
 ```
 
 ### 产品、回款、退款
 
 ```bash
-opencli xbb product-list --corpid your_corpid --attr serialNo --value CP.API.0001
-opencli xbb product-detail --corpid your_corpid --dataId 10001
-opencli xbb product-category-list --corpid your_corpid
-opencli xbb product-category-update --corpid your_corpid --dataId 306 --name 分类A
-opencli xbb product-category-del --corpid your_corpid --dataId 306
+opencli xbb product-list --attr serialNo --value CP.API.0001
+opencli xbb product-detail --dataId 10001
+opencli xbb product-category-list
+opencli xbb product-category-update --dataId 306 --name 分类A
+opencli xbb product-category-del --dataId 306
 
-opencli xbb payment-list --corpid your_corpid --attr serialNo --value PMO.API.0001
-opencli xbb payment-sheet-list --corpid your_corpid --attr serialNo --value RMO.API.0001
-opencli xbb payment-sheet-list --corpid your_corpid --subBusinessType 702
-opencli xbb payment-sheet-edit-write-off --corpid your_corpid --dataId 1194 --dataList '{"text_7":"编辑备注"}'
-opencli xbb payment-sheet-add-red --corpid your_corpid --dataList '{"serialNo":"RMO.API.0001"}'
-opencli xbb payment-sheet-edit-red --corpid your_corpid --dataId 1198 --dataList '{"text_7":"编辑红冲备注"}'
-opencli xbb payment-sheet-add-bad-debt --corpid your_corpid --dataList '{"serialNo":"RMO.API.0002"}'
-opencli xbb refund-list --corpid your_corpid --attr serialNo --value RFO.API.0001
+opencli xbb payment-list --attr serialNo --value PMO.API.0001
+opencli xbb payment-sheet-list --attr serialNo --value RMO.API.0001
+opencli xbb payment-sheet-list --subBusinessType 702
+opencli xbb payment-sheet-edit-write-off --dataId 1194 --dataList '{"text_7":"编辑备注"}'
+opencli xbb payment-sheet-add-red --dataList '{"serialNo":"RMO.API.0001"}'
+opencli xbb payment-sheet-edit-red --dataId 1198 --dataList '{"text_7":"编辑红冲备注"}'
+opencli xbb payment-sheet-add-bad-debt --dataList '{"serialNo":"RMO.API.0002"}'
+opencli xbb refund-list --attr serialNo --value RFO.API.0001
 ```
 
 ### 工单新命名
 
 ```bash
-opencli xbb work-order-list --corpid your_corpid --formId 7526034
-opencli xbb work-order-list --corpid your_corpid --formId 7526034 --attr serialNo --value WOO.20210616001
-opencli xbb work-order-list --corpid your_corpid --formId 7526034 --conditions "[{\"attr\":\"text_4\",\"value\":[4],\"symbol\":\"in\"},{\"attr\":\"ownerId\",\"value\":[\"02415643151585\"],\"symbol\":\"equal\"}]"
+opencli xbb work-order-list --formId 7526034
+opencli xbb work-order-list --formId 7526034 --attr serialNo --value WOO.20210616001
+opencli xbb work-order-list --formId 7526034 --conditions "[{\"attr\":\"text_4\",\"value\":[4],\"symbol\":\"in\"},{\"attr\":\"ownerId\",\"value\":[\"02415643151585\"],\"symbol\":\"equal\"}]"
 
-opencli xbb work-order-detail --corpid your_corpid --dataId 663
-opencli xbb work-order-add --corpid your_corpid --formId 7526034 --dataList '{"text_1":"测试工单"}'
-opencli xbb work-order-edit --corpid your_corpid --dataId 663 --dataList '{"text_1":"测试工单-更新"}'
-opencli xbb work-order-del --corpid your_corpid --dataId 663
-opencli xbb work-order-operate --corpid your_corpid --dataId 663 --operateType 12 --userId "02415643151585"
-opencli xbb work-order-operate --corpid your_corpid --dataId 663 --operateType 1 --data '{"cancelReason":"测试取消"}'
+opencli xbb work-order-detail --dataId 663
+opencli xbb work-order-add --formId 7526034 --dataList '{"text_1":"测试工单"}'
+opencli xbb work-order-edit --dataId 663 --dataList '{"text_1":"测试工单-更新"}'
+opencli xbb work-order-del --dataId 663
+opencli xbb work-order-operate --dataId 663 --operateType 12 --userId "02415643151585"
+opencli xbb work-order-operate --dataId 663 --operateType 1 --data '{"cancelReason":"测试取消"}'
 ```
 
 ### 工单旧命名与工时
 
 ```bash
-opencli xbb workorderlist --corpid your_corpid --formId 689 --attr serialNo --value WOO.20210616001
-opencli xbb workorderproductlist --corpid your_corpid --dataId 663
-opencli xbb work-order-template-list --corpid your_corpid
-opencli xbb work-order-template-detail --corpid your_corpid --formId 689
+opencli xbb workorderlist --formId 689 --attr serialNo --value WOO.20210616001
+opencli xbb workorderproductlist --dataId 663
+opencli xbb work-order-template-list
+opencli xbb work-order-template-detail --formId 689
 
-opencli xbb worktimerecordlist --corpid your_corpid
-opencli xbb worktimerecordlist --corpid your_corpid --conditions "[{\"attr\":\"ownerId\",\"value\":[\"02415643151585\"],\"symbol\":\"equal\"}]"
-opencli xbb worktimerecorddetail --corpid your_corpid --dataId 10001
+opencli xbb worktimerecordlist
+opencli xbb worktimerecordlist --conditions "[{\"attr\":\"ownerId\",\"value\":[\"02415643151585\"],\"symbol\":\"equal\"}]"
+opencli xbb worktimerecorddetail --dataId 10001
 ```
 
 ## 参数约定

@@ -16,10 +16,10 @@ function readConfig() {
   }
 }
 
-function getRuntimeConfig(kwargs) {
+function getRuntimeConfig() {
   const config = readConfig();
   return {
-    configCorpid: String(config.corpid || '').trim(),
+    corpid: String(config.corpid || '').trim(),
     token: String(config.token || '').trim(),
     baseUrl: String(config.baseurl || DEFAULT_BASE_URL).trim(),
     userId: String(config.userId || '').trim(),
@@ -31,10 +31,10 @@ function buildApiUrl(baseUrl, defaultUrl) {
   return `${baseUrl.replace(/\/+$/, '')}${apiPath}`;
 }
 
-function buildPayload(kwargs) {
+function buildPayload(kwargs, corpid) {
   const payload = {
     formId: Number(kwargs.formId || 0),
-    corpid: String(kwargs.corpid || ''),
+    corpid,
   };
 
   if (kwargs.userId) {
@@ -52,7 +52,7 @@ function getValidationError(payload, token) {
     return { code: 'NO_FORMID', msg: '缺少 --formId' };
   }
   if (!payload.corpid) {
-    return { code: 'NO_CORPID', msg: '缺少 --corpid' };
+    return { code: 'NO_CORPID', msg: '缺少本地 corpid；请先执行 opencli xbb set-token --corpid <CORPID> --token <TOKEN> --userId <USERID>' };
   }
   if (!token) {
     return { code: 'NO_TOKEN', msg: '缺少 token；请先执行 opencli xbb set-token --corpid <CORPID> --token <TOKEN> --userId <USERID>' };
@@ -107,7 +107,6 @@ cli({
   domain: 'proapi.xbongbong.com',
   args: [
     { name: 'formId', type: 'int', help: '模板id（必填）' },
-    { name: 'corpid', type: 'str', help: '公司id（必填）' },
     { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
     { name: 'queryFlag', type: 'str', default: '', help: '是否查询审批数据：0非审批数据，1审批数据，2全部' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
@@ -115,17 +114,13 @@ cli({
   columns: ['rank', 'attr', 'attrName', 'fieldType', 'required', 'noRepeat', 'multiple', 'dateType', 'items', 'code', 'msg', 'requestBody', 'responseBody'],
   func: async function (kwargs) {
     const debug = Boolean(kwargs.debug);
-    const { configCorpid, token, baseUrl, userId } = getRuntimeConfig(kwargs);
-    const payload = buildPayload(kwargs);
+    const { corpid, token, baseUrl, userId } = getRuntimeConfig();
+    const payload = buildPayload(kwargs, corpid);
     const body = JSON.stringify(payload);
 
     const validationError = getValidationError(payload, token);
     if (validationError) {
       return makeErrorRow(validationError.code, validationError.msg, debug, body, '');
-    }
-
-    if (configCorpid && payload.corpid !== configCorpid) {
-      return makeErrorRow('CORPID_MISMATCH', 'corpid与配置中不一致', debug, body, '');
     }
 
     const sign = crypto.createHash('sha256').update(body + token).digest('hex');

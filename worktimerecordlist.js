@@ -17,10 +17,10 @@ function readConfig() {
   }
 }
 
-function getRuntimeConfig(kwargs) {
+function getRuntimeConfig() {
   const config = readConfig();
   return {
-    configCorpid: String(config.corpid || '').trim(),
+    corpid: String(config.corpid || '').trim(),
     token: String(config.token || '').trim(),
     baseUrl: String(config.baseurl || DEFAULT_BASE_URL).trim(),
     userId: String(config.userId || '').trim(),
@@ -49,9 +49,9 @@ function buildConditions(kwargs) {
   }];
 }
 
-function buildPayload(kwargs) {
+function buildPayload(kwargs, corpid) {
   const payload = {
-    corpid: String(kwargs.corpid || ''),
+    corpid,
     page: Number(kwargs.page || 1),
     pageSize: Number(kwargs.pageSize || 20),
   };
@@ -76,7 +76,7 @@ function buildPayload(kwargs) {
 
 function getValidationError(payload, token) {
   if (!payload.corpid) {
-    return { code: 'NO_CORPID', msg: '缺少 --corpid' };
+    return { code: 'NO_CORPID', msg: '缺少本地 corpid；请先执行 opencli xbb set-token --corpid <CORPID> --token <TOKEN> --userId <USERID>' };
   }
   if (!token) {
     return { code: 'NO_TOKEN', msg: MISSING_TOKEN_MESSAGE };
@@ -132,7 +132,6 @@ cli({
   browser: false,
   domain: 'proapi.xbongbong.com',
   args: [
-    { name: 'corpid', type: 'str', help: '公司id（必填）' },
     { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
     { name: 'viewApproval', type: 'str', default: '', help: '是否查询审批中数据，1是，0否' },
     { name: 'conditions', type: 'str', default: '', help: '条件集合 JSON 字符串' },
@@ -146,23 +145,19 @@ cli({
   columns: ['rank', 'dataId', 'formId', 'serialNo', 'creatorId', 'ownerId', 'coUserId', 'addTime', 'updateTime', 'data', 'code', 'msg', 'requestBody', 'responseBody'],
   func: async function (kwargs) {
     const debug = Boolean(kwargs.debug);
+    const { corpid, token, baseUrl, userId } = getRuntimeConfig();
     let payload;
     try {
-      payload = buildPayload(kwargs);
+      payload = buildPayload(kwargs, corpid);
     } catch (error) {
       return makeErrorRow('INVALID_CONDITIONS', 'conditions 不是合法 JSON', debug, '', String(error?.message || error));
     }
 
-    const { configCorpid, token, baseUrl, userId } = getRuntimeConfig(kwargs);
     const requestBody = JSON.stringify(payload);
 
     const validationError = getValidationError(payload, token);
     if (validationError) {
       return makeErrorRow(validationError.code, validationError.msg, debug, requestBody, '');
-    }
-
-    if (configCorpid && payload.corpid !== configCorpid) {
-      return makeErrorRow('CORPID_MISMATCH', 'corpid与配置中不一致', debug, requestBody, '');
     }
 
     const sign = crypto.createHash('sha256').update(requestBody + token).digest('hex');

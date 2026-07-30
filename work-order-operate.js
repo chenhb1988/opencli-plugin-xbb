@@ -17,10 +17,10 @@ function readConfig() {
   }
 }
 
-function getRuntimeConfig(kwargs) {
+function getRuntimeConfig() {
   const config = readConfig();
   return {
-    configCorpid: String(config.corpid || '').trim(),
+    corpid: String(config.corpid || '').trim(),
     token: String(config.token || '').trim(),
     baseUrl: String(config.baseurl || DEFAULT_BASE_URL).trim(),
     userId: String(config.userId || '').trim(),
@@ -55,7 +55,7 @@ function parseData(raw) {
 
 function buildPayload(kwargs, parsedData) {
   const payload = {
-    corpid: String(kwargs.corpid || ''),
+    corpid,
     dataId: Number(kwargs.dataId || 0),
     operateType: Number(kwargs.operateType || 0),
   };
@@ -72,7 +72,7 @@ function buildPayload(kwargs, parsedData) {
 
 function getValidationError(payload, token, parsedData) {
   if (!payload.corpid) {
-    return { code: 'NO_CORPID', msg: '缺少 --corpid' };
+    return { code: 'NO_CORPID', msg: '缺少本地 corpid；请先执行 opencli xbb set-token --corpid <CORPID> --token <TOKEN> --userId <USERID>' };
   }
   if (!payload.dataId) {
     return { code: 'NO_DATAID', msg: '缺少 --dataId' };
@@ -119,7 +119,6 @@ cli({
   browser: false,
   domain: 'proapi.xbongbong.com',
   args: [
-    { name: 'corpid', type: 'str', help: '公司id（必填）' },
     { name: 'dataId', type: 'int', help: '工单数据id（必填）' },
     { name: 'operateType', type: 'int', help: '操作类型（必填）：1取消 2重启 3移交 4分配 5变更工单池 6抢单 7回退至工单池 8接受 9拒绝 10开始 11签到 12完成 13签退 15回退 16结算 17回访 18指派 19自由节点完成 20编辑回执单' },
     { name: 'data', type: 'str', default: '', help: '操作参数JSON字符串（可选；按operateType提供，如{"cancelReason":"xxx"}）' },
@@ -129,7 +128,7 @@ cli({
   columns: ['dataId', 'code', 'msg', 'requestBody', 'responseBody'],
   func: async function (kwargs) {
     const debug = Boolean(kwargs.debug);
-    const { configCorpid, token, baseUrl, userId } = getRuntimeConfig(kwargs);
+    const { corpid, token, baseUrl, userId } = getRuntimeConfig();
     const parsedData = parseData(kwargs.data);
     const payload = buildPayload(kwargs, parsedData);
     const requestBody = JSON.stringify(payload);
@@ -137,10 +136,6 @@ cli({
     const validationError = getValidationError(payload, token, parsedData);
     if (validationError) {
       return makeErrorRow(validationError.code, validationError.msg, debug, requestBody, '');
-    }
-
-    if (configCorpid && payload.corpid !== configCorpid) {
-      return makeErrorRow('CORPID_MISMATCH', 'corpid与配置中不一致', debug, requestBody, '');
     }
 
     const sign = crypto.createHash('sha256').update(requestBody + token).digest('hex');

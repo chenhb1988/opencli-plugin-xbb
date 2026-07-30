@@ -20,7 +20,7 @@ function readConfig() {
 function getRuntimeConfig() {
   const config = readConfig();
   return {
-    configCorpid: String(config.corpid || '').trim(),
+    corpid: String(config.corpid || '').trim(),
     token: String(config.token || '').trim(),
     baseUrl: String(config.baseurl || DEFAULT_BASE_URL).trim(),
     userId: String(config.userId || '').trim(),
@@ -45,7 +45,6 @@ cli({
   browser: false,
   domain: 'proapi.xbongbong.com',
   args: [
-    { name: 'corpid', type: 'str', help: '公司id（必填）' },
     { name: 'reportUserId', type: 'str', help: '提交报告员工userId（必填）' },
     { name: 'type', type: 'int', help: '工作报告类型，1日报，2周报，3月报（必填）' },
     { name: 'reportDate', type: 'int', help: '提交报告的日期时间戳（必填）' },
@@ -54,15 +53,14 @@ cli({
   columns: ['rank', 'num_1', 'text_1', 'text_2', 'code', 'msg', 'requestBody', 'responseBody'],
   func: async function (kwargs) {
     const debug = Boolean(kwargs.debug);
-    const { configCorpid, token, baseUrl, userId } = getRuntimeConfig();
-    const payload = { corpid: String(kwargs.corpid || ''), reportUserId: String(kwargs.reportUserId || ''), type: Number(kwargs.type || 0), reportDate: Number(kwargs.reportDate || 0) };
+    const { corpid, token, baseUrl, userId } = getRuntimeConfig();
+    const payload = { corpid, reportUserId: String(kwargs.reportUserId || ''), type: Number(kwargs.type || 0), reportDate: Number(kwargs.reportDate || 0) };
     const requestBody = JSON.stringify(payload);
-    if (!payload.corpid) return makeErrorRow('NO_CORPID', '缺少 --corpid', debug, requestBody, '');
+    if (!payload.corpid) return makeErrorRow('NO_CORPID', '缺少本地 corpid；请先执行 opencli xbb set-token --corpid <CORPID> --token <TOKEN> --userId <USERID>', debug, requestBody, '');
     if (!payload.reportUserId) return makeErrorRow('NO_REPORTUSERID', '缺少 --reportUserId', debug, requestBody, '');
     if (!payload.type) return makeErrorRow('NO_TYPE', '缺少 --type', debug, requestBody, '');
     if (!payload.reportDate) return makeErrorRow('NO_REPORTDATE', '缺少 --reportDate', debug, requestBody, '');
     if (!token) return makeErrorRow('NO_TOKEN', MISSING_TOKEN_MESSAGE, debug, requestBody, '');
-    if (configCorpid && payload.corpid !== configCorpid) return makeErrorRow('CORPID_MISMATCH', 'corpid与配置中不一致', debug, requestBody, '');
     const sign = crypto.createHash('sha256').update(requestBody + token).digest('hex');
     const resp = await fetch(buildApiUrl(baseUrl, API_URL), { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json;charset=UTF-8', sign }, userId ? { userId } : {}), body: requestBody });
     if (!resp.ok) return makeErrorRow(resp.status, `HTTP ${resp.status} ${resp.statusText}`, debug, requestBody, await resp.text());

@@ -20,7 +20,7 @@ function readConfig() {
 function getRuntimeConfig() {
   const config = readConfig();
   return {
-    configCorpid: String(config.corpid || '').trim(),
+    corpid: String(config.corpid || '').trim(),
     token: String(config.token || '').trim(),
     baseUrl: String(config.baseurl || DEFAULT_BASE_URL).trim(),
     userId: String(config.userId || '').trim(),
@@ -64,17 +64,16 @@ cli({
     { name: 'avatar', type: 'str', default: '', help: '头像（可选）' },
     { name: 'position', type: 'str', default: '', help: '职位（可选）' },
     { name: 'email', type: 'str', default: '', help: '邮箱（可选）' },
-    { name: 'corpid', type: 'str', help: '公司id（必填）' },
     { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
   ],
   columns: ['code', 'msg', 'requestBody', 'responseBody'],
   func: async function (kwargs) {
     const debug = Boolean(kwargs.debug);
-    const { configCorpid, token, baseUrl, userId } = getRuntimeConfig();
+    const { corpid, token, baseUrl, userId } = getRuntimeConfig();
     const roleIds = parseJsonArray(kwargs.roleIds);
     const userDepInfoList = parseJsonArray(kwargs.userDepInfoList);
-    const payload = { name: String(kwargs.name || ''), mobile: String(kwargs.mobile || ''), corpid: String(kwargs.corpid || '') };
+    const payload = { name: String(kwargs.name || ''), mobile: String(kwargs.mobile || ''), corpid };
     if (Array.isArray(roleIds)) payload.roleIds = roleIds;
     if (Array.isArray(userDepInfoList)) payload.userDepInfoList = userDepInfoList;
     if (String(kwargs.avatar || '').trim()) payload.avatar = String(kwargs.avatar);
@@ -84,11 +83,10 @@ cli({
     const requestBody = JSON.stringify(payload);
     if (!payload.name) return makeErrorRow('NO_NAME', '缺少 --name', debug, requestBody, '');
     if (!payload.mobile) return makeErrorRow('NO_MOBILE', '缺少 --mobile', debug, requestBody, '');
-    if (!payload.corpid) return makeErrorRow('NO_CORPID', '缺少 --corpid', debug, requestBody, '');
+    if (!payload.corpid) return makeErrorRow('NO_CORPID', '缺少本地 corpid；请先执行 opencli xbb set-token --corpid <CORPID> --token <TOKEN> --userId <USERID>', debug, requestBody, '');
     if (!Array.isArray(roleIds) || !roleIds.length) return makeErrorRow(roleIds === undefined ? 'INVALID_ROLEIDS' : 'NO_ROLEIDS', roleIds === undefined ? '--roleIds 必须是 JSON 数组字符串' : '缺少 --roleIds', debug, requestBody, '');
     if (!Array.isArray(userDepInfoList) || !userDepInfoList.length) return makeErrorRow(userDepInfoList === undefined ? 'INVALID_USERDEPINFOLIST' : 'NO_USERDEPINFOLIST', userDepInfoList === undefined ? '--userDepInfoList 必须是 JSON 数组字符串' : '缺少 --userDepInfoList', debug, requestBody, '');
     if (!token) return makeErrorRow('NO_TOKEN', MISSING_TOKEN_MESSAGE, debug, requestBody, '');
-    if (configCorpid && payload.corpid !== configCorpid) return makeErrorRow('CORPID_MISMATCH', 'corpid与配置中不一致', debug, requestBody, '');
     const sign = crypto.createHash('sha256').update(requestBody + token).digest('hex');
     const resp = await fetch(buildApiUrl(baseUrl, API_URL), { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json;charset=UTF-8', sign }, userId ? { userId } : {}), body: requestBody });
     if (!resp.ok) return makeErrorRow(resp.status, `HTTP ${resp.status} ${resp.statusText}`, debug, requestBody, await resp.text());

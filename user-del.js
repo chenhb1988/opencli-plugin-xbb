@@ -20,7 +20,7 @@ function readConfig() {
 function getRuntimeConfig() {
   const config = readConfig();
   return {
-    configCorpid: String(config.corpid || '').trim(),
+    corpid: String(config.corpid || '').trim(),
     token: String(config.token || '').trim(),
     baseUrl: String(config.baseurl || DEFAULT_BASE_URL).trim(),
     userId: String(config.userId || '').trim(),
@@ -58,23 +58,21 @@ cli({
   domain: 'proapi.xbongbong.com',
   args: [
     { name: 'userIds', type: 'str', help: '用户id列表，JSON数组字符串（必填）' },
-    { name: 'corpid', type: 'str', help: '公司id（必填）' },
     { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
   ],
   columns: ['code', 'msg', 'requestBody', 'responseBody'],
   func: async function (kwargs) {
     const debug = Boolean(kwargs.debug);
-    const { configCorpid, token, baseUrl, userId } = getRuntimeConfig();
+    const { corpid, token, baseUrl, userId } = getRuntimeConfig();
     const userIds = parseJsonArray(kwargs.userIds);
-    const payload = { corpid: String(kwargs.corpid || '') };
+    const payload = { corpid };
     if (Array.isArray(userIds)) payload.userIds = userIds;
     if (kwargs.userId) payload.userId = String(kwargs.userId);
     const requestBody = JSON.stringify(payload);
-    if (!payload.corpid) return makeErrorRow('NO_CORPID', '缺少 --corpid', debug, requestBody, '');
+    if (!payload.corpid) return makeErrorRow('NO_CORPID', '缺少本地 corpid；请先执行 opencli xbb set-token --corpid <CORPID> --token <TOKEN> --userId <USERID>', debug, requestBody, '');
     if (!Array.isArray(userIds) || !userIds.length) return makeErrorRow(userIds === undefined ? 'INVALID_USERIDS' : 'NO_USERIDS', userIds === undefined ? '--userIds 必须是 JSON 数组字符串' : '缺少 --userIds', debug, requestBody, '');
     if (!token) return makeErrorRow('NO_TOKEN', MISSING_TOKEN_MESSAGE, debug, requestBody, '');
-    if (configCorpid && payload.corpid !== configCorpid) return makeErrorRow('CORPID_MISMATCH', 'corpid与配置中不一致', debug, requestBody, '');
     const sign = crypto.createHash('sha256').update(requestBody + token).digest('hex');
     const resp = await fetch(buildApiUrl(baseUrl, API_URL), { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json;charset=UTF-8', sign }, userId ? { userId } : {}), body: requestBody });
     if (!resp.ok) return makeErrorRow(resp.status, `HTTP ${resp.status} ${resp.statusText}`, debug, requestBody, await resp.text());
