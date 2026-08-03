@@ -51,8 +51,6 @@ function getFormlistRows(corpid, saasMark) {
   const rows = runOpenCliJson([
     'xbb',
     'form-list',
-    '--corpid',
-    corpid,
     '--saasMark',
     String(saasMark),
     '-f',
