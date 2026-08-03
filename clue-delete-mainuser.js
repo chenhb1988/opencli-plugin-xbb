@@ -4,10 +4,10 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { cli, Strategy } from './opencli-registry.js';
 
-const CONFIG_FILE = path.join(os.homedir(), '.opencli', 'xbb', 'config.json');
+const CONFIG_FILE = path.join(os.homedir(), '.opencli', 'xbb', 'config.env');
 const API_URL = 'https://proapi.xbongbong.com/pro/v2/api/clue/deleteMainUser';
 const DEFAULT_BASE_URL = 'https://proapi.xbongbong.com';
-const MISSING_TOKEN_MESSAGE = '缺少 token；请先执行 opencli xbb set-token --corpid <CORPID> --token <TOKEN> --userId <USERID>';
+const MISSING_TOKEN_MESSAGE = '缺少 token；请先执行 opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>';
 
 function readConfig() {
   try {
@@ -65,7 +65,7 @@ cli({
     if (Array.isArray(businessUserIdList)) payload.businessUserIdList = businessUserIdList;
     const requestBody = JSON.stringify(payload);
     if (!payload.dataId) return makeErrorRow('NO_DATAID', '缺少 --dataId', debug, requestBody, '');
-    if (!payload.corpid) return makeErrorRow('NO_CORPID', '缺少本地 corpid；请先执行 opencli xbb set-token --corpid <CORPID> --token <TOKEN> --userId <USERID>', debug, requestBody, '');
+    if (!payload.corpid) return makeErrorRow('NO_CORPID', '缺少本地 corpid；请先执行 opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>', debug, requestBody, '');
     if (!Array.isArray(businessUserIdList) || !businessUserIdList.length) return makeErrorRow('NO_USERIDLIST', '缺少 --businessUserIdList 或格式不正确，需为JSON数组', debug, requestBody, '');
     if (!token) return makeErrorRow('NO_TOKEN', MISSING_TOKEN_MESSAGE, debug, requestBody, '');
     const sign = crypto.createHash('sha256').update(requestBody + token).digest('hex');

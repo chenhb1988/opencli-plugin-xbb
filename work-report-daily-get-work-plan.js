@@ -4,10 +4,10 @@ import os from 'node:os';
 import path from 'node:path';
 import { cli, Strategy } from './opencli-registry.js';
 
-const CONFIG_FILE = path.join(os.homedir(), '.opencli', 'xbb', 'config.json');
+const CONFIG_FILE = path.join(os.homedir(), '.opencli', 'xbb', 'config.env');
 const API_URL = 'https://proapi.xbongbong.com/pro/v2/api/workReportDaily/getWorkPlan';
 const DEFAULT_BASE_URL = 'https://proapi.xbongbong.com';
-const MISSING_TOKEN_MESSAGE = '缺少 token；请先执行 opencli xbb set-token --corpid <CORPID> --token <TOKEN> --userId <USERID>';
+const MISSING_TOKEN_MESSAGE = '缺少 token；请先执行 opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>';
 
 function readConfig() {
   try {
@@ -56,7 +56,7 @@ cli({
     const { corpid, token, baseUrl, userId } = getRuntimeConfig();
     const payload = { corpid, reportUserId: String(kwargs.reportUserId || ''), type: Number(kwargs.type || 0), reportDate: Number(kwargs.reportDate || 0) };
     const requestBody = JSON.stringify(payload);
-    if (!payload.corpid) return makeErrorRow('NO_CORPID', '缺少本地 corpid；请先执行 opencli xbb set-token --corpid <CORPID> --token <TOKEN> --userId <USERID>', debug, requestBody, '');
+    if (!payload.corpid) return makeErrorRow('NO_CORPID', '缺少本地 corpid；请先执行 opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>', debug, requestBody, '');
     if (!payload.reportUserId) return makeErrorRow('NO_REPORTUSERID', '缺少 --reportUserId', debug, requestBody, '');
     if (!payload.type) return makeErrorRow('NO_TYPE', '缺少 --type', debug, requestBody, '');
     if (!payload.reportDate) return makeErrorRow('NO_REPORTDATE', '缺少 --reportDate', debug, requestBody, '');

@@ -4,10 +4,10 @@ import os from 'node:os';
 import path from 'node:path';
 import { cli, Strategy } from './opencli-registry.js';
 
-const CONFIG_FILE = path.join(os.homedir(), '.opencli', 'xbb', 'config.json');
+const CONFIG_FILE = path.join(os.homedir(), '.opencli', 'xbb', 'config.env');
 const ADD_COUSER_API_URL = 'https://proapi.xbongbong.com/pro/v2/api/customer/addCoUser';
 const DEFAULT_BASE_URL = 'https://proapi.xbongbong.com';
-const MISSING_TOKEN_MESSAGE = '缺少 token；请先执行 opencli xbb set-token --corpid <CORPID> --token <TOKEN> --userId <USERID>';
+const MISSING_TOKEN_MESSAGE = '缺少 token；请先执行 opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>';
 
 function readConfig() {
   try {
@@ -93,7 +93,7 @@ function getValidationError(payload, token, businessUserIdList) {
     return { code: 'NO_DATAID', msg: '缺少 --dataId' };
   }
   if (!payload.corpid) {
-    return { code: 'NO_CORPID', msg: '缺少本地 corpid；请先执行 opencli xbb set-token --corpid <CORPID> --token <TOKEN> --userId <USERID>' };
+    return { code: 'NO_CORPID', msg: '缺少本地 corpid；请先执行 opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>' };
   }
   if (!token) {
     return { code: 'NO_TOKEN', msg: MISSING_TOKEN_MESSAGE };

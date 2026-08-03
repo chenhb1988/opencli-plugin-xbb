@@ -4,10 +4,10 @@ import os from 'node:os';
 import path from 'node:path';
 import { cli, Strategy } from './opencli-registry.js';
 
-const CONFIG_FILE = path.join(os.homedir(), '.opencli', 'xbb', 'config.json');
+const CONFIG_FILE = path.join(os.homedir(), '.opencli', 'xbb', 'config.env');
 const API_URL = 'https://proapi.xbongbong.com/pro/v2/api/user/edit';
 const DEFAULT_BASE_URL = 'https://proapi.xbongbong.com';
-const MISSING_TOKEN_MESSAGE = '缺少 token；请先执行 opencli xbb set-token --corpid <CORPID> --token <TOKEN> --userId <USERID>';
+const MISSING_TOKEN_MESSAGE = '缺少 token；请先执行 opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>';
 
 function readConfig() {
   try {
@@ -81,7 +81,7 @@ cli({
     const requestBody = JSON.stringify(payload);
     if (!payload.id) return makeErrorRow('NO_ID', '缺少 --id', debug, requestBody, '');
     if (!payload.name) return makeErrorRow('NO_NAME', '缺少 --name', debug, requestBody, '');
-    if (!payload.corpid) return makeErrorRow('NO_CORPID', '缺少本地 corpid；请先执行 opencli xbb set-token --corpid <CORPID> --token <TOKEN> --userId <USERID>', debug, requestBody, '');
+    if (!payload.corpid) return makeErrorRow('NO_CORPID', '缺少本地 corpid；请先执行 opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>', debug, requestBody, '');
     if (!Array.isArray(roleIds) || !roleIds.length) return makeErrorRow(roleIds === undefined ? 'INVALID_ROLEIDS' : 'NO_ROLEIDS', roleIds === undefined ? '--roleIds 必须是 JSON 数组字符串' : '缺少 --roleIds', debug, requestBody, '');
     if (!Array.isArray(userDepInfoList) || !userDepInfoList.length) return makeErrorRow(userDepInfoList === undefined ? 'INVALID_USERDEPINFOLIST' : 'NO_USERDEPINFOLIST', userDepInfoList === undefined ? '--userDepInfoList 必须是 JSON 数组字符串' : '缺少 --userDepInfoList', debug, requestBody, '');
     if (!token) return makeErrorRow('NO_TOKEN', MISSING_TOKEN_MESSAGE, debug, requestBody, '');

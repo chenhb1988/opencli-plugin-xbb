@@ -5,7 +5,7 @@ import { spawnSync } from 'node:child_process';
 import { cli, Strategy } from './opencli-registry.js';
 
 const CONFIG_DIR = path.join(os.homedir(), '.opencli', 'xbb');
-const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json');
+const CONFIG_FILE = path.join(CONFIG_DIR, 'config.env');
 const FORMLIST_FILE_SUFFIX = '.formlist.json';
 
 function resolveBaseUrl(corpid) {
@@ -131,7 +131,7 @@ async function setToken(kwargs) {
 
 cli({
   site: 'xbb',
-  name: 'set-token',
+  name: 'token-set',
   description: '保存 xbb API token,corpid,formId清单 到本地配置文件，其他命令需要formId时，可以先查询表单模板缓存文件',
   strategy: Strategy.PUBLIC,
   access: 'write',

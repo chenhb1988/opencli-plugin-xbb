@@ -5,7 +5,7 @@ import crypto from 'node:crypto';
 import { cli, Strategy } from './opencli-registry.js';
 
 const CONFIG_DIR = path.join(os.homedir(), '.opencli', 'xbb');
-const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json');
+const CONFIG_FILE = path.join(CONFIG_DIR, 'config.env');
 const API_URL = 'https://proapi.xbongbong.com/pro/v2/api/workOrderV2/handover';
 const DEFAULT_BASE_URL = 'https://proapi.xbongbong.com';
 
@@ -87,7 +87,7 @@ cli({
     const body = JSON.stringify(payload);
 
     if (!payload.corpid) {
-      return makeErrorRow('NO_CORPID', '缺少本地 corpid；请先执行 opencli xbb set-token --corpid <CORPID> --token <TOKEN> --userId <USERID>', debug, body, '');
+      return makeErrorRow('NO_CORPID', '缺少本地 corpid；请先执行 opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>', debug, body, '');
     }
     if (!payload.formId) {
       return makeErrorRow('NO_FORMID', '缺少 --formId', debug, body, '');
@@ -99,7 +99,7 @@ cli({
       return makeErrorRow('NO_BUSINESSUSERID', '缺少 --businessUserId', debug, body, '');
     }
     if (!token) {
-      return makeErrorRow('NO_TOKEN', '缺少 token；请先执行 opencli xbb set-token --corpid <CORPID> --token <TOKEN> --userId <USERID>', debug, body, '');
+      return makeErrorRow('NO_TOKEN', '缺少 token；请先执行 opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>', debug, body, '');
     }
 
     const sign = crypto.createHash('sha256').update(body + token).digest('hex');

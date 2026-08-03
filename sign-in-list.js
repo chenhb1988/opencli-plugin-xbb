@@ -4,10 +4,10 @@ import os from 'node:os';
 import path from 'node:path';
 import { cli, Strategy } from './opencli-registry.js';
 
-const CONFIG_FILE = path.join(os.homedir(), '.opencli', 'xbb', 'config.json');
+const CONFIG_FILE = path.join(os.homedir(), '.opencli', 'xbb', 'config.env');
 const API_URL = 'https://proapi.xbongbong.com/pro/v2/api/signIn/list';
 const DEFAULT_BASE_URL = 'https://proapi.xbongbong.com';
-const MISSING_TOKEN_MESSAGE = '缺少 token；请先执行 opencli xbb set-token --corpid <CORPID> --token <TOKEN> --userId <USERID>';
+const MISSING_TOKEN_MESSAGE = '缺少 token；请先执行 opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>';
 
 function readConfig() {
   try {
@@ -107,7 +107,7 @@ cli({
     const { corpid, token, baseUrl, userId } = getRuntimeConfig();
     const payload = buildPayload(kwargs, corpid);
     const body = JSON.stringify(payload);
-    if (!payload.corpid) return makeErrorRow('NO_CORPID', '缺少本地 corpid；请先执行 opencli xbb set-token --corpid <CORPID> --token <TOKEN> --userId <USERID>', debug, body, '');
+    if (!payload.corpid) return makeErrorRow('NO_CORPID', '缺少本地 corpid；请先执行 opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>', debug, body, '');
     if (!token) return makeErrorRow('NO_TOKEN', MISSING_TOKEN_MESSAGE, debug, body, '');
     if (String(kwargs.signInUserIdIn ?? '').trim() && !Array.isArray(parseArray(kwargs.signInUserIdIn))) return makeErrorRow('INVALID_SIGNINUSERIDIN', '--signInUserIdIn 必须是 JSON 数组字符串', debug, body, '');
     if (String(kwargs.signInCustomerIdIn ?? '').trim() && !Array.isArray(parseArray(kwargs.signInCustomerIdIn))) return makeErrorRow('INVALID_SIGNINCUSTOMERIDIN', '--signInCustomerIdIn 必须是 JSON 数组字符串', debug, body, '');
