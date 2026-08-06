@@ -46,8 +46,8 @@ function buildConditions(kwargs) {
   return [{ attr: String(kwargs.attr), value: [String(kwargs.value)], symbol: String(kwargs.symbol || 'equal') }];
 }
 
-function makeErrorRow(code, msg, debug, body = '', responseBody = '') {
-  return [{ rank: '', dataId: '', formId: '', name: '', customer: '', remindType: '', visitType: '', visitTime: '', addTime: '', updateTime: '', data: '', code, msg, requestBody: debug ? body : '', responseBody: debug ? responseBody : '' }];
+function makeErrorRow(code, msg) {
+  return [{ rank: '', dataId: '', formId: '', name: '', customer: '', remindType: '', visitType: '', visitTime: '', addTime: '', updateTime: '', data: '', code, msg }];
 }
 
 cli({
@@ -70,7 +70,7 @@ cli({
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
     { name: 'raw', type: 'bool', default: false, help: '输出接口返回的原文' },
   ],
-  columns: ['rank', 'dataId', 'formId', 'name', 'customer', 'remindType', 'visitType', 'visitTime', 'addTime', 'updateTime', 'data', 'code', 'msg', 'requestBody', 'responseBody'],
+  columns: ['rank', 'dataId', 'formId', 'name', 'customer', 'remindType', 'visitType', 'visitTime', 'addTime', 'updateTime', 'data', 'code', 'msg'],
   func: async (kwargs) => {
     const debug = Boolean(kwargs.debug);
     let conditions;
@@ -81,7 +81,7 @@ cli({
       const separatorIndex = message.indexOf(':');
       const code = separatorIndex > 0 ? message.slice(0, separatorIndex) : 'INVALID_CONDITIONS';
       const detail = separatorIndex > 0 ? message.slice(separatorIndex + 1) : message;
-      return makeErrorRow(code, detail, debug, '', detail);
+      return makeErrorRow(code, detail);
     }
     const { corpid, token, baseUrl, userId } = getRuntimeConfig();
     const payload = { formId: Number(kwargs.formId || 0), corpid };
@@ -90,19 +90,25 @@ cli({
     if (kwargs.userId) payload.userId = String(kwargs.userId);
     if (conditions.length) payload.conditions = conditions;
     const body = JSON.stringify(payload);
-    if (!payload.formId) return makeErrorRow('NO_FORMID', '缺少 --formId', debug, body, '');
-    if (!payload.corpid) return makeErrorRow('NO_CORPID', '缺少本地 corpid；请先执行 opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>', debug, body, '');
-    if (!token) return makeErrorRow('NO_TOKEN', MISSING_TOKEN_MESSAGE, debug, body, '');
-    if (!conditions.length) return makeErrorRow('NO_CONDITIONS', '缺少筛选条件，请传 --conditions 或 --attr/--value', debug, body, '');
+    if (!payload.formId) return makeErrorRow('NO_FORMID', '缺少 --formId');
+    if (!payload.corpid) return makeErrorRow('NO_CORPID', '缺少本地 corpid；请先执行 opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>');
+    if (!token) return makeErrorRow('NO_TOKEN', MISSING_TOKEN_MESSAGE);
+    if (!conditions.length) return makeErrorRow('NO_CONDITIONS', '缺少筛选条件，请传 --conditions 或 --attr/--value');
     const sign = crypto.createHash('sha256').update(body + token).digest('hex');
-    const resp = await fetch(buildApiUrl(baseUrl, API_URL), { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json;charset=UTF-8', sign }, userId ? { userId } : {}), body });
-    if (!resp.ok) return makeErrorRow(resp.status, `HTTP ${resp.status} ${resp.statusText}`, debug, body, await resp.text());
+    const apiUrl = buildApiUrl(baseUrl, API_URL);
+    const headers = Object.assign({ 'Content-Type': 'application/json;charset=UTF-8', sign }, userId ? { userId } : {});
+    if (debug) {
+      process.stderr.write(`[debug] URL: ${apiUrl}\n[debug] Headers: ${JSON.stringify(headers)}\n[debug] RequestBody: ${body}\n`);
+    }
+    const resp = await fetch(apiUrl, { method: 'POST', headers, body });
+    if (!resp.ok) return makeErrorRow(resp.status, `HTTP ${resp.status} ${resp.statusText}`);
     const data = await resp.json();
     const responseBody = JSON.stringify(data);
+    if (debug) process.stderr.write(`[debug] ResponseBody: ${responseBody}\n`);
     if (kwargs.raw) return [{ raw: responseBody }];
-    if (data.code !== 1) return makeErrorRow(data.code ?? '', data.msg ?? '未知错误', debug, body, responseBody);
+    if (data.code !== 1) return makeErrorRow(data.code ?? '', data.msg ?? '未知错误');
     const list = Array.isArray(data.result?.list) ? data.result.list : [];
-    if (!list.length) return makeErrorRow('NO_DATA', '接口成功，但 list 为空', debug, body, responseBody);
-    return list.map((item, index) => ({ rank: index + 1, dataId: item.dataId || '', formId: item.formId || '', name: item.data?.text_1 || '', customer: item.data?.text_2 || '', remindType: item.data?.text_5 || '', visitType: item.data?.text_4 || '', visitTime: item.data?.date_1 || '', addTime: item.addTime || '', updateTime: item.updateTime || '', data: JSON.stringify(item.data || {}), code: '', msg: '', requestBody: debug ? body : '', responseBody: '' }));
+    if (!list.length) return makeErrorRow('NO_DATA', '接口成功，但 list 为空');
+    return list.map((item, index) => ({ rank: index + 1, dataId: item.dataId || '', formId: item.formId || '', name: item.data?.text_1 || '', customer: item.data?.text_2 || '', remindType: item.data?.text_5 || '', visitType: item.data?.text_4 || '', visitTime: item.data?.date_1 || '', addTime: item.addTime || '', updateTime: item.updateTime || '', data: JSON.stringify(item.data || {}), code: '', msg: '' }));
   },
 });

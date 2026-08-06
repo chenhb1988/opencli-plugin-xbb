@@ -32,8 +32,8 @@ function buildApiUrl(baseUrl, defaultUrl) {
   return `${baseUrl.replace(/\/+$/, '')}${apiPath}`;
 }
 
-function makeErrorRow(code, msg, debug, body = '', responseBody = '') {
-  return [{ rank: '', amountDetail: '', code, msg, requestBody: debug ? body : '', responseBody: debug ? responseBody : '' }];
+function makeErrorRow(code, msg) {
+  return [{ rank: '', amountDetail: '', code, msg }];
 }
 
 cli({
@@ -49,7 +49,7 @@ cli({
     { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
   ],
-  columns: ['rank', 'amountDetail', 'code', 'msg', 'requestBody', 'responseBody'],
+  columns: ['rank', 'amountDetail', 'code', 'msg'],
   func: async (kwargs) => {
     const debug = Boolean(kwargs.debug);
     const { corpid, token, baseUrl, userId } = getRuntimeConfig();
@@ -57,22 +57,28 @@ cli({
     if (kwargs.userId) payload.userId = String(kwargs.userId);
 
     const body = JSON.stringify(payload);
-    if (!payload.corpid) return makeErrorRow('NO_CORPID', '缺少本地 corpid；请先执行 opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>', debug, body, '');
-    if (!payload.dataId) return makeErrorRow('NO_DATAID', '缺少 --dataId', debug, body, '');
-    if (!token) return makeErrorRow('NO_TOKEN', '缺少 token；请先执行 opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>', debug, body, '');
+    if (!payload.corpid) return makeErrorRow('NO_CORPID', '缺少本地 corpid；请先执行 opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>');
+    if (!payload.dataId) return makeErrorRow('NO_DATAID', '缺少 --dataId');
+    if (!token) return makeErrorRow('NO_TOKEN', '缺少 token；请先执行 opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>');
 
     const sign = crypto.createHash('sha256').update(body + token).digest('hex');
-    const resp = await fetch(buildApiUrl(baseUrl, API_URL), {
+    const headers = Object.assign({ 'Content-Type': 'application/json;charset=UTF-8', sign }, userId ? { userId } : {});
+    const apiUrl = buildApiUrl(baseUrl, API_URL);
+    if (debug) {
+      process.stderr.write(`[debug] URL: ${apiUrl}\n[debug] Headers: ${JSON.stringify(headers)}\n[debug] RequestBody: ${body}\n`);
+    }
+    const resp = await fetch(apiUrl, {
       method: 'POST',
-      headers: Object.assign({ 'Content-Type': 'application/json;charset=UTF-8', sign }, userId ? { userId } : {}),
+      headers,
       body,
     });
-    if (!resp.ok) return makeErrorRow(resp.status, `HTTP ${resp.status} ${resp.statusText}`, debug, body, await resp.text());
+    if (!resp.ok) return makeErrorRow(resp.status, `HTTP ${resp.status} ${resp.statusText}`);
     const data = await resp.json();
     const responseBody = JSON.stringify(data);
-    if (data.code !== 1) return makeErrorRow(data.code ?? '', data.msg ?? '未知错误', debug, body, responseBody);
+    if (debug) process.stderr.write(`[debug] ResponseBody: ${responseBody}\n`);
+    if (data.code !== 1) return makeErrorRow(data.code ?? '', data.msg ?? '未知错误');
     const amountDetail = Array.isArray(data.result?.amountDetail) ? data.result.amountDetail : [];
-    if (!amountDetail.length) return makeErrorRow('NO_DATA', '接口成功，但 amountDetail 为空', debug, body, responseBody);
-    return amountDetail.map((item, index) => ({ rank: index + 1, amountDetail: JSON.stringify(item || {}), code: '', msg: '', requestBody: debug && index === 0 ? body : '', responseBody: '' }));
+    if (!amountDetail.length) return makeErrorRow('NO_DATA', '接口成功，但 amountDetail 为空');
+    return amountDetail.map((item, index) => ({ rank: index + 1, amountDetail: JSON.stringify(item || {}), code: '', msg: '' }));
   },
 });

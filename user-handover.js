@@ -32,8 +32,8 @@ function buildApiUrl(baseUrl, apiUrl) {
   return `${baseUrl.replace(/\/+$/, '')}${apiPath}`;
 }
 
-function makeErrorRow(code, msg, debug, requestBody = '', responseBody = '') {
-  return [{ code, msg, requestBody: debug ? requestBody : '', responseBody: debug ? responseBody : '' }];
+function makeErrorRow(code, msg) {
+  return [{ code, msg }];
 }
 
 cli({
@@ -50,23 +50,29 @@ cli({
     { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
   ],
-  columns: ['code', 'msg', 'requestBody', 'responseBody'],
+  columns: ['code', 'msg'],
   func: async function (kwargs) {
     const debug = Boolean(kwargs.debug);
     const { corpid, token, baseUrl, userId } = getRuntimeConfig();
     const payload = { fromUserId: String(kwargs.fromUserId || ''), toUserId: String(kwargs.toUserId || ''), corpid };
     if (kwargs.userId) payload.userId = String(kwargs.userId);
     const requestBody = JSON.stringify(payload);
-    if (!payload.fromUserId) return makeErrorRow('NO_FROMUSERID', '缺少 --fromUserId', debug, requestBody, '');
-    if (!payload.toUserId) return makeErrorRow('NO_TOUSERID', '缺少 --toUserId', debug, requestBody, '');
-    if (!payload.corpid) return makeErrorRow('NO_CORPID', '缺少本地 corpid；请先执行 opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>', debug, requestBody, '');
-    if (!token) return makeErrorRow('NO_TOKEN', MISSING_TOKEN_MESSAGE, debug, requestBody, '');
+    if (!payload.fromUserId) return makeErrorRow('NO_FROMUSERID', '缺少 --fromUserId');
+    if (!payload.toUserId) return makeErrorRow('NO_TOUSERID', '缺少 --toUserId');
+    if (!payload.corpid) return makeErrorRow('NO_CORPID', '缺少本地 corpid；请先执行 opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>');
+    if (!token) return makeErrorRow('NO_TOKEN', MISSING_TOKEN_MESSAGE);
     const sign = crypto.createHash('sha256').update(requestBody + token).digest('hex');
-    const resp = await fetch(buildApiUrl(baseUrl, API_URL), { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json;charset=UTF-8', sign }, userId ? { userId } : {}), body: requestBody });
-    if (!resp.ok) return makeErrorRow(resp.status, `HTTP ${resp.status} ${resp.statusText}`, debug, requestBody, await resp.text());
+    const headers = Object.assign({ 'Content-Type': 'application/json;charset=UTF-8', sign }, userId ? { userId } : {});
+    const apiUrl = buildApiUrl(baseUrl, API_URL);
+    if (debug) {
+      process.stderr.write(`[debug] URL: ${apiUrl}\n[debug] Headers: ${JSON.stringify(headers)}\n[debug] RequestBody: ${requestBody}\n`);
+    }
+    const resp = await fetch(apiUrl, { method: 'POST', headers, body: requestBody });
+    if (!resp.ok) return makeErrorRow(resp.status, `HTTP ${resp.status} ${resp.statusText}`);
     const data = await resp.json();
     const responseBody = JSON.stringify(data);
-    if (data.code !== 1) return makeErrorRow(data.code ?? '', data.msg ?? '未知错误', debug, requestBody, responseBody);
-    return [{ code: data.code ?? '', msg: data.msg || '', requestBody: debug ? requestBody : '', responseBody: debug ? responseBody : '' }];
+    if (debug) process.stderr.write(`[debug] ResponseBody: ${responseBody}\n`);
+    if (data.code !== 1) return makeErrorRow(data.code ?? '', data.msg ?? '未知错误');
+    return [{ code: data.code ?? '', msg: data.msg || '' }];
   },
 });

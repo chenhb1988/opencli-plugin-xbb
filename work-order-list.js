@@ -114,7 +114,7 @@ function getValidationError(payload, token) {
   return null;
 }
 
-function makeErrorRow(code, msg, debug, body = '', responseBody = '') {
+function makeErrorRow(code, msg) {
   return [{
     rank: '',
     dataId: '',
@@ -129,8 +129,6 @@ function makeErrorRow(code, msg, debug, body = '', responseBody = '') {
     data: '',
     code,
     msg,
-    requestBody: debug ? body : '',
-    responseBody: debug ? responseBody : '',
   }];
 }
 
@@ -141,7 +139,7 @@ function stringifyValue(value) {
   return value ?? '';
 }
 
-function makeSuccessRows(list, debug, body, kwargs) {
+function makeSuccessRows(list) {
   return list.map((item, index) => ({
     rank: index + 1,
     dataId: item.dataId || '',
@@ -156,8 +154,6 @@ function makeSuccessRows(list, debug, body, kwargs) {
     data: JSON.stringify(item.data || {}),
     code: '',
     msg: '',
-    requestBody: debug ? body : '',
-    responseBody: '',
   }));
 }
 
@@ -182,7 +178,7 @@ cli({
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
     { name: 'raw', type: 'bool', default: false, help: '输出接口返回的原文' },
   ],
-  columns: ['rank', 'dataId', 'formId', 'serialNo', 'customerId', 'ownerId', 'status', 'creatorId', 'addTime', 'updateTime', 'data', 'code', 'msg', 'requestBody', 'responseBody'],
+  columns: ['rank', 'dataId', 'formId', 'serialNo', 'customerId', 'ownerId', 'status', 'creatorId', 'addTime', 'updateTime', 'data', 'code', 'msg'],
   func: async function (kwargs) {
     const debug = Boolean(kwargs.debug);
     const { corpid, token, baseUrl, userId } = getRuntimeConfig();
@@ -194,43 +190,49 @@ cli({
       const separatorIndex = message.indexOf(':');
       const code = separatorIndex > 0 ? message.slice(0, separatorIndex) : 'INVALID_PAYLOAD';
       const detail = separatorIndex > 0 ? message.slice(separatorIndex + 1) : message;
-      return makeErrorRow(code, detail, debug, '', detail);
+      return makeErrorRow(code, detail);
     }
 
     const body = JSON.stringify(payload);
 
     const validationError = getValidationError(payload, token);
     if (validationError) {
-      return makeErrorRow(validationError.code, validationError.msg, debug, body, '');
+      return makeErrorRow(validationError.code, validationError.msg);
     }
 
     const sign = crypto.createHash('sha256').update(body + token).digest('hex');
+    const headers = Object.assign({
+      'Content-Type': 'application/json;charset=UTF-8',
+      sign,
+    }, userId ? { userId } : {});
+    if (debug) {
+      process.stderr.write(`[debug] URL: ${buildApiUrl(baseUrl, WORK_ORDER_LIST_API_URL)}\n[debug] Headers: ${JSON.stringify(headers)}\n[debug] RequestBody: ${body}\n`);
+    }
     const resp = await fetch(buildApiUrl(baseUrl, WORK_ORDER_LIST_API_URL), {
       method: 'POST',
-      headers: Object.assign({
-        'Content-Type': 'application/json;charset=UTF-8',
-        sign,
-      }, userId ? { userId } : {}),
+      headers,
       body,
     });
 
     if (!resp.ok) {
       const responseText = await resp.text();
-      return makeErrorRow(resp.status, `HTTP ${resp.status} ${resp.statusText}`, debug, body, responseText);
+      if (debug) process.stderr.write(`[debug] ResponseBody: ${responseText}\n`);
+      return makeErrorRow(resp.status, `HTTP ${resp.status} ${resp.statusText}`);
     }
 
     const data = await resp.json();
     const responseBody = JSON.stringify(data);
+    if (debug) process.stderr.write(`[debug] ResponseBody: ${responseBody}\n`);
     if (kwargs.raw) return [{ raw: responseBody }];
     if (data.code !== 1) {
-      return makeErrorRow(data.code ?? '', data.msg ?? '未知错误', debug, body, responseBody);
+      return makeErrorRow(data.code ?? '', data.msg ?? '未知错误');
     }
 
     const list = Array.isArray(data.result?.list) ? data.result.list : [];
     if (!list.length) {
-      return makeErrorRow('NO_DATA', '接口成功，但 list 为空', debug, body, responseBody);
+      return makeErrorRow('NO_DATA', '接口成功，但 list 为空');
     }
 
-    return makeSuccessRows(list, debug, body, kwargs);
+    return makeSuccessRows(list);
   },
 });

@@ -32,8 +32,8 @@ function buildApiUrl(baseUrl, apiUrl) {
   return `${baseUrl.replace(/\/+$/, '')}${apiPath}`;
 }
 
-function makeErrorRow(code, msg, debug, requestBody = '', responseBody = '') {
-  return [{ resultCode: '', resultMsg: '', messageList: '', code, msg, requestBody: debug ? requestBody : '', responseBody: debug ? responseBody : '' }];
+function makeErrorRow(code, msg) {
+  return [{ resultCode: '', resultMsg: '', messageList: '', code, msg }];
 }
 
 cli({
@@ -50,7 +50,7 @@ cli({
     { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
   ],
-  columns: ['resultCode', 'resultMsg', 'messageList', 'code', 'msg', 'requestBody', 'responseBody'],
+  columns: ['resultCode', 'resultMsg', 'messageList', 'code', 'msg'],
   func: async (kwargs) => {
     const debug = Boolean(kwargs.debug);
     const { corpid, token, baseUrl, userId } = getRuntimeConfig();
@@ -66,17 +66,22 @@ cli({
     if (Array.isArray(businessUserIdList)) payload.businessUserIdList = businessUserIdList;
 
     const requestBody = JSON.stringify(payload);
-    if (!payload.dataId) return makeErrorRow('NO_DATAID', '缺少 --dataId', debug, requestBody, '');
-    if (!payload.corpid) return makeErrorRow('NO_CORPID', '缺少本地 corpid；请先执行 opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>', debug, requestBody, '');
-    if (!Array.isArray(businessUserIdList) || !businessUserIdList.length) return makeErrorRow('NO_USERIDLIST', '缺少 --businessUserIdList 或格式不正确，需为JSON数组', debug, requestBody, '');
-    if (!token) return makeErrorRow('NO_TOKEN', MISSING_TOKEN_MESSAGE, debug, requestBody, '');
+    if (!payload.dataId) return makeErrorRow('NO_DATAID', '缺少 --dataId');
+    if (!payload.corpid) return makeErrorRow('NO_CORPID', '缺少本地 corpid；请先执行 opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>');
+    if (!Array.isArray(businessUserIdList) || !businessUserIdList.length) return makeErrorRow('NO_USERIDLIST', '缺少 --businessUserIdList 或格式不正确，需为JSON数组');
+    if (!token) return makeErrorRow('NO_TOKEN', MISSING_TOKEN_MESSAGE);
 
     const sign = crypto.createHash('sha256').update(requestBody + token).digest('hex');
-    const resp = await fetch(buildApiUrl(baseUrl, API_URL), { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json;charset=UTF-8', sign }, userId ? { userId } : {}), body: requestBody });
-    if (!resp.ok) return makeErrorRow(resp.status, `HTTP ${resp.status} ${resp.statusText}`, debug, requestBody, await resp.text());
+    const headers = Object.assign({ 'Content-Type': 'application/json;charset=UTF-8', sign }, userId ? { userId } : {});
+    if (debug) {
+      process.stderr.write(`[debug] URL: ${buildApiUrl(baseUrl, API_URL)}\n[debug] Headers: ${JSON.stringify(headers)}\n[debug] RequestBody: ${requestBody}\n`);
+    }
+    const resp = await fetch(buildApiUrl(baseUrl, API_URL), { method: 'POST', headers, body: requestBody });
+    if (!resp.ok) return makeErrorRow(resp.status, `HTTP ${resp.status} ${resp.statusText}`);
     const data = await resp.json();
     const responseBody = JSON.stringify(data);
-    if (data.code !== 1) return makeErrorRow(data.code ?? '', data.msg ?? '未知错误', debug, requestBody, responseBody);
-    return [{ resultCode: data.code ?? '', resultMsg: data.msg || '', messageList: JSON.stringify(data.result?.messageList || []), code: data.code ?? '', msg: data.msg || '', requestBody: debug ? requestBody : '', responseBody: debug ? responseBody : '' }];
+    if (debug) process.stderr.write(`[debug] ResponseBody: ${responseBody}\n`);
+    if (data.code !== 1) return makeErrorRow(data.code ?? '', data.msg ?? '未知错误');
+    return [{ resultCode: data.code ?? '', resultMsg: data.msg || '', messageList: JSON.stringify(data.result?.messageList || []), code: data.code ?? '', msg: data.msg || '' }];
   },
 });

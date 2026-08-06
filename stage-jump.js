@@ -32,8 +32,8 @@ function buildApiUrl(baseUrl, apiUrl) {
   return `${baseUrl.replace(/\/+$/, '')}${apiPath}`;
 }
 
-function makeErrorRow(code, msg, debug, requestBody = '', responseBody = '') {
-  return [{ dataId: '', resultCode: '', resultMsg: '', code, msg, requestBody: debug ? requestBody : '', responseBody: debug ? responseBody : '' }];
+function makeErrorRow(code, msg) {
+  return [{ dataId: '', resultCode: '', resultMsg: '', code, msg }];
 }
 
 cli({
@@ -56,7 +56,7 @@ cli({
     { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
   ],
-  columns: ['dataId', 'resultCode', 'resultMsg', 'code', 'msg', 'requestBody', 'responseBody'],
+  columns: ['dataId', 'resultCode', 'resultMsg', 'code', 'msg'],
   func: async (kwargs) => {
     const debug = Boolean(kwargs.debug);
     const { corpid, token, baseUrl, userId } = getRuntimeConfig();
@@ -74,27 +74,36 @@ cli({
     if (String(kwargs.memo ?? '') !== '') payload.memo = String(kwargs.memo);
     const requestBody = JSON.stringify(payload);
 
-    if (!payload.corpid) return makeErrorRow('NO_CORPID', '缺少本地 corpid；请先执行 opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>', debug, requestBody, '');
-    if (!payload.formId) return makeErrorRow('NO_FORMID', '缺少 --formId', debug, requestBody, '');
-    if (!payload.businessType) return makeErrorRow('NO_BUSINESSTYPE', '缺少 --businessType', debug, requestBody, '');
-    if (!payload.saasMark) return makeErrorRow('NO_SAASMARK', '缺少 --saasMark', debug, requestBody, '');
-    if (!payload.dataId) return makeErrorRow('NO_DATAID', '缺少 --dataId', debug, requestBody, '');
-    if (!payload.toStageId) return makeErrorRow('NO_TOSTAGEID', '缺少 --toStageId', debug, requestBody, '');
-    if (!payload.stageProcessId) return makeErrorRow('NO_STAGEPROCESSID', '缺少 --stageProcessId', debug, requestBody, '');
-    if (!token) return makeErrorRow('NO_TOKEN', MISSING_TOKEN_MESSAGE, debug, requestBody, '');
+    if (!payload.corpid) return makeErrorRow('NO_CORPID', '缺少本地 corpid；请先执行 opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>');
+    if (!payload.formId) return makeErrorRow('NO_FORMID', '缺少 --formId');
+    if (!payload.businessType) return makeErrorRow('NO_BUSINESSTYPE', '缺少 --businessType');
+    if (!payload.saasMark) return makeErrorRow('NO_SAASMARK', '缺少 --saasMark');
+    if (!payload.dataId) return makeErrorRow('NO_DATAID', '缺少 --dataId');
+    if (!payload.toStageId) return makeErrorRow('NO_TOSTAGEID', '缺少 --toStageId');
+    if (!payload.stageProcessId) return makeErrorRow('NO_STAGEPROCESSID', '缺少 --stageProcessId');
+    if (!token) return makeErrorRow('NO_TOKEN', MISSING_TOKEN_MESSAGE);
 
     const sign = crypto.createHash('sha256').update(requestBody + token).digest('hex');
+    const headers = Object.assign({ 'Content-Type': 'application/json;charset=UTF-8', sign }, userId ? { userId } : {});
+    if (debug) {
+      process.stderr.write(`[debug] URL: ${buildApiUrl(baseUrl, API_URL)}\n[debug] Headers: ${JSON.stringify(headers)}\n[debug] RequestBody: ${requestBody}\n`);
+    }
     const resp = await fetch(buildApiUrl(baseUrl, API_URL), {
       method: 'POST',
-      headers: Object.assign({ 'Content-Type': 'application/json;charset=UTF-8', sign }, userId ? { userId } : {}),
+      headers,
       body: requestBody,
     });
 
-    if (!resp.ok) return makeErrorRow(resp.status, `HTTP ${resp.status} ${resp.statusText}`, debug, requestBody, await resp.text());
+    if (!resp.ok) {
+      const errText = await resp.text();
+      if (debug) process.stderr.write(`[debug] ResponseBody: ${errText}\n`);
+      return makeErrorRow(resp.status, `HTTP ${resp.status} ${resp.statusText}`);
+    }
     const data = await resp.json();
     const responseBody = JSON.stringify(data);
-    if (data.code !== 1) return makeErrorRow(data.code ?? '', data.msg ?? '未知错误', debug, requestBody, responseBody);
+    if (debug) process.stderr.write(`[debug] ResponseBody: ${responseBody}\n`);
+    if (data.code !== 1) return makeErrorRow(data.code ?? '', data.msg ?? '未知错误');
     const result = data.result || {};
-    return [{ dataId: result.dataId || payload.dataId || '', resultCode: result.code ?? '', resultMsg: result.msg || '', code: data.code ?? '', msg: data.msg || '', requestBody: debug ? requestBody : '', responseBody: debug ? responseBody : '' }];
+    return [{ dataId: result.dataId || payload.dataId || '', resultCode: result.code ?? '', resultMsg: result.msg || '', code: data.code ?? '', msg: data.msg || '' }];
   },
 });

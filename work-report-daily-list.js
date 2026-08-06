@@ -46,8 +46,8 @@ function buildConditions(kwargs) {
   return [{ attr: String(kwargs.attr), value: [String(kwargs.value)], symbol: String(kwargs.symbol || 'equal') }];
 }
 
-function makeErrorRow(code, msg, debug, requestBody = '', responseBody = '') {
-  return [{ rank: '', dataId: '', formId: '', addTime: '', updateTime: '', data: '', code, msg, requestBody: debug ? requestBody : '', responseBody: debug ? responseBody : '' }];
+function makeErrorRow(code, msg) {
+  return [{ rank: '', dataId: '', formId: '', addTime: '', updateTime: '', data: '', code, msg }];
 }
 
 cli({
@@ -69,7 +69,7 @@ cli({
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
     { name: 'raw', type: 'bool', default: false, help: '输出接口返回的原文' },
   ],
-  columns: ['rank', 'dataId', 'formId', 'addTime', 'updateTime', 'data', 'code', 'msg', 'requestBody', 'responseBody'],
+  columns: ['rank', 'dataId', 'formId', 'addTime', 'updateTime', 'data', 'code', 'msg'],
   func: async function (kwargs) {
     const debug = Boolean(kwargs.debug);
     let conditions;
@@ -80,7 +80,7 @@ cli({
       const separatorIndex = message.indexOf(':');
       const code = separatorIndex > 0 ? message.slice(0, separatorIndex) : 'INVALID_CONDITIONS';
       const detail = separatorIndex > 0 ? message.slice(separatorIndex + 1) : message;
-      return makeErrorRow(code, detail, debug, '', detail);
+      return makeErrorRow(code, detail);
     }
     const { corpid, token, baseUrl, userId } = getRuntimeConfig();
     const payload = { corpid };
@@ -89,17 +89,22 @@ cli({
     if (kwargs.userId) payload.userId = String(kwargs.userId);
     if (conditions.length) payload.conditions = conditions;
     const requestBody = JSON.stringify(payload);
-    if (!payload.corpid) return makeErrorRow('NO_CORPID', '缺少本地 corpid；请先执行 opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>', debug, requestBody, '');
-    if (!token) return makeErrorRow('NO_TOKEN', MISSING_TOKEN_MESSAGE, debug, requestBody, '');
+    if (!payload.corpid) return makeErrorRow('NO_CORPID', '缺少本地 corpid；请先执行 opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>');
+    if (!token) return makeErrorRow('NO_TOKEN', MISSING_TOKEN_MESSAGE);
     const sign = crypto.createHash('sha256').update(requestBody + token).digest('hex');
-    const resp = await fetch(buildApiUrl(baseUrl, API_URL), { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json;charset=UTF-8', sign }, userId ? { userId } : {}), body: requestBody });
-    if (!resp.ok) return makeErrorRow(resp.status, `HTTP ${resp.status} ${resp.statusText}`, debug, requestBody, await resp.text());
+    const headers = Object.assign({ 'Content-Type': 'application/json;charset=UTF-8', sign }, userId ? { userId } : {});
+    if (debug) {
+      process.stderr.write(`[debug] URL: ${buildApiUrl(baseUrl, API_URL)}\n[debug] Headers: ${JSON.stringify(headers)}\n[debug] RequestBody: ${requestBody}\n`);
+    }
+    const resp = await fetch(buildApiUrl(baseUrl, API_URL), { method: 'POST', headers, body: requestBody });
+    if (!resp.ok) return makeErrorRow(resp.status, `HTTP ${resp.status} ${resp.statusText}`);
     const data = await resp.json();
     const responseBody = JSON.stringify(data);
+    if (debug) process.stderr.write(`[debug] ResponseBody: ${responseBody}\n`);
     if (kwargs.raw) return [{ raw: responseBody }];
-    if (data.code !== 1) return makeErrorRow(data.code ?? '', data.msg ?? '未知错误', debug, requestBody, responseBody);
+    if (data.code !== 1) return makeErrorRow(data.code ?? '', data.msg ?? '未知错误');
     const list = Array.isArray(data.result?.list) ? data.result.list : [];
-    if (!list.length) return makeErrorRow('NO_DATA', '接口成功，但 list 为空', debug, requestBody, responseBody);
-    return list.map((item, index) => ({ rank: index + 1, dataId: item.dataId || '', formId: item.formId || '', addTime: item.addTime || '', updateTime: item.updateTime || '', data: JSON.stringify(item.data || {}), code: '', msg: '', requestBody: debug ? requestBody : '', responseBody: '' }));
+    if (!list.length) return makeErrorRow('NO_DATA', '接口成功，但 list 为空');
+    return list.map((item, index) => ({ rank: index + 1, dataId: item.dataId || '', formId: item.formId || '', addTime: item.addTime || '', updateTime: item.updateTime || '', data: JSON.stringify(item.data || {}), code: '', msg: '' }));
   },
 });

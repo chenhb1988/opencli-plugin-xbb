@@ -78,7 +78,7 @@ function getValidationError(payload, token) {
   return null;
 }
 
-function makeErrorRow(code, msg, debug, requestBody = '', responseBody = '') {
+function makeErrorRow(code, msg) {
   return [{
     dataId: '',
     formId: '',
@@ -89,8 +89,6 @@ function makeErrorRow(code, msg, debug, requestBody = '', responseBody = '') {
     data: '',
     code,
     msg,
-    requestBody: debug ? requestBody : '',
-    responseBody: debug ? responseBody : '',
   }];
 }
 
@@ -101,7 +99,7 @@ function stringifyValue(value) {
   return value ?? '';
 }
 
-function makeSuccessRow(data, debug, requestBody, responseBody) {
+function makeSuccessRow(data) {
   const result = data.result || {};
   return [{
     dataId: result.dataId || '',
@@ -113,8 +111,6 @@ function makeSuccessRow(data, debug, requestBody, responseBody) {
     data: JSON.stringify(result.data || {}),
     code: data.code ?? '',
     msg: data.msg || '',
-    requestBody: debug ? requestBody : '',
-    responseBody: debug ? responseBody : '',
   }];
 }
 
@@ -132,7 +128,7 @@ cli({
     { name: 'queryFlag', type: 'str', default: '', help: '是否查询审批数据：0非审批，1审批中，2全部' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
   ],
-  columns: ['dataId', 'formId', 'serialNo', 'creatorId', 'addTime', 'updateTime', 'data', 'code', 'msg', 'requestBody', 'responseBody'],
+  columns: ['dataId', 'formId', 'serialNo', 'creatorId', 'addTime', 'updateTime', 'data', 'code', 'msg'],
   func: async function (kwargs) {
     const debug = Boolean(kwargs.debug);
     const { corpid, token, baseUrl, userId } = getRuntimeConfig();
@@ -144,37 +140,44 @@ cli({
       const separatorIndex = message.indexOf(':');
       const code = separatorIndex > 0 ? message.slice(0, separatorIndex) : 'INVALID_PAYLOAD';
       const detail = separatorIndex > 0 ? message.slice(separatorIndex + 1) : message;
-      return makeErrorRow(code, detail, debug, '', detail);
+      return makeErrorRow(code, detail);
     }
 
     const requestBody = JSON.stringify(payload);
 
     const validationError = getValidationError(payload, token);
     if (validationError) {
-      return makeErrorRow(validationError.code, validationError.msg, debug, requestBody, '');
+      return makeErrorRow(validationError.code, validationError.msg);
     }
 
     const sign = crypto.createHash('sha256').update(requestBody + token).digest('hex');
-    const resp = await fetch(buildApiUrl(baseUrl, PRODUCT_DETAIL_API_URL), {
+    const apiUrl = buildApiUrl(baseUrl, PRODUCT_DETAIL_API_URL);
+    const headers = Object.assign({
+      'Content-Type': 'application/json;charset=UTF-8',
+      sign,
+    }, userId ? { userId } : {});
+    if (debug) {
+      process.stderr.write(`[debug] URL: ${apiUrl}\n[debug] Headers: ${JSON.stringify(headers)}\n[debug] RequestBody: ${requestBody}\n`);
+    }
+    const resp = await fetch(apiUrl, {
       method: 'POST',
-      headers: Object.assign({
-        'Content-Type': 'application/json;charset=UTF-8',
-        sign,
-      }, userId ? { userId } : {}),
+      headers,
       body: requestBody,
     });
 
     if (!resp.ok) {
       const responseText = await resp.text();
-      return makeErrorRow(resp.status, `HTTP ${resp.status} ${resp.statusText}`, debug, requestBody, responseText);
+      if (debug) process.stderr.write(`[debug] ResponseBody: ${responseText}\n`);
+      return makeErrorRow(resp.status, `HTTP ${resp.status} ${resp.statusText}`);
     }
 
     const data = await resp.json();
     const responseBody = JSON.stringify(data);
+    if (debug) process.stderr.write(`[debug] ResponseBody: ${responseBody}\n`);
     if (data.code !== 1) {
-      return makeErrorRow(data.code ?? '', data.msg ?? '未知错误', debug, requestBody, responseBody);
+      return makeErrorRow(data.code ?? '', data.msg ?? '未知错误');
     }
 
-    return makeSuccessRow(data, debug, requestBody, responseBody);
+    return makeSuccessRow(data);
   },
 });

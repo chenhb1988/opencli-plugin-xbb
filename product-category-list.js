@@ -66,7 +66,7 @@ function flattenCategoryTree(list, rows = []) {
   return rows;
 }
 
-function makeErrorRow(code, msg, debug, body = '', responseBody = '') {
+function makeErrorRow(code, msg) {
   return [{
     rank: '',
     id: '',
@@ -77,12 +77,10 @@ function makeErrorRow(code, msg, debug, body = '', responseBody = '') {
     corpid: '',
     code,
     msg,
-    requestBody: debug ? body : '',
-    responseBody: debug ? responseBody : '',
   }];
 }
 
-function makeSuccessRows(list, debug, body, kwargs) {
+function makeSuccessRows(list) {
   const flat = flattenCategoryTree(list);
   return flat.map((item, index) => ({
     rank: index + 1,
@@ -94,8 +92,6 @@ function makeSuccessRows(list, debug, body, kwargs) {
     corpid: item.corpid || '',
     code: '',
     msg: '',
-    requestBody: debug ? body : '',
-    responseBody: '',
   }));
 }
 
@@ -112,7 +108,7 @@ cli({
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
     { name: 'raw', type: 'bool', default: false, help: '输出接口返回的原文' },
   ],
-  columns: ['rank', 'id', 'name', 'parentId', 'router', 'sort', 'corpid', 'code', 'msg', 'requestBody', 'responseBody'],
+  columns: ['rank', 'id', 'name', 'parentId', 'router', 'sort', 'corpid', 'code', 'msg'],
   func: async function (kwargs) {
     const debug = Boolean(kwargs.debug);
     const { corpid, token, baseUrl, userId } = getRuntimeConfig();
@@ -121,36 +117,43 @@ cli({
 
     const validationError = getValidationError(payload, token);
     if (validationError) {
-      return makeErrorRow(validationError.code, validationError.msg, debug, body, '');
+      return makeErrorRow(validationError.code, validationError.msg);
     }
 
     const sign = crypto.createHash('sha256').update(body + token).digest('hex');
-    const resp = await fetch(buildApiUrl(baseUrl, PRODUCT_CATEGORY_LIST_API_URL), {
+    const apiUrl = buildApiUrl(baseUrl, PRODUCT_CATEGORY_LIST_API_URL);
+    const headers = Object.assign({
+      'Content-Type': 'application/json;charset=UTF-8',
+      sign,
+    }, userId ? { userId } : {});
+    if (debug) {
+      process.stderr.write(`[debug] URL: ${apiUrl}\n[debug] Headers: ${JSON.stringify(headers)}\n[debug] RequestBody: ${body}\n`);
+    }
+    const resp = await fetch(apiUrl, {
       method: 'POST',
-      headers: Object.assign({
-        'Content-Type': 'application/json;charset=UTF-8',
-        sign,
-      }, userId ? { userId } : {}),
+      headers,
       body,
     });
 
     if (!resp.ok) {
       const responseText = await resp.text();
-      return makeErrorRow(resp.status, `HTTP ${resp.status} ${resp.statusText}`, debug, body, responseText);
+      if (debug) process.stderr.write(`[debug] ResponseBody: ${responseText}\n`);
+      return makeErrorRow(resp.status, `HTTP ${resp.status} ${resp.statusText}`);
     }
 
     const data = await resp.json();
     const responseBody = JSON.stringify(data);
+    if (debug) process.stderr.write(`[debug] ResponseBody: ${responseBody}\n`);
     if (kwargs.raw) return [{ raw: responseBody }];
     if (data.code !== 1) {
-      return makeErrorRow(data.code ?? '', data.msg ?? '未知错误', debug, body, responseBody);
+      return makeErrorRow(data.code ?? '', data.msg ?? '未知错误');
     }
 
     const list = Array.isArray(data.result?.list) ? data.result.list : [];
     if (!list.length) {
-      return makeErrorRow('NO_DATA', '接口成功，但 list 为空', debug, body, responseBody);
+      return makeErrorRow('NO_DATA', '接口成功，但 list 为空');
     }
 
-    return makeSuccessRows(list, debug, body, kwargs);
+    return makeSuccessRows(list);
   },
 });

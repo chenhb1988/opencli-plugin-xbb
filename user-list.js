@@ -45,7 +45,7 @@ function buildPayload(kwargs, corpid) {
   return payload;
 }
 
-function makeErrorRow(code, msg, debug, body = '', responseBody = '') {
+function makeErrorRow(code, msg) {
   return [{
     rank: '',
     userId: '',
@@ -55,8 +55,6 @@ function makeErrorRow(code, msg, debug, body = '', responseBody = '') {
     avatar: '',
     code,
     msg,
-    requestBody: debug ? body : '',
-    responseBody: debug ? responseBody : '',
   }];
 }
 
@@ -79,7 +77,7 @@ cli({
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
     { name: 'raw', type: 'bool', default: false, help: '输出接口返回的原文' },
   ],
-  columns: ['rank', 'userId', 'name', 'position', 'jobnumber', 'avatar', 'code', 'msg', 'requestBody', 'responseBody'],
+  columns: ['rank', 'userId', 'name', 'position', 'jobnumber', 'avatar', 'code', 'msg'],
   func: async (kwargs) => {
     const debug = Boolean(kwargs.debug);
     const { corpid, token, baseUrl, userId } = getRuntimeConfig();
@@ -87,10 +85,10 @@ cli({
     const body = JSON.stringify(payload);
 
     if (!payload.corpid) {
-      return makeErrorRow('NO_CORPID', '缺少本地 corpid；请先执行 opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>', debug, body, '');
+      return makeErrorRow('NO_CORPID', '缺少本地 corpid；请先执行 opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>');
     }
     if (!token) {
-      return makeErrorRow('NO_TOKEN', '缺少 token；请先执行 opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>', debug, body, '');
+      return makeErrorRow('NO_TOKEN', '缺少 token；请先执行 opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>');
     }
 
     const sign = crypto.createHash('sha256').update(body + token).digest('hex');
@@ -100,6 +98,11 @@ cli({
     };
     if (userId) headers.userId = userId;
     const apiUrl = buildApiUrl(baseUrl);
+
+    if (debug) {
+      process.stderr.write(`[debug] URL: ${apiUrl}\n[debug] Headers: ${JSON.stringify(headers)}\n[debug] RequestBody: ${body}\n`);
+    }
+
     const resp = await fetch(apiUrl, {
       method: 'POST',
       headers,
@@ -108,19 +111,21 @@ cli({
 
     if (!resp.ok) {
       const responseText = await resp.text();
-      return makeErrorRow(resp.status, `HTTP ${resp.status} ${resp.statusText}`, debug, body, responseText);
+      if (debug) process.stderr.write(`[debug] ResponseBody: ${responseText}\n`);
+      return makeErrorRow(resp.status, `HTTP ${resp.status} ${resp.statusText}`);
     }
 
     const data = await resp.json();
     const responseBody = JSON.stringify(data);
+    if (debug) process.stderr.write(`[debug] ResponseBody: ${responseBody}\n`);
     if (kwargs.raw) return [{ raw: responseBody }];
     if (data.code !== 1) {
-      return makeErrorRow(data.code ?? '', data.msg ?? '未知错误', debug, body, responseBody);
+      return makeErrorRow(data.code ?? '', data.msg ?? '未知错误');
     }
 
     const list = Array.isArray(data.result?.userList) ? data.result.userList : [];
     if (!list.length) {
-      return makeErrorRow('NO_DATA', '接口成功，但 userList 为空', debug, body, responseBody);
+      return makeErrorRow('NO_DATA', '接口成功，但 userList 为空');
     }
 
     return list.map((item, index) => ({
@@ -132,8 +137,6 @@ cli({
       avatar: item.avatar || '',
       code: '',
       msg: '',
-      requestBody: debug ? body : '',
-      responseBody: '',
     }));
   },
 });

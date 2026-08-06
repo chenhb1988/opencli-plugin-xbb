@@ -32,8 +32,8 @@ function buildApiUrl(baseUrl, apiUrl) {
   return `${baseUrl.replace(/\/+$/, '')}${apiPath}`;
 }
 
-function makeErrorRow(code, msg, debug, requestBody = '', responseBody = '', baseUrl = '', corpid = '') {
-  return [{ corpid, token: '', checkUserId: '', resetToken: '', baseUrl: debug ? baseUrl : '', code, msg, requestBody: debug ? requestBody : '', responseBody: debug ? responseBody : '' }];
+function makeErrorRow(code, msg, baseUrl = '', corpid = '') {
+  return [{ corpid, token: '', checkUserId: '', resetToken: '', baseUrl, code, msg }];
 }
 
 cli({
@@ -50,7 +50,7 @@ cli({
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
     { name: 'raw', type: 'bool', default: false, help: '输出接口返回的原文' },
   ],
-  columns: ['corpid', 'token', 'checkUserId', 'resetToken', 'baseUrl', 'code', 'msg', 'requestBody', 'responseBody'],
+  columns: ['corpid', 'token', 'checkUserId', 'resetToken', 'baseUrl', 'code', 'msg'],
   func: async function (kwargs) {
     const debug = Boolean(kwargs.debug);
     const { corpid, token, baseUrl, userId } = getRuntimeConfig();
@@ -58,18 +58,23 @@ cli({
     const resetToken = String(kwargs.resetToken ?? '') !== '' ? Number(kwargs.resetToken) : 0;
     const payload = { corpid, resetToken, checkUserId };
     const requestBody = JSON.stringify(payload);
-    if (!payload.corpid) return makeErrorRow('NO_CORPID', '缺少本地 corpid；请先执行 opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>', debug, requestBody, '', baseUrl, payload.corpid);
-    if (!payload.checkUserId) return makeErrorRow('NO_CHECKUSERID', '缺少 --checkUserId；未填则使用配置中的userId', debug, requestBody, '', baseUrl, payload.corpid);
-    if (!token) return makeErrorRow('NO_TOKEN', MISSING_TOKEN_MESSAGE, debug, requestBody, '', baseUrl, payload.corpid);
+    if (!payload.corpid) return makeErrorRow('NO_CORPID', '缺少本地 corpid；请先执行 opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>', baseUrl, payload.corpid);
+    if (!payload.checkUserId) return makeErrorRow('NO_CHECKUSERID', '缺少 --checkUserId；未填则使用配置中的userId', baseUrl, payload.corpid);
+    if (!token) return makeErrorRow('NO_TOKEN', MISSING_TOKEN_MESSAGE, baseUrl, payload.corpid);
     const sign = crypto.createHash('sha256').update(requestBody + token).digest('hex');
-    const resp = await fetch(buildApiUrl(baseUrl, API_URL), { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json;charset=UTF-8', sign }, userId ? { userId } : {}), body: requestBody });
-    if (!resp.ok) return makeErrorRow(resp.status, `HTTP ${resp.status} ${resp.statusText}`, debug, requestBody, await resp.text(), baseUrl, payload.corpid);
+    const headers = Object.assign({ 'Content-Type': 'application/json;charset=UTF-8', sign }, userId ? { userId } : {});
+    if (debug) {
+      process.stderr.write(`[debug] URL: ${buildApiUrl(baseUrl, API_URL)}\n[debug] Headers: ${JSON.stringify(headers)}\n[debug] RequestBody: ${requestBody}\n`);
+    }
+    const resp = await fetch(buildApiUrl(baseUrl, API_URL), { method: 'POST', headers, body: requestBody });
+    if (!resp.ok) return makeErrorRow(resp.status, `HTTP ${resp.status} ${resp.statusText}`, baseUrl, payload.corpid);
     const data = await resp.json();
     const responseBody = JSON.stringify(data);
+    if (debug) process.stderr.write(`[debug] ResponseBody: ${responseBody}\n`);
     if (kwargs.raw) return [{ raw: responseBody }];
-    if (data.code !== 1) return makeErrorRow(data.code ?? '', data.msg ?? '未知错误', debug, requestBody, responseBody, baseUrl, payload.corpid);
+    if (data.code !== 1) return makeErrorRow(data.code ?? '', data.msg ?? '未知错误', baseUrl, payload.corpid);
     const result = data.result;
     const tokenValue = typeof result === 'string' ? result : (result && typeof result === 'object' ? (result.personalToken ?? result.token ?? JSON.stringify(result)) : '');
-    return [{ corpid: payload.corpid, token: tokenValue || '', checkUserId: payload.checkUserId, resetToken: String(resetToken), baseUrl: debug ? baseUrl : '', code: data.code ?? '', msg: data.msg || '', requestBody: debug ? requestBody : '', responseBody: debug ? responseBody : '' }];
+    return [{ corpid: payload.corpid, token: tokenValue || '', checkUserId: payload.checkUserId, resetToken: String(resetToken), baseUrl: debug ? baseUrl : '', code: data.code ?? '', msg: data.msg || '' }];
   },
 });
