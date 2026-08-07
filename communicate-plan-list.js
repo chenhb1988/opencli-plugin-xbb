@@ -32,6 +32,17 @@ function buildApiUrl(baseUrl, defaultUrl) {
   return `${baseUrl.replace(/\/+$/, '')}${apiPath}`;
 }
 
+function normalizeConditionValue(value) {
+  const stringValue = String(value);
+  if (/^-?\d+$/.test(stringValue)) {
+    const numericValue = Number(stringValue);
+    if (Number.isSafeInteger(numericValue)) {
+      return numericValue;
+    }
+  }
+  return stringValue;
+}
+
 function buildConditions(kwargs) {
   if (String(kwargs.conditions ?? '').trim()) {
     const parsed = JSON.parse(String(kwargs.conditions));
@@ -43,7 +54,7 @@ function buildConditions(kwargs) {
   if (!(kwargs.attr && kwargs.value)) {
     return [];
   }
-  return [{ attr: String(kwargs.attr), value: [String(kwargs.value)], symbol: String(kwargs.symbol || 'equal') }];
+  return [{ attr: String(kwargs.attr), value: [normalizeConditionValue(kwargs.value)], symbol: String(kwargs.symbol || 'equal') }];
 }
 
 function makeErrorRow(code, msg) {
@@ -85,9 +96,10 @@ cli({
     }
     const { corpid, token, baseUrl, userId } = getRuntimeConfig();
     const payload = { formId: Number(kwargs.formId || 0), corpid };
+    const payloadUserId = String(kwargs.userId || userId || '');
     if (String(kwargs.page ?? '') !== '') payload.page = Number(kwargs.page);
     if (String(kwargs.pageSize ?? '') !== '') payload.pageSize = Number(kwargs.pageSize);
-    if (kwargs.userId) payload.userId = String(kwargs.userId);
+    if (payloadUserId) payload.userId = payloadUserId;
     if (conditions.length) payload.conditions = conditions;
     const body = JSON.stringify(payload);
     if (!payload.formId) return makeErrorRow('NO_FORMID', '缺少 --formId');
