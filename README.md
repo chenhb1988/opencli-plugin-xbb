@@ -14,13 +14,13 @@ opencli plugin install github:chenhb1988/opencli-plugin-xbb
 首次使用先保存 `corpid`、`token` 和 `userId`：
 
 ```bash
-opencli xbb set-token --corpid <CORPID> --token <TOKEN> --userId <USERID>
+opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>
 ```
 
 执行后会写入：
 
 ```text
-~/.opencli/xbb/config.json
+~/.opencli/xbb/config.env
 ```
 
 文件内容包含：
@@ -52,7 +52,8 @@ opencli xbb form-list --saasMark 1 -f json
 
 ### 配置
 
-- `set-token`：保存 `corpid`、`token`、`userId`、`baseurl`，并刷新本地表单缓存
+- `token-set`：保存 `corpid`、`token`、`userId`、`baseurl`，并刷新本地表单缓存
+- `token-generate`：生成/获取个人 token，`--resetToken 0` 获取（默认）、`1` 刷新；`--checkUserId` 未传则用配置中的 `userId`
 
 ### 组织与人员
 
@@ -294,9 +295,9 @@ opencli xbb form-list --saasMark 1 -f json
 
 ## 通用行为
 
-- 先执行一次 `set-token` 保存有效的 `corpid`、`token`、`userId`
-- 除 `set-token` 外，其余命令都会从 `~/.opencli/xbb/config.json` 读取 `corpid`
-- 大部分命令会从 `~/.opencli/xbb/config.json` 读取 `token`
+- 先执行一次 `token-set` 保存有效的 `corpid`、`token`、`userId`
+- 除 `token-set` 外，其余命令都会从 `~/.opencli/xbb/config.env` 读取 `corpid`
+- 大部分命令会从 `~/.opencli/xbb/config.env` 读取 `token`
 - 所有命令会从配置中读取 `userId` 并附加到请求 header 中
 - 大部分命令需要 formId 参数，可以根据业务名称或 businessType 从 `~/.opencli/xbb/<corpid>.formlist.json` 中获取 formId
 - 未传入的可选参数不会进入请求体
@@ -312,7 +313,7 @@ opencli xbb form-list --saasMark 1 -f json
 ### 基础配置/初始化
 
 ```bash
-opencli xbb set-token --corpid your_corpid --token your_token --userId your_userid
+opencli xbb token-set --corpid your_corpid --token your_token --userId your_userid
 ```
 
 ### 员工信息

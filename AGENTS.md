@@ -11,10 +11,10 @@
 ```bash
 npm install -g @jackwener/opencli
 opencli plugin install github:chenhb1988/opencli-plugin-xbb
-opencli xbb set-token --corpid <CORPID> --token <TOKEN> --userId <USERID>
+opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>
 ```
 
-凭证保存在 `~/.opencli/xbb/config.json`。`set-token` 同时会将表单列表缓存写入 `~/.opencli/xbb/<corpid>.formlist.json`。除 `set-token` 外，其余命令都会从该配置读取 `corpid`。
+凭证保存在 `~/.opencli/xbb/config.env`。`token-set` 同时会将表单列表缓存写入 `~/.opencli/xbb/<corpid>.formlist.json`。除 `token-set` 外，其余命令都会从该配置读取 `corpid`。
 
 ## 验证方式
 
@@ -31,7 +31,7 @@ opencli xbb set-token --corpid <CORPID> --token <TOKEN> --userId <USERID>
 
 每个命令文件遵循以下结构（参考 `user-list.js`、`customer-list.js` 作为标准示例）：
 
-1. 硬编码 API URL 常量 + 配置路径（`~/.opencli/xbb/config.json`）
+1. 硬编码 API URL 常量 + 配置路径（`~/.opencli/xbb/config.env`）
 2. `readConfig()` — 解析配置文件，失败返回 `{}`
 3. `getRuntimeConfig(kwargs)` — 合并 CLI 参数与配置文件
 4. `buildPayload(kwargs)` — 忽略 `undefined` 字段，不发送未提供的参数
