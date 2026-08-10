@@ -86,7 +86,8 @@ cli({
     const payload = { corpid };
     if (String(kwargs.page ?? '') !== '') payload.page = Number(kwargs.page);
     if (String(kwargs.pageSize ?? '') !== '') payload.pageSize = Number(kwargs.pageSize);
-    if (kwargs.userId) payload.userId = String(kwargs.userId);
+    const requestUserId = String(kwargs.userId || userId || '').trim();
+    if (requestUserId) payload.userId = requestUserId;
     if (conditions.length) payload.conditions = conditions;
     const requestBody = JSON.stringify(payload);
     if (!payload.corpid) return makeErrorRow('NO_CORPID', '缺少本地 corpid；请先执行 opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>');

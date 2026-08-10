@@ -52,15 +52,16 @@ function parseDataList(raw) {
   }
 }
 
-function buildPayload(kwargs, parsedDataList) {
+function buildPayload(kwargs, parsedDataList, corpid, defaultUserId) {
   const payload = {
     corpid,
     formId: Number(kwargs.formId || 0),
     dataId: Number(kwargs.dataId || 0),
   };
 
-  if (kwargs.userId) {
-    payload.userId = String(kwargs.userId);
+  const userId = String(kwargs.userId || defaultUserId || '').trim();
+  if (userId) {
+    payload.userId = userId;
   }
 
   if (parsedDataList) {
@@ -133,7 +134,7 @@ cli({
     const debug = Boolean(kwargs.debug);
     const { corpid, token, baseUrl, userId } = getRuntimeConfig();
     const parsedDataList = parseDataList(kwargs.dataList);
-    const payload = buildPayload(kwargs, parsedDataList);
+    const payload = buildPayload(kwargs, parsedDataList, corpid, userId);
     const body = JSON.stringify(payload);
 
     const validationError = getValidationError(payload, token, parsedDataList);
