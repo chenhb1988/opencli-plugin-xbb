@@ -1,5 +1,11 @@
 {
   "name": "opencli-plugin-xbb",
   "version": "0.1.0",
-  "type": "module"
+  "type": "module",
+  "scripts": {
+    "test": "node test/commands-smoke-test.mjs",
+    "test:ding": "node test/real-api-test.mjs",
+	"test:qw": "node test/real-api-test.mjs --cases ./test/real-api-cases-qw.json",
+    "test:real:sync-details": "node test/real-api-test.mjs --sync-details"
+  }
 }

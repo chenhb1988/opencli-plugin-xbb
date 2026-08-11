@@ -1,0 +1,30 @@
+{
+  "cases": [
+    {
+      "name": "客户列表",
+      "command": "customer-list",
+      "args": {
+        "formId": 12345,
+        "page": "1",
+        "pageSize": "10"
+      },
+      "expect": {
+        "minRows": 1
+      }
+    },
+    {
+      "name": "客户详情",
+      "command": "customer-detail",
+      "args": {
+        "dataId": 12345678
+      }
+    },
+    {
+      "name": "表单定义",
+      "command": "form-get",
+      "args": {
+        "formId": 12345
+      }
+    }
+  ]
+}

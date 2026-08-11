@@ -1,0 +1,435 @@
+{
+  "cases": [
+    {
+      "name": "客户列表",
+      "command": "customer-list",
+      "args": {
+        "formId": 2248601,
+        "page": "1",
+        "pageSize": "2"
+      },
+      "enabled": true
+    },
+    {
+      "name": "客户详情",
+      "command": "customer-detail",
+      "args": {
+        "dataId": 67753927
+      },
+      "enabled": true
+    },
+    {
+      "name": "表单定义",
+      "command": "form-get",
+      "args": {
+        "formId": 5149789
+      },
+      "enabled": true
+    },
+    {
+      "command": "clue-list",
+      "args": {
+        "formId": 2281525,
+        "page": "1",
+        "pageSize": "2"
+      },
+      "enabled": true
+    },
+    {
+      "command": "clue-detail",
+      "args": {
+        "dataId": 10348872
+      },
+      "enabled": true
+    },
+    {
+      "command": "communicate-list",
+      "args": {
+        "page": "1",
+        "pageSize": "2"
+      },
+      "enabled": true
+    },
+    {
+      "command": "communicate-plan-list",
+      "args": {
+        "formId": 2248603,
+		"attr":"date_1",
+		"value":1786464000,
+        "page": "1",
+        "pageSize": "2"
+      },
+      "enabled": true
+    },
+    {
+      "command": "communicate-detail",
+      "args": {
+        "dataId": 150363707
+      },
+      "enabled": true
+    },
+    {
+      "command": "communicate-plan-detail",
+      "args": {
+        "dataId": 0
+      },
+      "enabled": false
+    },
+    {
+      "command": "contact-list",
+      "args": {
+        "page": "1",
+        "pageSize": "2"
+      },
+      "enabled": true
+    },
+    {
+      "command": "contact-detail",
+      "args": {
+        "dataId": 29246143
+      },
+      "enabled": true
+    },
+    {
+      "command": "contract-list",
+      "args": {
+        "formId": 5220531,
+        "page": "1",
+        "pageSize": "2"
+      },
+      "enabled": true
+    },
+    {
+      "command": "contract-detail",
+      "args": {
+        "dataId": 33861965
+      },
+      "enabled": true
+    },
+    {
+      "command": "contract-outstock-list",
+      "args": {
+        "page": "1",
+        "pageSize": "2"
+      },
+      "enabled": true
+    },
+    {
+      "command": "contract-outstock-detail",
+      "args": {
+        "dataId": 4198290
+      },
+      "enabled": true
+    },
+    {
+      "command": "department-list",
+      "args": {
+        "page": "1",
+        "pageSize": "2"
+      },
+      "enabled": true
+    },
+    {
+      "command": "form-data-list",
+      "args": {
+        "formId": 5149789,
+        "page": "1",
+        "pageSize": "2"
+      },
+      "enabled": true
+    },
+    {
+      "command": "form-data-detail",
+      "args": {
+        "dataId": 0
+      },
+      "enabled": false
+    },
+    {
+      "command": "form-list",
+      "args": {
+        "saasMark": "2"
+      },
+      "enabled": true
+    },
+    {
+      "command": "market-activity-list",
+      "args": {
+        "formId": 2281523,
+        "page": "1",
+        "pageSize": "2"
+      },
+      "enabled": true
+    },
+    {
+      "command": "market-activity-detail",
+      "args": {
+        "dataId": 11459
+      },
+      "enabled": true
+    },
+    {
+      "command": "opportunity-list",
+      "args": {
+        "formId": 2248606,
+        "page": "1",
+        "pageSize": "2"
+      },
+      "enabled": true
+    },
+    {
+      "command": "opportunity-detail",
+      "args": {
+        "dataId": 3647722
+      },
+      "enabled": true
+    },
+    {
+      "command": "payment-list",
+      "args": {
+        "page": "1",
+        "pageSize": "2"
+      },
+      "enabled": true
+    },
+    {
+      "command": "payment-detail",
+      "args": {
+        "dataId": 4477077
+      },
+      "enabled": true
+    },
+    {
+      "command": "payment-sheet-list",
+      "args": {
+        "page": "1",
+        "pageSize": "2"
+      },
+      "enabled": true
+    },
+    {
+      "command": "payment-sheet-detail",
+      "args": {
+        "dataId": 7400211
+      },
+      "enabled": true
+    },
+    {
+      "command": "payment-sheet-get-amount-detail",
+      "args": {
+        "dataId": 7400211
+      },
+      "enabled": true
+    },
+    {
+      "command": "pay-sheet-list",
+      "args": {
+        "page": "1",
+        "pageSize": "2"
+      },
+      "enabled": true
+    },
+    {
+      "command": "pay-sheet-detail",
+      "args": {
+        "dataId": 543969
+      },
+      "enabled": true
+    },
+    {
+      "command": "pay-sheet-get-amount-detail",
+      "args": {
+        "dataId": 543969
+      },
+      "enabled": true
+    },
+    {
+      "command": "product-category-list",
+      "args": {},
+      "enabled": true
+    },
+    {
+      "command": "product-list",
+      "args": {
+        "page": "1",
+        "pageSize": "2"
+      },
+      "enabled": true
+    },
+    {
+      "command": "product-detail",
+      "args": {
+        "dataId": 26808615
+      },
+      "enabled": true
+    },
+    {
+      "command": "refund-list",
+      "args": {
+        "page": "1",
+        "pageSize": "2"
+      },
+      "enabled": true
+    },
+    {
+      "command": "refund-detail",
+      "args": {
+        "dataId": 174334
+      },
+      "enabled": true
+    },
+    {
+      "command": "role-list",
+      "args": {},
+      "enabled": true
+    },
+    {
+      "command": "sign-in-list",
+      "args": {
+        "page": "1",
+        "pageSize": "2"
+      },
+      "enabled": true
+    },
+    {
+      "command": "stage-get",
+      "args": {
+        "formId": 2248606,
+        "businessType": "301",
+        "saasMark": "",
+        "dataId": 0
+      },
+      "enabled": false
+    },
+    {
+      "command": "user-list",
+      "args": {
+        "page": "1",
+        "pageSize": "2"
+      },
+      "enabled": true
+    },
+    {
+      "command": "work-order-list",
+      "args": {
+        "formId": 7192698,
+        "page": "1",
+        "pageSize": "2"
+      },
+      "enabled": true
+    },
+    {
+      "command": "work-order-detail",
+      "args": {
+        "dataId": 208161
+      },
+      "enabled": true
+    },
+    {
+      "command": "work-order-dynamic-list",
+      "args": {
+        "dataId": 208161,
+        "page": "1",
+        "pageSize": "2"
+      },
+      "enabled": false
+    },
+    {
+      "command": "workorderlist",
+      "args": {
+        "formId": 22958 ,
+        "page": "1",
+        "pageSize": "2"
+      },
+      "enabled": true
+    },
+    {
+      "command": "workorderproductlist",
+      "args": {
+        "dataId": 0,
+        "page": "1",
+        "pageSize": "2"
+      },
+      "enabled": false
+    },
+    {
+      "command": "work-order-template-list",
+      "args": {},
+      "enabled": true
+    },
+    {
+      "command": "work-order-template-detail",
+      "args": {
+        "formId": 7192698
+      },
+      "enabled": false
+    },
+    {
+      "command": "work-report-daily-list",
+      "args": {
+        "page": "1",
+        "pageSize": "2"
+      },
+      "enabled": true
+    },
+    {
+      "command": "work-report-daily-detail",
+      "args": {
+        "dataId": 2442906
+      },
+      "enabled": true
+    },
+    {
+      "command": "work-report-weekly-list",
+      "args": {
+        "page": "1",
+        "pageSize": "2"
+      },
+      "enabled": true
+    },
+    {
+      "command": "work-report-weekly-detail",
+      "args": {
+        "dataId": 2341480
+      },
+      "enabled": true
+    },
+    {
+      "command": "work-report-monthly-list",
+      "args": {
+        "page": "1",
+        "pageSize": "2"
+      },
+      "enabled": true
+    },
+    {
+      "command": "work-report-monthly-detail",
+      "args": {
+        "dataId": 2341484
+      },
+      "enabled": true
+    },
+    {
+      "command": "work-task-detail",
+      "args": {
+        "dataId": 0
+      },
+      "enabled": false
+    },
+    {
+      "command": "worktimerecordlist",
+      "args": {
+        "page": "1",
+        "pageSize": "2"
+      },
+      "enabled": true
+    },
+    {
+      "command": "worktimerecorddetail",
+      "args": {
+        "dataId": 11253
+      },
+      "enabled": true
+    }
+  ]
+}
