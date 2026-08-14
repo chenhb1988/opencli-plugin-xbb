@@ -69,6 +69,39 @@ function getFormlistRows(corpid, saasMark) {
   return rows;
 }
 
+function getPersonalToken(corpid, token, userId) {
+  const rows = runOpenCliJson([
+    'xbb',
+    'token-generate',
+    '--checkUserId',
+    userId,
+    '--resetToken',
+    '1',
+    '--token',
+    token,
+    '--corpid',
+    corpid,
+    '-f',
+    'json',
+  ]);
+
+  if (!Array.isArray(rows)) {
+    throw new Error('token-generate 返回结果不是数组');
+  }
+
+  const errorRow = rows.find((item) => item && String(item.code ?? '') !== '' && Number(item.code) !== 1);
+  if (errorRow) {
+    throw new Error(`token-generate 获取个人 token 失败：${errorRow.code} ${errorRow.msg || ''}`.trim());
+  }
+
+  const personalToken = String(rows[0]?.token || '').trim();
+  if (!personalToken.startsWith('user_')) {
+    throw new Error('token-generate 未返回有效的个人 token');
+  }
+
+  return personalToken;
+}
+
 function writeFormlistFile(corpid) {
   const customForms = getFormlistRows(corpid, 2);
   const systemForms = getFormlistRows(corpid, 1);
@@ -108,8 +141,17 @@ async function setToken(kwargs) {
     return createResult('error', '缺少 --userId', corpid, '', '');
   }
 
+  let personalToken = token;
+  if (!token.startsWith('user_')) {
+    try {
+      personalToken = getPersonalToken(corpid, token, userId);
+    } catch (error) {
+      return createResult('error', `生成个人 token 失败：${error.message}`, corpid, '', userId);
+    }
+  }
+
   const baseurl = resolveBaseUrl(corpid);
-  const config = { corpid, token, baseurl, userId };
+  const config = { corpid, token: personalToken, baseurl, userId };
 
   fs.mkdirSync(CONFIG_DIR, { recursive: true });
   fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2) + '\n', 'utf8');
