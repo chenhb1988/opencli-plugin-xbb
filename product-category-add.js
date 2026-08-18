@@ -32,13 +32,13 @@ function buildApiUrl(baseUrl, defaultUrl) {
   return `${baseUrl.replace(/\/+$/, '')}${apiPath}`;
 }
 
-function buildPayload(kwargs, corpid) {
+function buildPayload(kwargs, corpid, runtimeUserId) {
   const payload = {
     corpid,
     name: String(kwargs.name || '').trim(),
   };
 
-  if (kwargs.userId) payload.userId = String(kwargs.userId);
+  if (runtimeUserId) payload.userId = runtimeUserId;
   if (String(kwargs.parentId ?? '') !== '') payload.parentId = Number(kwargs.parentId);
   if (String(kwargs.sort ?? '') !== '') payload.sort = Number(kwargs.sort);
   if (String(kwargs.router || '').trim()) payload.router = String(kwargs.router).trim();
@@ -80,9 +80,9 @@ cli({
   domain: 'proapi.xbongbong.com',
   args: [
     { name: 'name', type: 'str', help: '分类名称（必填）' },
-    { name: 'parentId', type: 'int', default: '', help: '父分类id（可选）' },
+    { name: 'parentId', type: 'str', default: '', help: '父分类id（可选）' },
     { name: 'router', type: 'str', default: '', help: '路由（可选）' },
-    { name: 'sort', type: 'int', default: '', help: '排序（可选）' },
+    { name: 'sort', type: 'str', default: '', help: '排序（可选）' },
     { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
   ],
@@ -90,14 +90,15 @@ cli({
   func: async function (kwargs) {
     const debug = Boolean(kwargs.debug);
     const { corpid, token, baseUrl, userId } = getRuntimeConfig();
-    const payload = buildPayload(kwargs, corpid);
+    const runtimeUserId = String(kwargs.userId || userId || '').trim();
+    const payload = buildPayload(kwargs, corpid, runtimeUserId);
     const requestBody = JSON.stringify(payload);
 
     const validationError = getValidationError(payload, token);
     if (validationError) return makeErrorRow(validationError.code, validationError.msg);
 
     const sign = crypto.createHash('sha256').update(requestBody + token).digest('hex');
-    const headers = Object.assign({ 'Content-Type': 'application/json;charset=UTF-8', sign }, userId ? { userId } : {});
+    const headers = Object.assign({ 'Content-Type': 'application/json;charset=UTF-8', sign }, runtimeUserId ? { userId: runtimeUserId } : {});
     if (debug) {
       process.stderr.write(`[debug] URL: ${buildApiUrl(baseUrl, API_URL)}\n[debug] Headers: ${JSON.stringify(headers)}\n[debug] RequestBody: ${requestBody}\n`);
     }

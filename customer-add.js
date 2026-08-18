@@ -86,7 +86,8 @@ cli({
       corpid,
       formId: Number(kwargs.formId || 0),
     };
-    if (kwargs.userId) payload.userId = String(kwargs.userId);
+    const runtimeUserId = String(kwargs.userId || userId || '').trim();
+    if (runtimeUserId) payload.userId = runtimeUserId;
 
     const parsedDataList = parseDataList(kwargs.dataList);
     if (parsedDataList) {
@@ -115,7 +116,7 @@ cli({
     const headers = Object.assign({
       'Content-Type': 'application/json;charset=UTF-8',
       sign,
-    }, userId ? { userId } : {});
+    }, runtimeUserId ? { userId: runtimeUserId } : {});
     const apiUrl = buildApiUrl(baseUrl, CUSTOMER_ADD_API_URL);
     if (debug) {
       process.stderr.write(`[debug] URL: ${apiUrl}\n[debug] Headers: ${JSON.stringify(headers)}\n[debug] RequestBody: ${body}\n`);

@@ -12,6 +12,7 @@ dist/
 .opencli/
 .mcp.json
 *.log
+test/real-api-cases.json
 .DS_Store
 
 # VitePress

@@ -73,7 +73,7 @@ cli({
     const debug = Boolean(kwargs.debug);
     const { corpid, token, baseUrl, userId } = getRuntimeConfig();
     const parsedDataList = parseDataList(kwargs.dataList);
-    const payload = { corpid, userId: String(kwargs.userId || '') };
+    const payload = { corpid, userId: String(kwargs.userId || userId || '').trim() };
     if (parsedDataList) payload.dataList = parsedDataList;
     const requestBody = JSON.stringify(payload);
     if (!payload.corpid) return makeErrorRow('NO_CORPID', '缺少本地 corpid；请先执行 opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>');
@@ -82,7 +82,7 @@ cli({
     if (parsedDataList === null) return makeErrorRow('NO_DATALIST', '缺少 --dataList');
     if (parsedDataList === undefined) return makeErrorRow('INVALID_DATALIST', '--dataList 必须是 JSON 对象字符串');
     const sign = crypto.createHash('sha256').update(requestBody + token).digest('hex');
-    const headers = { 'Content-Type': 'application/json;charset=UTF-8', sign, userId };
+    const headers = { 'Content-Type': 'application/json;charset=UTF-8', sign, userId: payload.userId };
     if (debug) {
       process.stderr.write(`[debug] URL: ${buildApiUrl(baseUrl, API_URL)}\n[debug] Headers: ${JSON.stringify(headers)}\n[debug] RequestBody: ${requestBody}\n`);
     }

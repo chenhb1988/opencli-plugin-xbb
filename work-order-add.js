@@ -142,7 +142,7 @@ cli({
     const headers = Object.assign({
       'Content-Type': 'application/json;charset=UTF-8',
       sign,
-    }, userId ? { userId } : {});
+    }, payload.userId ? { userId: payload.userId } : {});
     const apiUrl = buildApiUrl(baseUrl, WORK_ORDER_ADD_API_URL);
     if (debug) {
       process.stderr.write(`[debug] URL: ${apiUrl}\n[debug] Headers: ${JSON.stringify(headers)}\n[debug] RequestBody: ${requestBody}\n`);

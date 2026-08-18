@@ -71,7 +71,8 @@ cli({
     const debug = Boolean(kwargs.debug);
     const { corpid, token, baseUrl, userId } = getRuntimeConfig();
     const payload = { corpid };
-    if (kwargs.userId) payload.userId = String(kwargs.userId);
+    const runtimeUserId = String(kwargs.userId || userId || '').trim();
+    if (runtimeUserId) payload.userId = runtimeUserId;
 
     const parsedDataList = parseDataList(kwargs.dataList);
     if (parsedDataList) payload.dataList = parsedDataList;
@@ -83,7 +84,7 @@ cli({
     if (parsedDataList === undefined) return makeErrorRow('INVALID_DATALIST', '--dataList 必须是 JSON 对象字符串');
 
     const sign = crypto.createHash('sha256').update(body + token).digest('hex');
-    const headers = Object.assign({ 'Content-Type': 'application/json;charset=UTF-8', sign }, userId ? { userId } : {});
+    const headers = Object.assign({ 'Content-Type': 'application/json;charset=UTF-8', sign }, runtimeUserId ? { userId: runtimeUserId } : {});
     const apiUrl = buildApiUrl(baseUrl, API_URL);
     if (debug) {
       process.stderr.write(`[debug] URL: ${apiUrl}\n[debug] Headers: ${JSON.stringify(headers)}\n[debug] RequestBody: ${body}\n`);
