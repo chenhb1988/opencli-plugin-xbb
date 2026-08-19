@@ -98,7 +98,7 @@ cli({
     { name: 'isPublic', type: 'int', default: '', help: '是否公海客户：0非公海，1公海，不传表示全部' },
     { name: 'del', type: 'int', default: 0, help: '0客户列表，1回收站数据' },
     { name: 'viewApproval', type: 'str', default: '', help: '是否查询审批中数据，1是，0否' },
-    { name: 'conditions', type: 'str', default: '', help: '条件集合 JSON 字符串' },
+    { name: 'conditions', type: 'str', default: '', help: '条件集合 JSON 字符串，例如 [{"attr":"subForm_1","subAttr":"text_2","value":["133***"],"symbol":"equal"}]' },
     { name: 'attr', type: 'str', default: '', help: '筛选字段 attr，例如 text_1(客户名称)' },
     { name: 'value', type: 'str', default: '', help: '筛选值，和 --attr 配合使用' },
     { name: 'symbol', type: 'str', default: 'equal', help: '筛选操作符，默认 equal' },
