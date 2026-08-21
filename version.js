@@ -1,6 +1,6 @@
 import { cli, Strategy } from './opencli-registry.js';
 
-const VERSION = 'v1.3';
+const VERSION = 'v1.5';
 
 cli({
   site: 'xbb',

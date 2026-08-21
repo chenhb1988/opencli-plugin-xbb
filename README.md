@@ -52,7 +52,7 @@ opencli xbb form-list --saasMark 1 -f json
 
 ### 配置
 
-- `token-set`：保存 `corpid`、`token`、`userId`、`baseurl`，并刷新本地表单缓存
+- `token-set`：保存个人 token、`corpid`、`userId`、`baseurl`，并刷新本地表单缓存；传入的 token 不以 `user_` 开头时，会先为该 `userId` 刷新并保存个人 token
 - `token-generate`：生成/获取个人 token，`--resetToken 0` 获取（默认）、`1` 刷新；`--checkUserId` 未传则用配置中的 `userId`
 
 ### 组织与人员
