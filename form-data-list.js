@@ -113,7 +113,7 @@ function makeSuccessRows(list) {
 cli({
   site: 'xbb',
   name: 'form-data-list',
-  description: '自定义表单数据列表接口',
+  description: '自定义表单数据列表接口（businessType: 0；formId必填）',
   strategy: Strategy.PUBLIC,
   access: 'read',
   browser: false,

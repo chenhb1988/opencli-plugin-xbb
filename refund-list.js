@@ -121,7 +121,7 @@ function makeSuccessRows(list) {
 cli({
   site: 'xbb',
   name: 'refund-list',
-  description: '退货退款单列表接口',
+  description: '退货退款单列表接口（businessType: 202）',
   strategy: Strategy.PUBLIC,
   access: 'read',
   browser: false,

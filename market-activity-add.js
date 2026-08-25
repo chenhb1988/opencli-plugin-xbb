@@ -56,7 +56,7 @@ function parseDataList(raw) {
 cli({
   site: 'xbb',
   name: 'market-activity-add',
-  description: '新建市场活动接口',
+  description: '新建市场活动接口（businessType: 8100）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

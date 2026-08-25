@@ -117,7 +117,7 @@ function makeSuccessRow(data) {
 cli({
   site: 'xbb',
   name: 'customer-edit',
-  description: '编辑客户接口',
+  description: '编辑客户接口（businessType: 100；formId必填）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

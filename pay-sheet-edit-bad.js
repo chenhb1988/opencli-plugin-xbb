@@ -56,7 +56,7 @@ function parseDataList(raw) {
 cli({
   site: 'xbb',
   name: 'pay-sheet-edit-bad',
-  description: '编辑核销付款单坏账接口',
+  description: '编辑核销付款单坏账接口（businessType: 802）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

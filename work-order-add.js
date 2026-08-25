@@ -114,7 +114,7 @@ function makeSuccessRow(data) {
 cli({
   site: 'xbb',
   name: 'work-order-add',
-  description: '新增工单接口',
+  description: '新增工单接口（businessType: 20300；formId必填）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

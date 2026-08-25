@@ -62,7 +62,7 @@ function parseDataList(raw) {
 cli({
   site: 'xbb',
   name: 'payment-sheet-add-bad-debt',
-  description: '新建坏账回款单接口',
+  description: '新建坏账回款单接口（businessType: 702）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

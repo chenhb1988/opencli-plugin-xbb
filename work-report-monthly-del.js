@@ -39,7 +39,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'work-report-monthly-del',
-  description: '删除月报接口',
+  description: '删除月报接口（businessType: 2104）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

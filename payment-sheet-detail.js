@@ -47,7 +47,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'payment-sheet-detail',
-  description: '回款单详情接口',
+  description: '回款单详情接口（businessType: 702）',
   strategy: Strategy.PUBLIC,
   access: 'read',
   browser: false,

@@ -96,7 +96,7 @@ function makeSuccessRows(explainList) {
 cli({
   site: 'xbb',
   name: 'work-order-template-detail',
-  description: '工单模板详情接口',
+  description: '工单模板详情接口（businessType: 20300；formId必填）',
   strategy: Strategy.PUBLIC,
   access: 'read',
   browser: false,

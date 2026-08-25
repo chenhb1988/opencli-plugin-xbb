@@ -39,7 +39,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'pay-plan-delete-mainuser',
-  description: '付款计划删除负责人接口',
+  description: '付款计划删除负责人接口（businessType: 801）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

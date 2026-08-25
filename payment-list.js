@@ -123,7 +123,7 @@ function makeSuccessRows(list) {
 cli({
   site: 'xbb',
   name: 'payment-list',
-  description: '应收款列表接口',
+  description: '应收款列表接口（businessType: 701）',
   strategy: Strategy.PUBLIC,
   access: 'read',
   browser: false,

@@ -39,7 +39,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'product-online',
-  description: '产品上下架接口',
+  description: '产品上下架接口（businessType: 2401）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

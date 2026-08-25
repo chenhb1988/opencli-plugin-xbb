@@ -44,7 +44,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'contract-handover',
-  description: '合同订单移交接口',
+  description: '合同订单移交接口（businessType: 201）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

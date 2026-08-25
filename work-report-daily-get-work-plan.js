@@ -39,7 +39,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'work-report-daily-get-work-plan',
-  description: '获取工作计划接口',
+  description: '获取工作计划接口（businessType: 2102）',
   strategy: Strategy.PUBLIC,
   access: 'read',
   browser: false,

@@ -35,7 +35,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'refund-edit',
-  description: '编辑退货退款单接口',
+  description: '编辑退货退款单接口（businessType: 202）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

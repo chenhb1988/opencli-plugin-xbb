@@ -90,7 +90,7 @@ function makeSuccessRow(data) {
 cli({
   site: 'xbb',
   name: 'form-data-detail',
-  description: '自定义表单数据详情接口',
+  description: '自定义表单数据详情接口（businessType: 0）',
   strategy: Strategy.PUBLIC,
   access: 'read',
   browser: false,

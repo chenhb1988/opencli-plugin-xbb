@@ -45,7 +45,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'communicate-del',
-  description: '删除跟进记录接口',
+  description: '删除跟进记录接口（businessType: 501）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

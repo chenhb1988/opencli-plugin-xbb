@@ -81,7 +81,7 @@ function makeSuccessRow(data) {
 cli({
   site: 'xbb',
   name: 'form-data-del',
-  description: '删除自定义表单数据接口',
+  description: '删除自定义表单数据接口（businessType: 0）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

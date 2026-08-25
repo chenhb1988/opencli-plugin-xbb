@@ -62,7 +62,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'work-report-daily-edit',
-  description: '编辑日报接口',
+  description: '编辑日报接口（businessType: 2102）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

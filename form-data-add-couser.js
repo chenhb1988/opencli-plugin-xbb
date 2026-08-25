@@ -39,7 +39,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'form-data-add-couser',
-  description: '自定义表单添加协同人接口',
+  description: '自定义表单添加协同人接口（businessType: 0）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

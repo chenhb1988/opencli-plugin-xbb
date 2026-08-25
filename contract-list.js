@@ -127,7 +127,7 @@ function makeSuccessRows(list, kwargs) {
 cli({
   site: 'xbb',
   name: 'contract-list',
-  description: '合同订单列表接口',
+  description: '合同订单列表接口（businessType: 201；formId必填）',
   strategy: Strategy.PUBLIC,
   access: 'read',
   browser: false,

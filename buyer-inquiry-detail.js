@@ -59,7 +59,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'buyer-inquiry-detail',
-  description: '采购询价详情接口',
+  description: '采购询价详情接口（businessType: 5900）',
   strategy: Strategy.PUBLIC,
   access: 'read',
   browser: false,

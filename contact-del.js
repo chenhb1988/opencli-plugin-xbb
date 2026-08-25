@@ -27,7 +27,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'contact-del',
-  description: '删除联系人接口',
+  description: '删除联系人接口（businessType: 401）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

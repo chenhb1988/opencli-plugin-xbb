@@ -120,7 +120,7 @@ function makeSuccessRows(list) {
 cli({
   site: 'xbb',
   name: 'communicate-list',
-  description: '跟进记录列表接口',
+  description: '跟进记录列表接口（businessType: 501）',
   strategy: Strategy.PUBLIC,
   access: 'read',
   browser: false,

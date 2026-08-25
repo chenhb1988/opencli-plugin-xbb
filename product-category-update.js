@@ -83,7 +83,7 @@ function makeSuccessRow(payload, data) {
 cli({
   site: 'xbb',
   name: 'product-category-update',
-  description: '编辑产品分类接口',
+  description: '编辑产品分类接口（businessType: 2401）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

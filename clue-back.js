@@ -39,7 +39,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'clue-back',
-  description: '线索退回公海接口',
+  description: '线索退回公海接口（businessType: 8000）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

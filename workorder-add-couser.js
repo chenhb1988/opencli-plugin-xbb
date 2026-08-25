@@ -44,7 +44,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'workorder-add-couser',
-  description: '添加工单协同人',
+  description: '添加工单协同人（businessType: 2301）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

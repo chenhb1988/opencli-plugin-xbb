@@ -62,7 +62,7 @@ function parseDataList(raw) {
 cli({
   site: 'xbb',
   name: 'payment-add',
-  description: '新建应收款接口',
+  description: '新建应收款接口（businessType: 701）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

@@ -80,7 +80,7 @@ function makeSuccessRows(list) {
 cli({
   site: 'xbb',
   name: 'work-order-template-list',
-  description: '工单模板列表接口',
+  description: '工单模板列表接口（businessType: 20300）',
   strategy: Strategy.PUBLIC,
   access: 'read',
   browser: false,

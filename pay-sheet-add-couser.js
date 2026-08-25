@@ -39,7 +39,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'pay-sheet-add-couser',
-  description: '付款单添加协同人接口',
+  description: '付款单添加协同人接口（businessType: 802）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

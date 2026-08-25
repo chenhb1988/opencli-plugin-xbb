@@ -39,7 +39,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'work-task-add-couser',
-  description: '任务添加协同人接口',
+  description: '任务添加协同人接口（businessType: 20900）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

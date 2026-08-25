@@ -81,7 +81,7 @@ function makeSuccessRow(data) {
 cli({
   site: 'xbb',
   name: 'work-order-del',
-  description: '删除工单接口',
+  description: '删除工单接口（businessType: 20300）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

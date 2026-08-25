@@ -39,7 +39,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'clue-delete-mainuser',
-  description: '线索删除负责人接口',
+  description: '线索删除负责人接口（businessType: 8000）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

@@ -56,7 +56,7 @@ function parseDataList(raw) {
 cli({
   site: 'xbb',
   name: 'payment-sheet-add-pre',
-  description: '新建预收款回款单接口',
+  description: '新建预收款回款单接口（businessType: 702）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

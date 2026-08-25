@@ -39,7 +39,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'payment-sheet-get-amount-detail',
-  description: '回款单金额明细接口',
+  description: '回款单金额明细接口（businessType: 702）',
   strategy: Strategy.PUBLIC,
   access: 'read',
   browser: false,

@@ -44,7 +44,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'opportunity-delete-couser',
-  description: '销售机会删除协同人接口',
+  description: '销售机会删除协同人接口（businessType: 301）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

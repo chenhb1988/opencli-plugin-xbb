@@ -44,7 +44,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'payment-add-mainuser',
-  description: '应收款添加负责人接口',
+  description: '应收款添加负责人接口（businessType: 701）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

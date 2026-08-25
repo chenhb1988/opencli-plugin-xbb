@@ -62,7 +62,7 @@ function parseDataList(raw) {
 cli({
   site: 'xbb',
   name: 'opportunity-add',
-  description: '新建销售机会接口',
+  description: '新建销售机会接口（businessType: 301；formId必填）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

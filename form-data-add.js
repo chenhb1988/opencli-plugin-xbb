@@ -114,7 +114,7 @@ function makeSuccessRow(data) {
 cli({
   site: 'xbb',
   name: 'form-data-add',
-  description: '新建自定义表单数据接口',
+  description: '新建自定义表单数据接口（businessType: 0；formId必填）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

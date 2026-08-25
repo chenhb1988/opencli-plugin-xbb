@@ -123,7 +123,7 @@ function makeSuccessRows(list) {
 cli({
   site: 'xbb',
   name: 'workorderlist',
-  description: '工单列表接口',
+  description: '工单列表接口（businessType: 2301；formId必填）',
   strategy: Strategy.PUBLIC,
   access: 'read',
   browser: false,

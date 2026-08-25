@@ -39,7 +39,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'communicate-plan-cancel',
-  description: '访客计划取消接口',
+  description: '访客计划取消接口（businessType: 601）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

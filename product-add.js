@@ -62,7 +62,7 @@ function parseDataList(raw) {
 cli({
   site: 'xbb',
   name: 'product-add',
-  description: '新建产品接口',
+  description: '新建产品接口（businessType: 2401）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

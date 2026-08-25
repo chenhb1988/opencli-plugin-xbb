@@ -109,7 +109,7 @@ function makeSuccessRow(kwargs, data) {
 cli({
   site: 'xbb',
   name: 'work-order-operate',
-  description: '工单流转接口',
+  description: '工单流转接口（businessType: 20300）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

@@ -81,7 +81,7 @@ function makeSuccessRows(list) {
 cli({
   site: 'xbb',
   name: 'buyer-inquiry-list',
-  description: '采购询价列表接口',
+  description: '采购询价列表接口（businessType: 5900）',
   strategy: Strategy.PUBLIC,
   access: 'read',
   browser: false,

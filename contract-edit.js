@@ -62,7 +62,7 @@ function parseDataList(raw) {
 cli({
   site: 'xbb',
   name: 'contract-edit',
-  description: '编辑合同订单接口',
+  description: '编辑合同订单接口（businessType: 201）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

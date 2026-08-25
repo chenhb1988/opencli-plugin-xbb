@@ -140,7 +140,7 @@ function makeSuccessRows(list) {
 cli({
   site: 'xbb',
   name: 'clue-list',
-  description: '线索列表接口',
+  description: '线索列表接口（businessType: 8000；formId必填）',
   strategy: Strategy.PUBLIC,
   access: 'read',
   browser: false,

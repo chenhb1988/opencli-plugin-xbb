@@ -58,7 +58,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'customer-invoice-info-add',
-  description: '新增客户开票信息接口',
+  description: '新增客户开票信息接口（businessType: 100）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

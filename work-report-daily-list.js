@@ -53,7 +53,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'work-report-daily-list',
-  description: '日报列表接口',
+  description: '日报列表接口（businessType: 2102）',
   strategy: Strategy.PUBLIC,
   access: 'read',
   browser: false,

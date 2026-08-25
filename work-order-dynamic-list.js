@@ -83,7 +83,7 @@ function makeSuccessRows(list) {
 cli({
   site: 'xbb',
   name: 'work-order-dynamic-list',
-  description: '工单动态列表接口',
+  description: '工单动态列表接口（businessType: 20300）',
   strategy: Strategy.PUBLIC,
   access: 'read',
   browser: false,

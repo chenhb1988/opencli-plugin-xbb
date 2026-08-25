@@ -45,7 +45,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'product-del',
-  description: '删除产品接口',
+  description: '删除产品接口（businessType: 2401）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

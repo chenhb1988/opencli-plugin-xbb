@@ -64,13 +64,12 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'communicate-plan-list',
-  description: '访客计划列表接口',
+  description: '访客计划列表接口（businessType: 601）',
   strategy: Strategy.PUBLIC,
   access: 'read',
   browser: false,
   domain: 'proapi.xbongbong.com',
   args: [
-    { name: 'formId', type: 'int', help: '表单id（必填）' },
     { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
     { name: 'conditions', type: 'str', default: '', help: '筛选条件 JSON 数组字符串，优先级高于 --attr/--value' },
     { name: 'attr', type: 'str', default: '', help: '筛选字段 attr，例如 date_1' },
@@ -95,14 +94,13 @@ cli({
       return makeErrorRow(code, detail);
     }
     const { corpid, token, baseUrl, userId } = getRuntimeConfig();
-    const payload = { formId: Number(kwargs.formId || 0), corpid };
+    const payload = { corpid };
     const payloadUserId = String(kwargs.userId || userId || '');
     if (String(kwargs.page ?? '') !== '') payload.page = Number(kwargs.page);
     if (String(kwargs.pageSize ?? '') !== '') payload.pageSize = Number(kwargs.pageSize);
     if (payloadUserId) payload.userId = payloadUserId;
     if (conditions.length) payload.conditions = conditions;
     const body = JSON.stringify(payload);
-    if (!payload.formId) return makeErrorRow('NO_FORMID', '缺少 --formId');
     if (!payload.corpid) return makeErrorRow('NO_CORPID', '缺少本地 corpid；请先执行 opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>');
     if (!token) return makeErrorRow('NO_TOKEN', MISSING_TOKEN_MESSAGE);
     if (!conditions.length) return makeErrorRow('NO_CONDITIONS', '缺少筛选条件，请传 --conditions 或 --attr/--value');

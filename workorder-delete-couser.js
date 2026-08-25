@@ -44,7 +44,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'workorder-delete-couser',
-  description: '删除工单协同人',
+  description: '删除工单协同人（businessType: 2301）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

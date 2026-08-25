@@ -45,7 +45,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'payment-sheet-del',
-  description: '删除回款单接口',
+  description: '删除回款单接口（businessType: 702）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

@@ -39,7 +39,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'pay-sheet-del',
-  description: '删除付款单接口',
+  description: '删除付款单接口（businessType: 802）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

@@ -62,7 +62,7 @@ function parseDataList(raw) {
 cli({
   site: 'xbb',
   name: 'payment-sheet-edit-red',
-  description: '编辑红冲回款单接口',
+  description: '编辑红冲回款单接口（businessType: 702）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

@@ -101,7 +101,7 @@ function makeSuccessRow(data) {
 cli({
   site: 'xbb',
   name: 'worktimerecorddetail',
-  description: '工时记录详情接口',
+  description: '工时记录详情接口（businessType: 2301）',
   strategy: Strategy.PUBLIC,
   access: 'read',
   browser: false,

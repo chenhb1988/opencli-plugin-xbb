@@ -39,7 +39,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'contact-delete-couser',
-  description: '联系人删除协同人接口',
+  description: '联系人删除协同人接口（businessType: 401）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

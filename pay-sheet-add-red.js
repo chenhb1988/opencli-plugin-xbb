@@ -56,7 +56,7 @@ function parseDataList(raw) {
 cli({
   site: 'xbb',
   name: 'pay-sheet-add-red',
-  description: '新建核销付款单红冲接口',
+  description: '新建核销付款单红冲接口（businessType: 802）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

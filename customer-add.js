@@ -66,7 +66,7 @@ function parseDataList(raw) {
 cli({
   site: 'xbb',
   name: 'customer-add',
-  description: '新建客户接口',
+  description: '新建客户接口（businessType: 100；formId必填）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

@@ -80,7 +80,7 @@ function makeSuccessRow(data) {
 cli({
   site: 'xbb',
   name: 'work-task-edit',
-  description: '编辑任务接口',
+  description: '编辑任务接口（businessType: 20900）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

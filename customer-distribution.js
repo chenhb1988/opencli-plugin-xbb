@@ -44,7 +44,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'customer-distribution',
-  description: '客户分配接口',
+  description: '客户分配接口（businessType: 100）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

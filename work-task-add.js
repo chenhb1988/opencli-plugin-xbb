@@ -79,7 +79,7 @@ function makeSuccessRow(data) {
 cli({
   site: 'xbb',
   name: 'work-task-add',
-  description: '新增任务接口',
+  description: '新增任务接口（businessType: 20900）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

@@ -39,7 +39,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'stage-get',
-  description: '阶段获取接口',
+  description: '阶段获取接口（formId必填）',
   strategy: Strategy.PUBLIC,
   access: 'read',
   browser: false,

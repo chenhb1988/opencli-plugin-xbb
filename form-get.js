@@ -97,7 +97,7 @@ function makeSuccessRows(explainList) {
 cli({
   site: 'xbb',
   name: 'form-get',
-  description: '表单模板字段解释接口',
+  description: '表单模板字段解释接口（formId必填）',
   strategy: Strategy.PUBLIC,
   access: 'read',
   browser: false,

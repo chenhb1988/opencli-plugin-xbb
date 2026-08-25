@@ -98,7 +98,7 @@ function makeSuccessRows(list) {
 cli({
   site: 'xbb',
   name: 'product-category-list',
-  description: '产品分类列表接口',
+  description: '产品分类列表接口（businessType: 2401）',
   strategy: Strategy.PUBLIC,
   access: 'read',
   browser: false,

@@ -56,7 +56,7 @@ function parseDataList(raw) {
 cli({
   site: 'xbb',
   name: 'contract-outstock-edit',
-  description: '编辑销售出库单接口',
+  description: '编辑销售出库单接口（businessType: 1504）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,
