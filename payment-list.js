@@ -8,6 +8,7 @@ const CONFIG_FILE = path.join(os.homedir(), '.opencli', 'xbb', 'config.env');
 const PAYMENT_LIST_API_URL = 'https://proapi.xbongbong.com/pro/v2/api/payment/list';
 const DEFAULT_BASE_URL = 'https://proapi.xbongbong.com';
 const MISSING_TOKEN_MESSAGE = '缺少 token；请先执行 opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>';
+let lastPagination = null;
 
 function readConfig() {
   try {
@@ -140,6 +141,7 @@ cli({
     { name: 'raw', type: 'bool', default: false, help: '输出接口返回的原文' },
   ],
   columns: ['rank', 'dataId', 'formId', 'serialNo', 'customerId', 'contractId', 'receivableAmount', 'receivedAmount', 'unreceivedAmount', 'creatorId', 'addTime', 'updateTime', 'data', 'code', 'msg'],
+  footerExtra: () => (lastPagination ? `totalCount ${lastPagination.totalCount} / totalPage ${lastPagination.totalPage}` : undefined),
   func: async function (kwargs) {
     const debug = Boolean(kwargs.debug);
     const { corpid, token, baseUrl, userId } = getRuntimeConfig();
@@ -173,6 +175,9 @@ cli({
     }
 
     const data = await resp.json();
+    lastPagination = data?.code === 1 && data?.result?.totalCount != null && data?.result?.totalPage != null
+      ? { totalCount: data.result.totalCount, totalPage: data.result.totalPage }
+      : null;
     const responseBody = JSON.stringify(data);
     if (debug) process.stderr.write(`[debug] ResponseBody: ${responseBody}\n`);
     if (kwargs.raw) return [{ raw: responseBody }];

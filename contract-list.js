@@ -8,6 +8,7 @@ const CONFIG_FILE = path.join(os.homedir(), '.opencli', 'xbb', 'config.env');
 const CONTRACT_LIST_API_URL = 'https://proapi.xbongbong.com/pro/v2/api/contract/list';
 const DEFAULT_BASE_URL = 'https://proapi.xbongbong.com';
 const MISSING_TOKEN_MESSAGE = '缺少 token；请先执行 opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>';
+let lastPagination = null;
 
 function readConfig() {
   try {
@@ -33,6 +34,15 @@ function buildApiUrl(baseUrl, defaultUrl) {
 }
 
 function buildConditions(kwargs) {
+  const conditions = kwargs.conditions;
+  if (typeof conditions === 'string' && conditions.trim()) {
+    const parsed = JSON.parse(conditions);
+    if (!Array.isArray(parsed)) {
+      throw new Error('INVALID_CONDITIONS:conditions 必须是 JSON 数组');
+    }
+    return parsed;
+  }
+
   if (!(kwargs.attr && kwargs.value)) {
     return [];
   }
@@ -42,6 +52,20 @@ function buildConditions(kwargs) {
     value: [String(kwargs.value)],
     symbol: String(kwargs.symbol || 'equal'),
   }];
+}
+
+function formatOwnerIds(value) {
+  if (typeof value === 'string' && value.trim().startsWith('[')) {
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) {
+        return parsed.join(',');
+      }
+    } catch {
+      // 非 JSON 数组字符串，原样返回
+    }
+  }
+  return value ?? '';
 }
 
 function buildPayload(kwargs, corpid) {
@@ -94,6 +118,7 @@ function makeErrorRow(code, msg) {
     customerId: '',
     contactId: '',
     ownerId: '',
+    signerId: '',
     contractAmount: '',
     creatorId: '',
     addTime: '',
@@ -113,7 +138,8 @@ function makeSuccessRows(list, kwargs) {
     serialNo: item.data?.serialNo || '',
     customerId: item.data?.text_2 || '',
     contactId: item.data?.text_3 || '',
-    ownerId: item.data?.text_8 || '',
+    ownerId: formatOwnerIds(item.data?.ownerId),
+    signerId: item.data?.text_8 || '',
     contractAmount: item.data?.num_1 || '',
     creatorId: item.data?.creatorId || '',
     addTime: item.addTime || '',
@@ -136,6 +162,7 @@ cli({
     { name: 'formId', type: 'int', help: '表单id（必填）' },
     { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
     { name: 'viewApproval', type: 'str', default: '', help: '是否查询审批中数据，1是，0否' },
+    { name: 'conditions', type: 'str', default: '', help: '条件集合 JSON 数组字符串，优先级高于 --attr/--value，例如 [{"attr":"text_8","value":["xxx"],"symbol":"equal"}]' },
     { name: 'attr', type: 'str', default: '', help: '筛选字段 attr，例如 text_1' },
     { name: 'value', type: 'str', default: '', help: '筛选值，和 --attr 配合使用' },
     { name: 'symbol', type: 'str', default: 'equal', help: '筛选操作符，默认 equal' },
@@ -144,11 +171,21 @@ cli({
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
     { name: 'raw', type: 'bool', default: false, help: '输出接口返回的原文' },
   ],
-  columns: ['rank', 'dataId', 'formId', 'name', 'serialNo', 'customerId', 'contactId', 'ownerId', 'contractAmount', 'creatorId', 'addTime', 'updateTime', 'data', 'code', 'msg'],
+  columns: ['rank', 'dataId', 'formId', 'name', 'serialNo', 'customerId', 'contactId', 'ownerId', 'signerId', 'contractAmount', 'creatorId', 'addTime', 'updateTime', 'code', 'msg'],
+  footerExtra: () => (lastPagination ? `totalCount ${lastPagination.totalCount} / totalPage ${lastPagination.totalPage}` : undefined),
   func: async function (kwargs) {
     const debug = Boolean(kwargs.debug);
     const { corpid, token, baseUrl, userId } = getRuntimeConfig();
-    const payload = buildPayload(kwargs, corpid);
+    let payload;
+    try {
+      payload = buildPayload(kwargs, corpid);
+    } catch (error) {
+      const message = String(error?.message || error);
+      const separatorIndex = message.indexOf(':');
+      const code = separatorIndex > 0 ? message.slice(0, separatorIndex) : 'INVALID_PAYLOAD';
+      const detail = separatorIndex > 0 ? message.slice(separatorIndex + 1) : message;
+      return makeErrorRow(code, detail);
+    }
     const body = JSON.stringify(payload);
 
     const validationError = getValidationError(payload, token);
@@ -178,6 +215,9 @@ cli({
     }
 
     const data = await resp.json();
+    lastPagination = data?.code === 1 && data?.result?.totalCount != null && data?.result?.totalPage != null
+      ? { totalCount: data.result.totalCount, totalPage: data.result.totalPage }
+      : null;
     const responseBody = JSON.stringify(data);
     if (debug) process.stderr.write(`[debug] ResponseBody: ${responseBody}\n`);
     if (kwargs.raw) return [{ raw: responseBody }];

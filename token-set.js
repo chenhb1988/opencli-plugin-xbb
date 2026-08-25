@@ -112,7 +112,66 @@ function writeFormlistFile(corpid) {
   return formlistFile;
 }
 
-function createResult(status, message, corpid, baseurl, userId, formlistFile = '') {
+function normalizeBusinessType(value) {
+  return String(value).trim().replace(/[)）\]】,，;；:：。!?！？]+$/g, '');
+}
+
+function getCommandBusinessType(command) {
+  if (command.businessType !== undefined && command.businessType !== null) {
+    return normalizeBusinessType(command.businessType);
+  }
+  const description = String(command.description || '');
+  const match = description.match(/businessType\s*:\s*(\d+)/i);
+  return match ? normalizeBusinessType(match[1]) : '';
+}
+
+function escapeCell(value) {
+  return String(value ?? '').replace(/\|/g, '\\|').replace(/\r?\n/g, ' ');
+}
+
+function optionDescription(option) {
+  return `--${option.name}: ${option.help || ''}`;
+}
+
+function writeCommandMap(corpid) {
+  const formFile = getFormlistFile(corpid);
+  if (!fs.existsSync(formFile)) {
+    throw new Error(`Form cache not found: ${formFile}`);
+  }
+  const raw = fs.readFileSync(formFile, 'utf8').replace(/^\uFEFF/, '');
+  const data = JSON.parse(raw);
+  const forms = Array.isArray(data) ? data : data.data || [];
+
+  const help = runOpenCliJson(['xbb', '--help', '-f', 'json']);
+  const commands = Array.isArray(help?.commands) ? help.commands : [];
+
+  const lines = [
+    '# XBB 命令映射',
+    '',
+    `来源：opencli xbb --help；表单缓存：${path.basename(formFile)}`,
+    '',
+    '| 命令 | 命令名称 | formId | businessType | 字段说明 |',
+    '| --- | --- | --- | --- | --- |',
+  ];
+
+  for (const command of commands) {
+    const commandBusinessType = getCommandBusinessType(command);
+    const matchedForms = forms.filter((form) => String(form.businessType ?? '').trim() === commandBusinessType);
+    const formIds = [...new Set(matchedForms.map((form) => form.formId).filter(Boolean))];
+    const businessTypes = [...new Set(matchedForms.map((form) => form.businessType).filter(Boolean))];
+    const options = (command.command_options || []).map(optionDescription).join('<br>');
+    lines.push(
+      `| ${escapeCell(command.name)} | ${escapeCell(command.description)} | ${escapeCell(formIds.join(', '))} | ${escapeCell(businessTypes.join(', ') || commandBusinessType)} | ${escapeCell(options)} |`,
+    );
+  }
+
+  const commandMapFile = path.join(CONFIG_DIR, 'command-map.md');
+  fs.mkdirSync(CONFIG_DIR, { recursive: true });
+  fs.writeFileSync(commandMapFile, `${lines.join('\n')}\n`, 'utf8');
+  return commandMapFile;
+}
+
+function createResult(status, message, corpid, baseurl, userId, formlistFile = '', commandMapFile = '') {
   return [{
     status,
     message,
@@ -121,6 +180,7 @@ function createResult(status, message, corpid, baseurl, userId, formlistFile = '
     baseurl,
     userId,
     formlistFile,
+    commandMapFile,
   }];
 }
 
@@ -158,15 +218,17 @@ async function setToken(kwargs) {
 
   try {
     const formlistFile = writeFormlistFile(corpid);
-    return createResult('ok', '已保存 corpid、token、baseurl、userId，并同步表单模板缓存文件', corpid, baseurl, userId, formlistFile);
+    const commandMapFile = writeCommandMap(corpid);
+    return createResult('ok', '已保存 corpid、token、baseurl、userId，并同步表单模板缓存与命令映射文件', corpid, baseurl, userId, formlistFile, commandMapFile);
   } catch (error) {
     return createResult(
       'partial',
-      `已保存 corpid、token、baseurl、userId，但同步表单模板缓存失败：${error.message}`,
+      `已保存 corpid、token、baseurl、userId，但同步缓存失败：${error.message}`,
       corpid,
       baseurl,
       userId,
       getFormlistFile(corpid),
+      '',
     );
   }
 }
@@ -174,7 +236,7 @@ async function setToken(kwargs) {
 cli({
   site: 'xbb',
   name: 'token-set',
-  description: '保存 xbb API token,corpid,formId清单 到本地配置文件，其他命令需要formId时，可以先查询表单模板缓存文件',
+  description: '保存 xbb API token,corpid,formId清单 到本地配置文件，其他命令需要意图识别或找formId时，优先查命令映射文件(command-map.md)',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,
@@ -183,6 +245,6 @@ cli({
     { name: 'token', type: 'str', help: '要保存的 API token' },
     { name: 'userId', type: 'str', help: '操作人id（必填）' },
   ],
-  columns: ['status', 'message', 'configFile', 'corpid', 'baseurl', 'userId', 'formlistFile'],
+  columns: ['status', 'message', 'configFile', 'corpid', 'baseurl', 'userId', 'formlistFile', 'commandMapFile'],
   func: setToken,
 });

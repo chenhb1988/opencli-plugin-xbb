@@ -8,6 +8,7 @@ const CONFIG_DIR = path.join(os.homedir(), '.opencli', 'xbb');
 const CONFIG_FILE = path.join(CONFIG_DIR, 'config.env');
 const OPPORTUNITY_LIST_API_URL = 'https://proapi.xbongbong.com/pro/v2/api/opportunity/list';
 const DEFAULT_BASE_URL = 'https://proapi.xbongbong.com';
+let lastPagination = null;
 
 function readConfig() {
   try {
@@ -96,6 +97,7 @@ cli({
     { name: 'raw', type: 'bool', default: false, help: '输出接口返回的原文' },
   ],
   columns: ['rank', 'dataId', 'formId', 'name', 'serialNo', 'customerId', 'opportunityAmount', 'ownerId', 'addTime', 'updateTime', 'code', 'msg'],
+  footerExtra: () => (lastPagination ? `totalCount ${lastPagination.totalCount} / totalPage ${lastPagination.totalPage}` : undefined),
   func: async (kwargs) => {
     const debug = Boolean(kwargs.debug);
     const { corpid, token, baseUrl, userId } = getRuntimeConfig();
@@ -134,6 +136,9 @@ cli({
     }
 
     const data = await resp.json();
+    lastPagination = data?.code === 1 && data?.result?.totalCount != null && data?.result?.totalPage != null
+      ? { totalCount: data.result.totalCount, totalPage: data.result.totalPage }
+      : null;
     const responseBody = JSON.stringify(data);
     if (debug) process.stderr.write(`[debug] ResponseBody: ${responseBody}\n`);
     if (kwargs.raw) return [{ raw: responseBody }];
