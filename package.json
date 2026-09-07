@@ -1,7 +1,36 @@
 {
-  "name": "opencli-plugin-xbb",
-  "version": "0.1.0",
+  "name": "@xbongbong/xbbcli",
+  "version": "1.0.0",
+  "description": "销帮帮 CRM 的独立命令行工具",
   "type": "module",
+  "bin": {
+    "xbbcli": "./bin/xbb.js"
+  },
+  "files": [
+    "bin",
+    "*.js",
+    "README.md"
+  ],
+  "keywords": [
+    "xbb",
+    "销帮帮",
+    "crm",
+    "cli"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chenhb1988/opencli-plugin-xbb.git"
+  },
+  "bugs": {
+    "url": "https://github.com/chenhb1988/opencli-plugin-xbb/issues"
+  },
+  "homepage": "https://github.com/chenhb1988/opencli-plugin-xbb#readme",
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "test": "node test/commands-smoke-test.mjs && node test/customer-add-userid-test.mjs && node test/communicate-add-userid-test.mjs",
 	"test:add": "node test/add-api-test.mjs",

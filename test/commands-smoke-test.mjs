@@ -69,7 +69,7 @@ async function main() {
 
   const versionCommand = registry.get('xbb/version');
   assert.ok(versionCommand, 'version command must be registered');
-  assert.deepEqual(await versionCommand.func({}), [{ version: 'v1.3' }]);
+  assert.deepEqual(await versionCommand.func({}), [{ version: 'v1.5' }]);
 
   console.log(`Validated ${commandFiles.length} xbb commands without network access.`);
 }

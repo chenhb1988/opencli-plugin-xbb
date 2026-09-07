@@ -1,20 +1,24 @@
-# opencli-plugin-xbb
+# xbbcli
 
-`opencli` 的销帮帮 CRM (`xbb`) 插件。当前命令全部走 HTTP API，不依赖浏览器。
+销帮帮 CRM (`xbb`) 命令行工具。所有命令直接调用 HTTP API，不依赖 `opencli` 或浏览器。
 
 ## 安装
 
 ```bash
-npm install -g @jackwener/opencli
-opencli plugin install github:chenhb1988/opencli-plugin-xbb
+npm install -g @xbongbong/xbbcli
+xbbcli --help
 ```
+
+开发目录中也可以直接运行 `node bin/xbb.js`。
+
+需要升级时运行 `npm update -g @xbongbong/xbbcli`。
 
 ## 初始化配置
 
 首次使用先保存 `corpid`、`token` 和 `userId`：
 
 ```bash
-opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>
+xbbcli token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>
 ```
 
 执行后会写入：
@@ -36,11 +40,11 @@ opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>
 ~/.opencli/xbb/<corpid>.formlist.json
 ```
 
-内部等价于执行：
+初始化过程会直接调用接口拉取两份表单清单：
 
 ```bash
-opencli xbb form-list --saasMark 2 -f json
-opencli xbb form-list --saasMark 1 -f json
+xbbcli form-list --saasMark 2 -f json
+xbbcli form-list --saasMark 1 -f json
 ```
 
 `baseurl` 路由规则：
@@ -313,25 +317,25 @@ opencli xbb form-list --saasMark 1 -f json
 ### 基础配置/初始化
 
 ```bash
-opencli xbb token-set --corpid your_corpid --token your_token --userId your_userid
+xbbcli token-set --corpid your_corpid --token your_token --userId your_userid
 ```
 
 ### 员工信息
 
 ```bash
-opencli xbb user-list
-opencli xbb user-list --nameLike 张三 --debug
+xbbcli user-list
+xbbcli user-list --nameLike 张三 --debug
 ```
 
 ### 表单查询
 
 ```bash
-opencli xbb form-list --saasMark 1
-opencli xbb form-list --saasMark 1 --businessType 100
-opencli xbb form-list --saasMark 2 --name 工单
+xbbcli form-list --saasMark 1
+xbbcli form-list --saasMark 1 --businessType 100
+xbbcli form-list --saasMark 2 --name 工单
 
-opencli xbb form-get --formId 19274
-opencli xbb form-get --formId 19277 --subBusinessType 100
+xbbcli form-get --formId 19274
+xbbcli form-get --formId 19277 --subBusinessType 100
 ```
 
 ### 客户

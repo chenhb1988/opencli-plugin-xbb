@@ -1,8 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { spawnSync } from 'node:child_process';
-import { cli, Strategy } from './opencli-registry.js';
+import { cli, Strategy, getRegistry } from './opencli-registry.js';
 
 const CONFIG_DIR = path.join(os.homedir(), '.opencli', 'xbb');
 const CONFIG_FILE = path.join(CONFIG_DIR, 'config.env');
@@ -23,39 +22,16 @@ function getFormlistFile(corpid) {
   return path.join(CONFIG_DIR, `${corpid}${FORMLIST_FILE_SUFFIX}`);
 }
 
-function runOpenCliJson(args) {
-  const result = process.platform === 'win32'
-    ? spawnSync('cmd.exe', ['/d', '/s', '/c', 'opencli', ...args], { encoding: 'utf8' })
-    : spawnSync('opencli', args, { encoding: 'utf8' });
-
-  if (result.error) {
-    throw result.error;
-  }
-  if (result.status !== 0) {
-    throw new Error(String(result.stderr || result.stdout || 'opencli 命令执行失败').trim());
-  }
-
-  const output = String(result.stdout || '').trim();
-  if (!output) {
-    return [];
-  }
-
-  try {
-    return JSON.parse(output);
-  } catch {
-    throw new Error(`opencli 返回的 JSON 解析失败：${output}`);
-  }
+async function runCommandJson(name, kwargs) {
+  const command = getRegistry().get(`xbb/${name}`);
+  if (!command) throw new Error(`找不到命令：${name}`);
+  const rows = await command.func(kwargs);
+  if (!Array.isArray(rows)) throw new Error(`${name} 返回结果不是数组`);
+  return rows;
 }
 
-function getFormlistRows(corpid, saasMark) {
-  const rows = runOpenCliJson([
-    'xbb',
-    'form-list',
-    '--saasMark',
-    String(saasMark),
-    '-f',
-    'json',
-  ]);
+async function getFormlistRows(corpid, saasMark) {
+  const rows = await runCommandJson('form-list', { saasMark: String(saasMark) });
 
   if (!Array.isArray(rows)) {
     throw new Error(`form-list 返回结果不是数组：saasMark=${saasMark}`);
@@ -69,21 +45,13 @@ function getFormlistRows(corpid, saasMark) {
   return rows;
 }
 
-function getPersonalToken(corpid, token, userId) {
-  const rows = runOpenCliJson([
-    'xbb',
-    'token-generate',
-    '--checkUserId',
-    userId,
-    '--resetToken',
-    '1',
-    '--token',
+async function getPersonalToken(corpid, token, userId) {
+  const rows = await runCommandJson('token-generate', {
+    checkUserId: userId,
+    resetToken: '1',
     token,
-    '--corpid',
     corpid,
-    '-f',
-    'json',
-  ]);
+  });
 
   if (!Array.isArray(rows)) {
     throw new Error('token-generate 返回结果不是数组');
@@ -102,9 +70,9 @@ function getPersonalToken(corpid, token, userId) {
   return personalToken;
 }
 
-function writeFormlistFile(corpid) {
-  const customForms = getFormlistRows(corpid, 2);
-  const systemForms = getFormlistRows(corpid, 1);
+async function writeFormlistFile(corpid) {
+  const customForms = await getFormlistRows(corpid, 2);
+  const systemForms = await getFormlistRows(corpid, 1);
   const formlistFile = getFormlistFile(corpid);
   const mergedRows = [...customForms, ...systemForms];
 
@@ -142,13 +110,17 @@ function writeCommandMap(corpid) {
   const data = JSON.parse(raw);
   const forms = Array.isArray(data) ? data : data.data || [];
 
-  const help = runOpenCliJson(['xbb', '--help', '-f', 'json']);
-  const commands = Array.isArray(help?.commands) ? help.commands : [];
+  const commands = [...getRegistry().values()]
+    .filter((command) => command.site === 'xbb')
+    .map((command) => ({
+      ...command,
+      command_options: command.args || [],
+    }));
 
   const lines = [
     '# XBB 命令映射',
     '',
-    `来源：opencli xbb --help；表单缓存：${path.basename(formFile)}`,
+    `来源：xbb --help；表单缓存：${path.basename(formFile)}`,
     '',
     '| 命令 | 命令名称 | formId | businessType | 字段说明 |',
     '| --- | --- | --- | --- | --- |',
@@ -204,7 +176,7 @@ async function setToken(kwargs) {
   let personalToken = token;
   if (!token.startsWith('user_')) {
     try {
-      personalToken = getPersonalToken(corpid, token, userId);
+      personalToken = await getPersonalToken(corpid, token, userId);
     } catch (error) {
       return createResult('error', `生成个人 token 失败：${error.message}`, corpid, '', userId);
     }
@@ -217,7 +189,7 @@ async function setToken(kwargs) {
   fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2) + '\n', 'utf8');
 
   try {
-    const formlistFile = writeFormlistFile(corpid);
+    const formlistFile = await writeFormlistFile(corpid);
     const commandMapFile = writeCommandMap(corpid);
     return createResult('ok', '已保存 corpid、token、baseurl、userId，并同步表单模板缓存与命令映射文件', corpid, baseurl, userId, formlistFile, commandMapFile);
   } catch (error) {
