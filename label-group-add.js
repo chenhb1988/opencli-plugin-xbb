@@ -39,7 +39,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'label-group-add',
-  description: '新建标签分组接口（label 模块）',
+  description: '新建标签分组接口（businessType: -1；label 模块）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

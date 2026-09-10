@@ -52,7 +52,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'ai-call-add-task',
-  description: '批量AI呼叫接口（业务模块: hkh AI呼叫）',
+  description: '批量AI呼叫接口（businessType: -1；业务模块: hkh AI呼叫）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

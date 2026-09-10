@@ -39,7 +39,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'work-order-asset-del',
-  description: '资产删除接口（workOrderV2 资产）',
+  description: '资产删除接口（businessType: -1；workOrderV2 资产）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

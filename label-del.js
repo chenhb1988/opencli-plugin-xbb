@@ -52,7 +52,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'label-del',
-  description: '删除标签接口（移入回收站，label 模块）',
+  description: '删除标签接口（businessType: -1；移入回收站，label 模块）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

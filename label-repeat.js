@@ -39,7 +39,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'label-repeat',
-  description: '标签判重接口（label 模块）',
+  description: '标签判重接口（businessType: -1；label 模块）',
   strategy: Strategy.PUBLIC,
   access: 'read',
   browser: false,

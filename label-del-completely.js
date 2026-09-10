@@ -39,7 +39,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'label-del-completely',
-  description: '彻底删除标签接口（label 模块）',
+  description: '彻底删除标签接口（businessType: -1；label 模块）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

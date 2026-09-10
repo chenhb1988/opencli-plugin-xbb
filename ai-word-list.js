@@ -39,7 +39,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'ai-word-list',
-  description: '获取AI话术列表接口（业务模块: hkh AI呼叫）',
+  description: '获取AI话术列表接口（businessType: -1；业务模块: hkh AI呼叫）',
   strategy: Strategy.PUBLIC,
   access: 'read',
   browser: false,

@@ -39,7 +39,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'label-all-list',
-  description: '表单标签列表接口（label 模块）',
+  description: '表单标签列表接口（businessType: -1；label 模块）',
   strategy: Strategy.PUBLIC,
   access: 'read',
   browser: false,

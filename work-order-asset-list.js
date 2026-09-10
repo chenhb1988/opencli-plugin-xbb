@@ -54,7 +54,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'work-order-asset-list',
-  description: '资产列表接口（workOrderV2 资产）',
+  description: '资产列表接口（businessType: -1；workOrderV2 资产）',
   strategy: Strategy.PUBLIC,
   access: 'read',
   browser: false,
