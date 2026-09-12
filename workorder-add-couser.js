@@ -2,9 +2,9 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { cli, Strategy } from './opencli-registry.js';
+import { cli, Strategy } from './xbb-registry.js';
 
-const CONFIG_DIR = path.join(os.homedir(), '.opencli', 'xbb');
+const CONFIG_DIR = path.join(os.homedir(), '.xbbcli');
 const CONFIG_FILE = path.join(CONFIG_DIR, 'config.env');
 const API_URL = 'https://proapi.xbongbong.com/pro/v2/api/workOrderV2/addCoUser';
 const DEFAULT_BASE_URL = 'https://proapi.xbongbong.com';
@@ -79,7 +79,7 @@ cli({
     const body = JSON.stringify(payload);
 
     if (!payload.corpid) {
-      return makeErrorRow('NO_CORPID', '缺少本地 corpid；请先执行 opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>');
+      return makeErrorRow('NO_CORPID', '缺少本地 corpid；请先执行 xbbcli token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>');
     }
     if (!payload.dataId) {
       return makeErrorRow('NO_DATAID', '缺少 --dataId');
@@ -88,7 +88,7 @@ cli({
       return makeErrorRow('NO_USERIDLIST', '缺少 --businessUserIdList 或格式不正确，需为JSON数组');
     }
     if (!token) {
-      return makeErrorRow('NO_TOKEN', '缺少 token；请先执行 opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>');
+      return makeErrorRow('NO_TOKEN', '缺少 token；请先执行 xbbcli token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>');
     }
 
     const sign = crypto.createHash('sha256').update(body + token).digest('hex');

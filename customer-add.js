@@ -2,9 +2,9 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { cli, Strategy } from './opencli-registry.js';
+import { cli, Strategy } from './xbb-registry.js';
 
-const CONFIG_DIR = path.join(os.homedir(), '.opencli', 'xbb');
+const CONFIG_DIR = path.join(os.homedir(), '.xbbcli');
 const CONFIG_FILE = path.join(CONFIG_DIR, 'config.env');
 const CUSTOMER_ADD_API_URL = 'https://proapi.xbongbong.com/pro/v2/api/customer/add';
 const DEFAULT_BASE_URL = 'https://proapi.xbongbong.com';
@@ -97,13 +97,13 @@ cli({
     const body = JSON.stringify(payload);
 
     if (!payload.corpid) {
-      return makeErrorRow('NO_CORPID', '缺少本地 corpid；请先执行 opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>');
+      return makeErrorRow('NO_CORPID', '缺少本地 corpid；请先执行 xbbcli token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>');
     }
     if (!payload.formId) {
       return makeErrorRow('NO_FORMID', '缺少 --formId');
     }
     if (!token) {
-      return makeErrorRow('NO_TOKEN', '缺少 token；请先执行 opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>');
+      return makeErrorRow('NO_TOKEN', '缺少 token；请先执行 xbbcli token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>');
     }
     if (parsedDataList === null) {
       return makeErrorRow('NO_DATALIST', '缺少 --dataList');

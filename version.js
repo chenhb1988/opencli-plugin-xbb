@@ -1,4 +1,4 @@
-import { cli, Strategy } from './opencli-registry.js';
+import { cli, Strategy } from './xbb-registry.js';
 
 const VERSION = 'v1.5';
 

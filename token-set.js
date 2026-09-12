@@ -1,9 +1,9 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { cli, Strategy, getRegistry } from './opencli-registry.js';
+import { cli, Strategy, getRegistry } from './xbb-registry.js';
 
-const CONFIG_DIR = path.join(os.homedir(), '.opencli', 'xbb');
+const CONFIG_DIR = path.join(os.homedir(), '.xbbcli');
 const CONFIG_FILE = path.join(CONFIG_DIR, 'config.env');
 const FORMLIST_FILE_SUFFIX = '.formlist.json';
 

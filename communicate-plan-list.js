@@ -2,12 +2,12 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { cli, Strategy } from './opencli-registry.js';
+import { cli, Strategy } from './xbb-registry.js';
 
-const CONFIG_FILE = path.join(os.homedir(), '.opencli', 'xbb', 'config.env');
+const CONFIG_FILE = path.join(os.homedir(), '.xbbcli', 'config.env');
 const API_URL = 'https://proapi.xbongbong.com/pro/v2/api/communicatePlan/list';
 const DEFAULT_BASE_URL = 'https://proapi.xbongbong.com';
-const MISSING_TOKEN_MESSAGE = '缺少 token；请先执行 opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>';
+const MISSING_TOKEN_MESSAGE = '缺少 token；请先执行 xbbcli token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>';
 let lastPagination = null;
 
 function readConfig() {
@@ -103,7 +103,7 @@ cli({
     if (payloadUserId) payload.userId = payloadUserId;
     if (conditions.length) payload.conditions = conditions;
     const body = JSON.stringify(payload);
-    if (!payload.corpid) return makeErrorRow('NO_CORPID', '缺少本地 corpid；请先执行 opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>');
+    if (!payload.corpid) return makeErrorRow('NO_CORPID', '缺少本地 corpid；请先执行 xbbcli token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>');
     if (!token) return makeErrorRow('NO_TOKEN', MISSING_TOKEN_MESSAGE);
     if (!conditions.length) return makeErrorRow('NO_CONDITIONS', '缺少筛选条件，请传 --conditions 或 --attr/--value');
     const sign = crypto.createHash('sha256').update(body + token).digest('hex');
