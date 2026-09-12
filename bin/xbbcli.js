@@ -3,7 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { getRegistry } from '../opencli-registry.js';
+import { getRegistry } from '../xbb-registry.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -14,7 +14,7 @@ process.stdout.on('error', (error) => {
 
 async function loadCommands() {
   const files = fs.readdirSync(root)
-    .filter((name) => name.endsWith('.js') && name !== 'opencli-registry.js')
+    .filter((name) => name.endsWith('.js') && name !== 'xbb-registry.js')
     .sort();
   for (const file of files) {
     await import(`${pathToFileURL(path.join(root, file)).href}?xbbCli`);

@@ -89,7 +89,7 @@ async function loadCommand(commandName) {
   const filePath = path.join(repositoryRoot, `${commandName}.js`);
   assert.ok(fs.existsSync(filePath), `Command file not found: ${commandName}.js`);
 
-  const { getRegistry } = await import(pathToFileURL(path.join(repositoryRoot, 'opencli-registry.js')).href);
+  const { getRegistry } = await import(pathToFileURL(path.join(repositoryRoot, 'xbb-registry.js')).href);
   await import(`${pathToFileURL(filePath).href}?realApiTest=${Date.now()}`);
   const command = getRegistry().get(`xbb/${commandName}`);
   assert.ok(command, `Command was not registered: xbb/${commandName}`);

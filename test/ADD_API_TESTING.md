@@ -1,6 +1,6 @@
 # Add 接口测试
 
-`add-api-cases.example.json` 按 `~/.opencli/xbb/command-map.md` 的 formId 选择，并使用 `opencli xbb form-get --formId <formId> -f json` 返回的字段解释填写 `dataList`。每个实体创建用例后，负责人/协同人和客户开票用例通过 `from` 自动复用刚创建的 `dataId`。
+`add-api-cases.example.json` 按 `~/.xbbcli/command-map.md` 的 formId 选择，并使用 `xbbcli form-get --formId <formId> -f json` 返回的字段解释填写 `dataList`。每个实体创建用例后，负责人/协同人和客户开票用例通过 `from` 自动复用刚创建的 `dataId`。
 
 默认只校验用例文件，不访问网络：
 
@@ -8,7 +8,7 @@
 npm.cmd run test:add
 ```
 
-确认 `~/.opencli/xbb/config.env`、用户 ID 和测试数据无误后，显式执行真实写入：
+确认 `~/.xbbcli/config.env`、用户 ID 和测试数据无误后，显式执行真实写入：
 
 ```powershell
 node test/add-api-test.mjs --execute

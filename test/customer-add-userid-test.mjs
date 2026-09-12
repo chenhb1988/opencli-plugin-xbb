@@ -12,8 +12,8 @@ const originalFetch = globalThis.fetch;
 
 process.env.USERPROFILE = temporaryHome;
 process.env.HOME = temporaryHome;
-fs.mkdirSync(path.join(temporaryHome, '.opencli', 'xbb'), { recursive: true });
-fs.writeFileSync(path.join(temporaryHome, '.opencli', 'xbb', 'config.env'), JSON.stringify({
+fs.mkdirSync(path.join(temporaryHome, '.xbbcli'), { recursive: true });
+fs.writeFileSync(path.join(temporaryHome, '.xbbcli', 'config.env'), JSON.stringify({
   corpid: 'ding-test',
   token: 'test-token',
   userId: 'config-user-id',
@@ -27,7 +27,7 @@ try {
     return new Response(JSON.stringify({ code: 1, msg: 'ok', result: { dataId: 1 } }), { status: 200 });
   };
 
-  const { getRegistry } = await import(pathToFileURL(path.join(repositoryRoot, 'opencli-registry.js')).href);
+  const { getRegistry } = await import(pathToFileURL(path.join(repositoryRoot, 'xbb-registry.js')).href);
   await import(`${pathToFileURL(path.join(repositoryRoot, 'customer-add.js')).href}?customerAddUserIdTest`);
   const command = getRegistry().get('xbb/customer-add');
   const rows = await command.func({ formId: 572924, dataList: { text_1: '测试客户' } });

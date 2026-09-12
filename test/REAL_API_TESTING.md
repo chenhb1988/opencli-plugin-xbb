@@ -1,7 +1,7 @@
 # 真实接口测试
 
 默认 `npm test` 只执行无网络的命令冒烟测试。`npm run test:real` 会读取本机
-`~/.opencli/xbb/config.env` 中的凭证并请求真实 API；只允许执行名称以 `list`、
+`~/.xbbcli/config.env` 中的凭证并请求真实 API；只允许执行名称以 `list`、
 `detail` 或 `get` 结尾的只读命令。
 
 ## 配置用例
@@ -30,7 +30,7 @@ Copy-Item test/real-api-cases.example.json test/real-api-cases.json
 }
 ```
 
-`name` 用于输出，`command` 是 `opencli xbb` 后的命令名，`args` 使用命令参数名。
+`name` 用于输出，`command` 是 `xbbcli` 后的命令名，`args` 使用命令参数名。
 默认断言至少有一条非错误结果；可用 `expect.minRows` 提高最低返回行数，或设
 `expect.success` 为 `false` 来保留只检查返回行数的特殊用例。
 示例清单中无法预填真实 ID 的用例带有 `enabled: false`，填写参数后改为 `true`。

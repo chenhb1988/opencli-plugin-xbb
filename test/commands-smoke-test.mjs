@@ -35,9 +35,9 @@ function restoreEnvironment() {
 
 async function main() {
   const commandFiles = fs.readdirSync(repositoryRoot)
-    .filter((fileName) => fileName.endsWith('.js') && fileName !== 'opencli-registry.js')
+    .filter((fileName) => fileName.endsWith('.js') && fileName !== 'xbb-registry.js')
     .sort();
-  const { getRegistry } = await import(pathToFileURL(path.join(repositoryRoot, 'opencli-registry.js')).href);
+  const { getRegistry } = await import(pathToFileURL(path.join(repositoryRoot, 'xbb-registry.js')).href);
   const registry = getRegistry();
   const failures = [];
 

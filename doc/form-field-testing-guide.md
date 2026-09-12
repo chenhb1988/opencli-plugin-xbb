@@ -1,13 +1,13 @@
 # CRM 表单字段测试与调试指南
 
-本文总结通过 `opencli xbb` 创建 CRM 数据时，构造 `dataList`、定位接口错误和沉淀真实测试用例的经验。
+本文总结通过 `xbbcli` 创建 CRM 数据时，构造 `dataList`、定位接口错误和沉淀真实测试用例的经验。
 
 ## 1. 先获取字段解释
 
 创建或编辑前，先查询对应表单：
 
 ```powershell
-opencli xbb form-get --formId <FORM_ID> -f json
+xbbcli form-get --formId <FORM_ID> -f json
 ```
 
 - `attr` 是 `dataList` 的字段名。
@@ -82,7 +82,7 @@ opencli xbb form-get --formId <FORM_ID> -f json
 首次调用使用 `--debug`：
 
 ```powershell
-opencli xbb <command> ... --debug
+xbbcli <command> ... --debug
 ```
 
 检查输出的 `RequestBody`，重点确认：

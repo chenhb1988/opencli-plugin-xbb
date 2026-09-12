@@ -53,7 +53,7 @@ for (const cleanupCase of cleanupCases) {
 
 async function loadCommand(commandName) {
   const filePath = path.join(repositoryRoot, `${commandName}.js`);
-  const { getRegistry } = await import(pathToFileURL(path.join(repositoryRoot, 'opencli-registry.js')).href);
+  const { getRegistry } = await import(pathToFileURL(path.join(repositoryRoot, 'xbb-registry.js')).href);
   await import(`${pathToFileURL(filePath).href}?addApiTest=${Date.now()}-${commandName}`);
   const command = getRegistry().get(`xbb/${commandName}`);
   assert.ok(command, `Command was not registered: xbb/${commandName}`);
