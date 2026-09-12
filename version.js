@@ -1,6 +1,6 @@
 import { cli, Strategy } from './xbb-registry.js';
 
-const VERSION = 'v1.5';
+const VERSION = 'v1.6';
 
 cli({
   site: 'xbb',

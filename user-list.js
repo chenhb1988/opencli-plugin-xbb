@@ -62,7 +62,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'user-list',
-  description: '用户列表接口',
+  description: '用户列表接口（businessType: -1）',
   strategy: Strategy.PUBLIC,
   access: 'read',
   browser: false,

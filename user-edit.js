@@ -51,7 +51,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'user-edit',
-  description: '编辑用户接口',
+  description: '编辑用户接口（businessType: -1）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

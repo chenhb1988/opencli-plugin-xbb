@@ -39,7 +39,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'stage-jump',
-  description: '阶段跳转接口（formId必填）',
+  description: '阶段跳转接口（businessType: -1；formId必填）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

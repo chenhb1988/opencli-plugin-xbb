@@ -51,7 +51,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'user-del',
-  description: '删除用户接口',
+  description: '删除用户接口（businessType: -1）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

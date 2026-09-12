@@ -39,7 +39,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'work-task-handover',
-  description: '任务移交接口（businessType: 20900）',
+  description: '工作任务移交接口（businessType: 21500）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

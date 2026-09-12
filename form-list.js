@@ -102,7 +102,7 @@ function makeSuccessRows(list) {
 cli({
   site: 'xbb',
   name: 'form-list',
-  description: '表单模板列表接口',
+  description: '表单模板列表接口（businessType: -1）',
   strategy: Strategy.PUBLIC,
   access: 'read',
   browser: false,

@@ -68,7 +68,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'sign-in-list',
-  description: '签到列表接口',
+  description: '签到列表接口（businessType: 2001）',
   strategy: Strategy.PUBLIC,
   access: 'read',
   browser: false,

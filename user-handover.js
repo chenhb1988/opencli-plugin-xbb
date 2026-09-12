@@ -39,7 +39,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'user-handover',
-  description: '用户交接接口',
+  description: '用户交接接口（businessType: -1）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

@@ -40,7 +40,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'role-list',
-  description: '角色列表接口',
+  description: '角色列表接口（businessType: -1）',
   strategy: Strategy.PUBLIC,
   access: 'read',
   browser: false,
