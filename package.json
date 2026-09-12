@@ -1,10 +1,10 @@
 {
   "name": "@xbongbong/xbbcli",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "销帮帮 CRM 的独立命令行工具",
   "type": "module",
   "bin": {
-    "xbbcli": "./bin/xbb.js"
+    "xbbcli": "./bin/xbbcli.js"
   },
   "files": [
     "bin",
