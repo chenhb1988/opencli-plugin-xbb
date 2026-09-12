@@ -1,0 +1,26 @@
+# Development and repository metadata
+.git/
+.github/
+.agents/
+.codex/
+.qoder/
+AGENTS.md
+CLAUDE.md
+
+# Tests and internal documentation
+test/
+doc/
+*.py
+readme.txt
+
+# Local configuration and dependency artifacts
+.opencli/
+.env*
+node_modules/
+package-lock.json
+
+# Editor and OS files
+.idea/
+.vscode/
+.DS_Store
+*.log

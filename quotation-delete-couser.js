@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { cli, Strategy } from './opencli-registry.js';
+import { cli, Strategy } from './xbb-registry.js';
 
 const CONFIG_FILE = path.join(os.homedir(), '.opencli', 'xbb', 'config.env');
 const API_URL = 'https://proapi.xbongbong.com/pro/v2/api/quotation/deleteCoUser';

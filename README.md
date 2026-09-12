@@ -13,6 +13,21 @@ xbbcli --help
 
 需要升级时运行 `npm update -g @xbongbong/xbbcli`。
 
+
+
+首次使用时配置销帮帮凭证：
+
+```bash
+xbbcli token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>
+```
+
+配置完成后即可运行各业务命令，例如：
+
+```bash
+xbbcli user-list
+xbbcli form-list --saasMark 1 -f json
+```
+
 ## 初始化配置
 
 首次使用先保存 `corpid`、`token` 和 `userId`：
