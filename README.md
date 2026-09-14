@@ -42,12 +42,36 @@ xbbcli token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>
 ~/.xbbcli/config.env
 ```
 
-文件内容包含：
+`config.env` 是一个 JSON 文件，可同时保存多家公司，每个公司包含：
 
 - `corpid`
 - `token`
 - `baseurl`
 - `userId`
+- `enable`：是否启用；任何时刻**仅且只有一个**公司的 `enable` 为 `true`
+
+示例：
+
+```json
+[
+  {
+    "corpid": "<CORPID_A>",
+    "token": "<TOKEN_A>",
+    "baseurl": "https://proapi.xbongbong.com",
+    "userId": "<USERID_A>",
+    "enable": true
+  },
+  {
+    "corpid": "<CORPID_B>",
+    "token": "<TOKEN_B>",
+    "baseurl": "https://appapi.xbongbong.com",
+    "userId": "<USERID_B>",
+    "enable": false
+  }
+]
+```
+
+`token-set` 会按 `corpid` 新增或覆盖一家公司，并把该公司置为 `enable=true`（其余公司自动置为 `false`）。除 `token-set`、`token-list`、`token-use`、`token-del` 外，其余命令都使用 `enable` 为 `true` 的公司配置。
 
 同时会自动拉取两份表单清单并合并缓存到：
 
@@ -62,6 +86,27 @@ xbbcli form-list --saasMark 2 -f json
 xbbcli form-list --saasMark 1 -f json
 ```
 
+同时会自动分页拉取所有部门与员工并缓存到：
+
+```text
+~/.xbbcli/<corpid>.department-user.json
+```
+
+初始化过程调用：
+
+```bash
+xbbcli department-list --pageSize 200 -f json
+xbbcli user-list --pageSize 200 -f json
+```
+
+缓存文件内容：
+
+- `departments`：部门清单（`id`、`name`、`parentId`、`depIdRouter`）
+- `users`：员工清单（`userId`、`name`、`position`、`jobnumber`、`departmentList`）
+- `departmentCount`、`userCount`、`pageSize`、`updatedAt`
+
+以后需要查询部门或员工信息时，可以先查这个文件，避免重复调用接口。
+
 `baseurl` 路由规则：
 
 - `corpid` 以 `ding` 开头，或包含 `$$ding` 时，使用 `https://proapi.xbongbong.com`
@@ -71,7 +116,10 @@ xbbcli form-list --saasMark 1 -f json
 
 ### 配置
 
-- `token-set`：保存个人 token、`corpid`、`userId`、`baseurl`，并刷新本地表单缓存；传入的 token 不以 `user_` 开头时，会先为该 `userId` 刷新并保存个人 token
+- `token-set`：保存个人 token、`corpid`、`userId`、`baseurl`，并刷新本地表单缓存、命令映射文件与部门/员工缓存；传入的 token 不以 `user_` 开头时，会先为该 `userId` 刷新并保存个人 token
+- `token-list`：列出本地保存的所有公司配置和唯一启用的公司；`--showToken` 显示完整 token（默认脱敏）
+- `token-use`：切换当前启用的公司（`xbbcli token-use --corpid <CORPID>`），保证仅且只有一个公司被启用
+- `token-del`：删除指定公司的本地配置（`xbbcli token-del --corpid <CORPID>`），并保证剩余配置中仅且只有一个公司被启用
 - `token-generate`：生成/获取个人 token，`--resetToken 0` 获取（默认）、`1` 刷新；`--checkUserId` 未传则用配置中的 `userId`
 
 ### 组织与人员
@@ -319,6 +367,7 @@ xbbcli form-list --saasMark 1 -f json
 - 大部分命令会从 `~/.xbbcli/config.env` 读取 `token`
 - 所有命令会从配置中读取 `userId` 并附加到请求 header 中
 - 大部分命令需要 formId 参数，可以根据业务名称或 businessType 从 `~/.xbbcli/<corpid>.formlist.json` 中获取 formId
+- 需要查询部门 id/名称 或 员工 userId/所属部门 时，可以先查 `~/.xbbcli/<corpid>.department-user.json`（由 `token-set` 分页抓取并缓存全部部门与员工）
 - 未传入的可选参数不会进入请求体
 - `--attr` 和 `--value` 只有同时提供时才会拼入查询条件
 - `--limit` 是在响应映射之后截断结果

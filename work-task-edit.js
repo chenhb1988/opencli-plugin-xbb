@@ -11,7 +11,16 @@ const MISSING_TOKEN_MESSAGE = '缺少 token；请先执行 xbbcli token-set --co
 
 function readConfig() {
   try {
-    return JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
+    const parsed = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
+    const companies = Array.isArray(parsed)
+      ? parsed
+      : Array.isArray(parsed?.companies)
+        ? parsed.companies
+        : null;
+    if (companies) {
+      return companies.find((item) => item && item.enable) || {};
+    }
+    return parsed || {};
   } catch {
     return {};
   }

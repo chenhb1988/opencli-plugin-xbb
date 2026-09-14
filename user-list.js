@@ -12,7 +12,16 @@ let lastPagination = null;
 
 function readConfig() {
   try {
-    return JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
+    const parsed = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
+    const companies = Array.isArray(parsed)
+      ? parsed
+      : Array.isArray(parsed?.companies)
+        ? parsed.companies
+        : null;
+    if (companies) {
+      return companies.find((item) => item && item.enable) || {};
+    }
+    return parsed || {};
   } catch {
     return {};
   }
@@ -53,7 +62,7 @@ function makeErrorRow(code, msg) {
     name: '',
     position: '',
     jobnumber: '',
-    avatar: '',
+    departmentList: '',
     code,
     msg,
   }];
@@ -78,7 +87,7 @@ cli({
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
     { name: 'raw', type: 'bool', default: false, help: '输出接口返回的原文' },
   ],
-  columns: ['rank', 'userId', 'name', 'position', 'jobnumber', 'avatar', 'code', 'msg'],
+  columns: ['rank', 'userId', 'name', 'position', 'jobnumber', 'departmentList', 'code', 'msg'],
   footerExtra: () => (lastPagination ? `totalCount ${lastPagination.totalCount} / totalPage ${lastPagination.totalPage}` : undefined),
   func: async (kwargs) => {
     const debug = Boolean(kwargs.debug);
@@ -139,7 +148,7 @@ cli({
       name: item.name || '',
       position: item.position || '',
       jobnumber: item.jobnumber || '',
-      avatar: item.avatar || '',
+      departmentList: Array.isArray(item.departmentList) ? JSON.stringify(item.departmentList) : (item.departmentList || ''),
       code: '',
       msg: '',
     }));

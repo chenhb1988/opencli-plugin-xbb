@@ -14,7 +14,7 @@ opencli plugin install github:chenhb1988/opencli-plugin-xbb
 opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>
 ```
 
-凭证保存在 `~/.opencli/xbb/config.env`。`token-set` 同时会将表单列表缓存写入 `~/.opencli/xbb/<corpid>.formlist.json`。除 `token-set` 外，其余命令都会从该配置读取 `corpid`。
+凭证保存在 `~/.xbbcli/config.env`，文件是 JSON 数组，支持保存多家公司，每家公司含 `corpid`/`token`/`baseurl`/`userId`/`enable`，任何时刻仅且只有一个公司的 `enable` 为 `true`。`token-set` 会按 `corpid` 新增或覆盖配置并把该公司置为启用，同时将表单列表缓存写入 `~/.xbbcli/<corpid>.formlist.json`、命令映射写入 `~/.xbbcli/<corpid>.command-map.md`、部门与员工清单缓存写入 `~/.xbbcli/<corpid>.department-user.json`。除 `token-set`/`token-list`/`token-use`/`token-del` 外，其余命令都从该配置读取当前启用公司的 `corpid` 与 `token`。
 
 ## 验证方式
 
@@ -55,3 +55,7 @@ opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>
 ## 工作流：依赖 formId 的命令
 
 `form-list` → `form-get` → 数据命令（`customer-add`、`form-data-add` 等）是标准依赖链。`dataList` 以 JSON 对象字符串传入，在命令内部解析。当字段名或下拉框可选值未知时，先用 `form-get --formId <ID>` 获取表单 schema，再构建 `dataList`。
+
+## 工作流：查询部门与员工
+
+需要确认部门 id/名称，或员工 userId/所属部门时，先读 `~/.xbbcli/<corpid>.department-user.json`（由 `token-set` 分页拉取后缓存，含 `departments` 与 `users` 两份清单），避免每次都调用 `department-list` / `user-list`。缓存过期时重新执行 `token-set` 刷新。

@@ -6,6 +6,10 @@ import { cli, Strategy, getRegistry } from './xbb-registry.js';
 const CONFIG_DIR = path.join(os.homedir(), '.xbbcli');
 const CONFIG_FILE = path.join(CONFIG_DIR, 'config.env');
 const FORMLIST_FILE_SUFFIX = '.formlist.json';
+const COMMAND_MAP_FILE_SUFFIX = '.command-map.md';
+const DEPARTMENT_USER_FILE_SUFFIX = '.department-user.json';
+const READ_ALL_PAGE_SIZE = 200;
+const READ_ALL_MAX_PAGES = 1000;
 
 function resolveBaseUrl(corpid) {
   if (corpid.startsWith('ding') || corpid.includes('$$ding')) {
@@ -20,6 +24,10 @@ function normalizeArg(value) {
 
 function getFormlistFile(corpid) {
   return path.join(CONFIG_DIR, `${corpid}${FORMLIST_FILE_SUFFIX}`);
+}
+
+function getCommandMapFile(corpid) {
+  return path.join(CONFIG_DIR, `${corpid}${COMMAND_MAP_FILE_SUFFIX}`);
 }
 
 async function runCommandJson(name, kwargs) {
@@ -45,10 +53,10 @@ async function getFormlistRows(corpid, saasMark) {
   return rows;
 }
 
-async function getPersonalToken(corpid, token, userId) {
+async function requestPersonalToken(corpid, token, userId, resetToken) {
   const rows = await runCommandJson('token-generate', {
     checkUserId: userId,
-    resetToken: '1',
+    resetToken: String(resetToken),
     token,
     corpid,
   });
@@ -62,7 +70,20 @@ async function getPersonalToken(corpid, token, userId) {
     throw new Error(`token-generate 获取个人 token 失败：${errorRow.code} ${errorRow.msg || ''}`.trim());
   }
 
-  const personalToken = String(rows[0]?.token || '').trim();
+  return String(rows[0]?.token || '').trim();
+}
+
+async function getPersonalToken(corpid, token, userId) {
+  const existingToken = await requestPersonalToken(corpid, token, userId, 0);
+
+  if (existingToken) {
+    if (!existingToken.startsWith('user_')) {
+      throw new Error('token-generate 未返回有效的个人 token');
+    }
+    return existingToken;
+  }
+
+  const personalToken = await requestPersonalToken(corpid, token, userId, 1);
   if (!personalToken.startsWith('user_')) {
     throw new Error('token-generate 未返回有效的个人 token');
   }
@@ -78,6 +99,79 @@ async function writeFormlistFile(corpid) {
 
   fs.writeFileSync(formlistFile, JSON.stringify(mergedRows, null, 2) + '\n', 'utf8');
   return formlistFile;
+}
+
+function getDepartmentUserFile(corpid) {
+  return path.join(CONFIG_DIR, `${corpid}${DEPARTMENT_USER_FILE_SUFFIX}`);
+}
+
+async function fetchAllRows(name, pageSize) {
+  const rows = [];
+  for (let page = 1; page <= READ_ALL_MAX_PAGES; page += 1) {
+    const pageRows = await runCommandJson(name, { page: String(page), pageSize: String(pageSize) });
+    const errorRow = pageRows.find((item) => item && String(item.code ?? '') !== '');
+    if (errorRow) {
+      if (String(errorRow.code) === 'NO_DATA') {
+        return rows;
+      }
+      throw new Error(`${name} 获取失败（page=${page}）：${errorRow.code} ${errorRow.msg || ''}`.trim());
+    }
+    rows.push(...pageRows);
+  }
+  throw new Error(`${name} 分页超过 ${READ_ALL_MAX_PAGES} 页，未获取到完整数据`);
+}
+
+function parseDepartmentListField(value) {
+  if (Array.isArray(value)) {
+    return value;
+  }
+  const text = String(value ?? '').trim();
+  if (!text) {
+    return [];
+  }
+  try {
+    const parsed = JSON.parse(text);
+    return Array.isArray(parsed) ? parsed : text;
+  } catch {
+    return text;
+  }
+}
+
+function toDepartmentEntry(row) {
+  return {
+    id: row.id ?? '',
+    name: row.name ?? '',
+    parentId: row.parentId ?? '',
+    depIdRouter: row.depIdRouter ?? '',
+  };
+}
+
+function toUserEntry(row) {
+  return {
+    userId: row.userId ?? '',
+    name: row.name ?? '',
+    position: row.position ?? '',
+    jobnumber: row.jobnumber ?? '',
+    departmentList: parseDepartmentListField(row.departmentList),
+  };
+}
+
+async function writeDepartmentUserFile(corpid) {
+  const departmentRows = await fetchAllRows('department-list', READ_ALL_PAGE_SIZE);
+  const userRows = await fetchAllRows('user-list', READ_ALL_PAGE_SIZE);
+  const payload = {
+    corpid,
+    updatedAt: new Date().toISOString(),
+    pageSize: READ_ALL_PAGE_SIZE,
+    departmentCount: departmentRows.length,
+    userCount: userRows.length,
+    departments: departmentRows.map(toDepartmentEntry),
+    users: userRows.map(toUserEntry),
+  };
+  const file = getDepartmentUserFile(corpid);
+  fs.mkdirSync(CONFIG_DIR, { recursive: true });
+  fs.writeFileSync(file, JSON.stringify(payload, null, 2) + '\n', 'utf8');
+  return file;
 }
 
 function normalizeBusinessType(value) {
@@ -137,13 +231,13 @@ function writeCommandMap(corpid) {
     );
   }
 
-  const commandMapFile = path.join(CONFIG_DIR, 'command-map.md');
+  const commandMapFile = getCommandMapFile(corpid);
   fs.mkdirSync(CONFIG_DIR, { recursive: true });
   fs.writeFileSync(commandMapFile, `${lines.join('\n')}\n`, 'utf8');
   return commandMapFile;
 }
 
-function createResult(status, message, corpid, baseurl, userId, formlistFile = '', commandMapFile = '') {
+function createResult(status, message, corpid, baseurl, userId, formlistFile = '', commandMapFile = '', enable = '', companyCount = '', departmentUserFile = '') {
   return [{
     status,
     message,
@@ -151,9 +245,46 @@ function createResult(status, message, corpid, baseurl, userId, formlistFile = '
     corpid,
     baseurl,
     userId,
+    enable,
+    companyCount,
     formlistFile,
     commandMapFile,
+    departmentUserFile,
   }];
+}
+
+function readCompanies() {
+  try {
+    const parsed = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
+    return normalizeCompanies(parsed);
+  } catch {
+    return [];
+  }
+}
+
+function normalizeCompanies(parsed) {
+  if (Array.isArray(parsed)) {
+    return parsed.filter((item) => item && typeof item === 'object');
+  }
+  if (parsed && Array.isArray(parsed.companies)) {
+    return parsed.companies.filter((item) => item && typeof item === 'object');
+  }
+  if (parsed && parsed.corpid) {
+    const { corpid, token, baseurl, userId } = parsed;
+    return [{ corpid, token, baseurl, userId, enable: true }];
+  }
+  return [];
+}
+
+function upsertCompany(companies, entry) {
+  const index = companies.findIndex((item) => String(item.corpid || '').trim() === entry.corpid);
+  const next = companies.map((item) => ({ ...item, enable: false }));
+  if (index === -1) {
+    next.push({ ...entry, enable: true });
+  } else {
+    next[index] = { ...next[index], ...entry, enable: true };
+  }
+  return next;
 }
 
 async function setToken(kwargs) {
@@ -183,15 +314,16 @@ async function setToken(kwargs) {
   }
 
   const baseurl = resolveBaseUrl(corpid);
-  const config = { corpid, token: personalToken, baseurl, userId };
+  const companies = upsertCompany(readCompanies(), { corpid, token: personalToken, baseurl, userId });
 
   fs.mkdirSync(CONFIG_DIR, { recursive: true });
-  fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2) + '\n', 'utf8');
+  fs.writeFileSync(CONFIG_FILE, JSON.stringify(companies, null, 2) + '\n', 'utf8');
 
   try {
     const formlistFile = await writeFormlistFile(corpid);
     const commandMapFile = writeCommandMap(corpid);
-    return createResult('ok', '已保存 corpid、token、baseurl、userId，并同步表单模板缓存与命令映射文件', corpid, baseurl, userId, formlistFile, commandMapFile);
+    const departmentUserFile = await writeDepartmentUserFile(corpid);
+    return createResult('ok', '已保存 corpid、token、baseurl、userId，并同步表单模板缓存、命令映射文件与部门/员工缓存', corpid, baseurl, userId, formlistFile, commandMapFile, true, companies.length, departmentUserFile);
   } catch (error) {
     return createResult(
       'partial',
@@ -201,6 +333,9 @@ async function setToken(kwargs) {
       userId,
       getFormlistFile(corpid),
       '',
+      true,
+      companies.length,
+      '',
     );
   }
 }
@@ -208,7 +343,7 @@ async function setToken(kwargs) {
 cli({
   site: 'xbb',
   name: 'token-set',
-  description: '保存 xbb API token,corpid,formId清单 到本地配置文件，其他命令需要意图识别或找formId时，优先查命令映射文件(command-map.md)',
+  description: '保存 xbb API token,corpid,formId清单 到本地配置文件，并缓存部门与员工清单(<corpid>.department-user.json)；其他命令需要意图识别或找formId时，优先查命令映射文件(<corpid>.command-map.md)',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,
@@ -217,6 +352,6 @@ cli({
     { name: 'token', type: 'str', help: '要保存的 API token' },
     { name: 'userId', type: 'str', help: '操作人id（必填）' },
   ],
-  columns: ['status', 'message', 'configFile', 'corpid', 'baseurl', 'userId', 'formlistFile', 'commandMapFile'],
+  columns: ['status', 'message', 'configFile', 'corpid', 'baseurl', 'userId', 'enable', 'companyCount', 'formlistFile', 'commandMapFile', 'departmentUserFile'],
   func: setToken,
 });

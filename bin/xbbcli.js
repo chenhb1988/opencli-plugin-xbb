@@ -91,6 +91,11 @@ function outputRows(rows, command, format) {
   }
   process.stdout.write(`${columns.join('\t')}\n`);
   for (const row of rows) process.stdout.write(`${columns.map((column) => String(row[column] ?? '')).join('\t')}\n`);
+
+  const footer = typeof command.footerExtra === "function"
+    ? command.footerExtra()
+    : command.footerExtra;
+  if (footer) process.stdout.write(`${footer}\n`);
 }
 
 await loadCommands();

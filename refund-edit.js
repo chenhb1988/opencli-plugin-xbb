@@ -9,7 +9,22 @@ const CONFIG_FILE = path.join(CONFIG_DIR, 'config.env');
 const API_URL = 'https://proapi.xbongbong.com/pro/v2/api/refund/edit';
 const DEFAULT_BASE_URL = 'https://proapi.xbongbong.com';
 
-function readConfig() { try { return JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8')); } catch { return {}; } }
+function readConfig() {
+  try {
+    const parsed = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
+    const companies = Array.isArray(parsed)
+      ? parsed
+      : Array.isArray(parsed?.companies)
+        ? parsed.companies
+        : null;
+    if (companies) {
+      return companies.find((item) => item && item.enable) || {};
+    }
+    return parsed || {};
+  } catch {
+    return {};
+  }
+}
 function getRuntimeConfig() {
   const config = readConfig();
   return { corpid: String(config.corpid || '').trim(), token: String(config.token || '').trim(), baseUrl: String(config.baseurl || DEFAULT_BASE_URL).trim(), userId: String(config.userId || '').trim() };
