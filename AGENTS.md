@@ -14,7 +14,7 @@ opencli plugin install github:chenhb1988/opencli-plugin-xbb
 opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>
 ```
 
-凭证保存在 `~/.xbbcli/config.env`，文件是 JSON 数组，支持保存多家公司，每家公司含 `corpid`/`token`/`baseurl`/`userId`/`enable`，任何时刻仅且只有一个公司的 `enable` 为 `true`。`token-set` 会按 `corpid` 新增或覆盖配置并把该公司置为启用，同时将表单列表缓存写入 `~/.xbbcli/<corpid>.formlist.json`、命令映射写入 `~/.xbbcli/<corpid>.command-map.md`、部门与员工清单缓存写入 `~/.xbbcli/<corpid>.department-user.json`。除 `token-set`/`token-list`/`token-use`/`token-del` 外，其余命令都从该配置读取当前启用公司的 `corpid` 与 `token`。
+凭证保存在 `~/.xbbcli/config.env`，文件是 JSON 数组，支持保存多家公司，每家公司含 `corpid`/`corpName`/`token`/`baseurl`/`userId`/`userName`/`enable`，任何时刻仅且只有一个公司的 `enable` 为 `true`。`token-set` 会按 `corpid` 新增或覆盖配置并把该公司置为启用，同时将表单列表缓存写入 `~/.xbbcli/<corpid>.formlist.json`、命令映射写入 `~/.xbbcli/<corpid>.command-map.md`、部门与员工清单缓存写入 `~/.xbbcli/<corpid>.department-user.json`，并从部门 `id` 为 `1` 的部门名称得到公司名写入该公司的 `corpName`、从员工列表按 `userId` 匹配姓名写入 `userName`。除 `token-set`/`token-list`/`token-use`/`token-del` 外，其余命令都从该配置读取当前启用公司的 `corpid` 与 `token`。
 
 ## 验证方式
 

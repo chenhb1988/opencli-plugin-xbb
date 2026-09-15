@@ -156,7 +156,7 @@ function toUserEntry(row) {
   };
 }
 
-async function writeDepartmentUserFile(corpid) {
+async function writeDepartmentUserFile(corpid, userId) {
   const departmentRows = await fetchAllRows('department-list', READ_ALL_PAGE_SIZE);
   const userRows = await fetchAllRows('user-list', READ_ALL_PAGE_SIZE);
   const payload = {
@@ -171,7 +171,34 @@ async function writeDepartmentUserFile(corpid) {
   const file = getDepartmentUserFile(corpid);
   fs.mkdirSync(CONFIG_DIR, { recursive: true });
   fs.writeFileSync(file, JSON.stringify(payload, null, 2) + '\n', 'utf8');
-  return file;
+  return { file, corpName: getCorpName(departmentRows), userName: getUserName(userRows, userId) };
+}
+
+function getCorpName(departmentRows) {
+  const root = departmentRows.find((row) => Number(row.id) === 1);
+  return root ? String(root.name || '').trim() : '';
+}
+
+function getUserName(userRows, userId) {
+  const target = String(userId || '').trim();
+  if (!target) {
+    return '';
+  }
+  const exact = userRows.find((row) => String(row.userId || '').trim() === target);
+  const matched = exact || userRows.find((row) => String(row.userId || '').trim().toLowerCase() === target.toLowerCase());
+  return matched ? String(matched.name || '').trim() : '';
+}
+
+function writeCompanyProfile(corpid, profile) {
+  const fields = Object.entries(profile).filter(([, value]) => String(value || '').trim() !== '');
+  if (!fields.length) {
+    return;
+  }
+  const patch = Object.fromEntries(fields);
+  const companies = readCompanies().map((item) => (
+    String(item.corpid || '').trim() === corpid ? { ...item, ...patch } : item
+  ));
+  fs.writeFileSync(CONFIG_FILE, JSON.stringify(companies, null, 2) + '\n', 'utf8');
 }
 
 function normalizeBusinessType(value) {
@@ -237,7 +264,7 @@ function writeCommandMap(corpid) {
   return commandMapFile;
 }
 
-function createResult(status, message, corpid, baseurl, userId, formlistFile = '', commandMapFile = '', enable = '', companyCount = '', departmentUserFile = '') {
+function createResult(status, message, corpid, baseurl, userId, formlistFile = '', commandMapFile = '', enable = '', companyCount = '', departmentUserFile = '', corpName = '', userName = '') {
   return [{
     status,
     message,
@@ -250,6 +277,8 @@ function createResult(status, message, corpid, baseurl, userId, formlistFile = '
     formlistFile,
     commandMapFile,
     departmentUserFile,
+    corpName,
+    userName,
   }];
 }
 
@@ -322,8 +351,9 @@ async function setToken(kwargs) {
   try {
     const formlistFile = await writeFormlistFile(corpid);
     const commandMapFile = writeCommandMap(corpid);
-    const departmentUserFile = await writeDepartmentUserFile(corpid);
-    return createResult('ok', '已保存 corpid、token、baseurl、userId，并同步表单模板缓存、命令映射文件与部门/员工缓存', corpid, baseurl, userId, formlistFile, commandMapFile, true, companies.length, departmentUserFile);
+    const { file: departmentUserFile, corpName, userName } = await writeDepartmentUserFile(corpid, userId);
+    writeCompanyProfile(corpid, { corpName, userName });
+    return createResult('ok', '已保存 corpid、token、baseurl、userId，并同步表单模板缓存、命令映射文件与部门/员工缓存', corpid, baseurl, userId, formlistFile, commandMapFile, true, companies.length, departmentUserFile, corpName, userName);
   } catch (error) {
     return createResult(
       'partial',
@@ -352,6 +382,6 @@ cli({
     { name: 'token', type: 'str', help: '要保存的 API token' },
     { name: 'userId', type: 'str', help: '操作人id（必填）' },
   ],
-  columns: ['status', 'message', 'configFile', 'corpid', 'baseurl', 'userId', 'enable', 'companyCount', 'formlistFile', 'commandMapFile', 'departmentUserFile'],
+  columns: ['status', 'message', 'configFile', 'corpid', 'baseurl', 'userId', 'enable', 'companyCount', 'formlistFile', 'commandMapFile', 'departmentUserFile', 'corpName', 'userName'],
   func: setToken,
 });

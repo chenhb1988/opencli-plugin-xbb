@@ -50,7 +50,7 @@ function maskToken(token) {
   return `${value.slice(0, 8)}****${value.slice(-4)}`;
 }
 function makeErrorRow(code, msg) {
-  return [{ enable: '', corpid: '', userId: '', baseurl: '', token: '', code, msg }];
+  return [{ enable: '', corpid: '', corpName: '', userName: '', userId: '', baseurl: '', token: '', code, msg }];
 }
 
 cli({
@@ -64,7 +64,7 @@ cli({
   args: [
     { name: 'showToken', type: 'bool', default: false, help: '显示完整 token；默认只显示脱敏预览' },
   ],
-  columns: ['enable', 'corpid', 'userId', 'baseurl', 'token', 'code', 'msg'],
+  columns: ['enable', 'corpid', 'userId', 'baseurl', 'token', 'corpName', 'userName', 'code', 'msg'],
   func: async (kwargs) => {
     const companies = readCompanies();
     if (!companies.length) {
@@ -78,6 +78,8 @@ cli({
       userId: String(item.userId || ''),
       baseurl: String(item.baseurl || ''),
       token: showToken ? String(item.token || '') : maskToken(item.token),
+      corpName: String(item.corpName || ''),
+      userName: String(item.userName || ''),
       code: '',
       msg: '',
     }));
@@ -88,6 +90,8 @@ cli({
         userId: '',
         baseurl: '',
         token: '',
+        corpName: '',
+        userName: '',
         code: 'INVALID_ENABLE',
         msg: `配置中启用（enable=true）的公司数量为 ${enabledCount}，请用 xbbcli token-use --corpid <CORPID> 修正`,
       });
