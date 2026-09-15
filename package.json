@@ -4,7 +4,7 @@
   "description": "销帮帮 CRM 的独立命令行工具",
   "type": "module",
   "bin": {
-    "xbbcli": "./bin/xbbcli.js"
+    "xbbcli": "bin/xbbcli.js"
   },
   "files": [
     "bin",
