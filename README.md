@@ -116,12 +116,40 @@ xbbcli user-list --pageSize 200 -f json
 - `corpid` 以 `ding` 开头，或包含 `$$ding` 时，使用 `https://proapi.xbongbong.com`
 - 其他 `corpid` 使用 `https://appapi.xbongbong.com`
 
+## 环境变量模式（单公司）
+
+除 `config.env` 外，命令也支持从环境变量读取一家公司的凭证，便于 CI、容器与其他工具集成：
+
+| 环境变量 | 对应字段 |
+| --- | --- |
+| `XBB_CORPID` | `corpid` |
+| `XBB_TOKEN` | `token` |
+| `XBB_BASEURL` | `baseurl` |
+| `XBB_USERID` | `userId` |
+| `XBB_CORPNAME` | `corpName` |
+| `XBB_USERNAME` | `userName` |
+
+读取优先级：
+
+1. `config.env` 中存在 `enable=true` 的公司时，使用该配置（多公司切换行为不变）
+2. `config.env` 缺失、解析失败或没有启用公司时，回落到上述环境变量
+3. 设置 `XBB_ENV_ONLY=1` 可强制只使用环境变量（完全忽略 `config.env`）
+
+`token-set` 成功后会自动把这 6 个值写入环境变量（加 `--noEnv` 可跳过）：
+
+- Windows：用 `setx` 写入用户级环境变量，**只对新开的终端生效**
+- macOS/Linux：写入 `~/.xbbcli/env.sh`（`export` 形式，权限 600），需要 `source ~/.xbbcli/env.sh` 才在当前 shell 生效
+
+环境变量模式只支持一家公司：此时 `token-list` 以 `source=env` 单行显示，`token-use` / `token-del` 会返回不支持多公司的错误行，并提示改用 `config.env`。
+
+> 注意：`token-del` 不会清理已经写入的环境变量。如需移除环境变量模式，Windows 下执行 `setx XBB_TOKEN ""`（其余 `XBB_*` 同理）并重开终端；macOS/Linux 下删除 `~/.xbbcli/env.sh`，再 `unset` 当前 shell 中已导出的变量。
+
 ## 当前支持的命令
 
 ### 配置
 
-- `token-set`：保存个人 token、`corpid`、`userId`、`baseurl`，并刷新本地表单缓存、命令映射文件与部门/员工缓存；传入的 token 不以 `user_` 开头时，会先为该 `userId` 刷新并保存个人 token
-- `token-list`：列出本地保存的所有公司配置和唯一启用的公司（含 `corpName` 公司名称与 `userName` 操作人姓名）；`--showToken` 显示完整 token（默认脱敏）
+- `token-set`：保存个人 token、`corpid`、`userId`、`baseurl`，并刷新本地表单缓存、命令映射文件与部门/员工缓存；传入的 token 不以 `user_` 开头时，会先为该 `userId` 刷新并保存个人 token；成功后同步写入 `XBB_*` 环境变量（Windows 用 `setx`，其他平台写 `~/.xbbcli/env.sh`），`--noEnv` 可跳过；返回 `envStored` / `envFile` 两列
+- `token-list`：列出本地保存的所有公司配置和唯一启用的公司（含 `corpName` 公司名称与 `userName` 操作人姓名，`source` 列标记来源 `config`/`env`）；`--showToken` 显示完整 token（默认脱敏）；环境变量模式下单行显示
 - `token-use`：切换当前启用的公司（`xbbcli token-use --corpid <CORPID>`），保证仅且只有一个公司被启用
 - `token-del`：删除指定公司的本地配置（`xbbcli token-del --corpid <CORPID>`），并保证剩余配置中仅且只有一个公司被启用
 - `token-generate`：生成/获取个人 token，`--resetToken 0` 获取（默认）、`1` 刷新；`--checkUserId` 未传则用配置中的 `userId`
@@ -369,6 +397,7 @@ xbbcli user-list --pageSize 200 -f json
 - 先执行一次 `token-set` 保存有效的 `corpid`、`token`、`userId`
 - 除 `token-set` 外，其余命令都会从 `~/.xbbcli/config.env` 读取 `corpid`
 - 大部分命令会从 `~/.xbbcli/config.env` 读取 `token`
+- 未配置 `config.env`（或其中没有启用公司）时，命令会回落到 `XBB_CORPID` / `XBB_TOKEN` / `XBB_BASEURL` / `XBB_USERID` / `XBB_CORPNAME` / `XBB_USERNAME` 环境变量；`XBB_ENV_ONLY=1` 可强制只用环境变量
 - 所有命令会从配置中读取 `userId` 并附加到请求 header 中
 - 大部分命令需要 formId 参数，可以根据业务名称或 businessType 从 `~/.xbbcli/<corpid>.formlist.json` 中获取 formId
 - 需要查询部门 id/名称，或员工 userId/所属部门时，可以先查 `~/.xbbcli/<corpid>.department-user.json`（由 `token-set` 分页抓取并缓存全部部门与员工）
@@ -380,6 +409,7 @@ xbbcli user-list --pageSize 200 -f json
 - 加 `--debug` 可以输出 `requestBody` 和 `responseBody`
 - 加 `--raw` 可以输出接口返回的原始 JSON 字符串（所有 list 命令均支持）
 - 在填充参数时不清楚参数含义/下拉框可选项值，调用 `form-get` 命令获取 form 解释
+- `xbbcli -v` / `xbbcli --version` 查看版本号（读取 `package.json` 的 `version`）
 
 ## 常用示例
 

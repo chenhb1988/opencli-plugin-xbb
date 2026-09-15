@@ -21,12 +21,22 @@ async function loadCommands() {
   }
 }
 
+function readVersion() {
+  try {
+    const parsed = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+    return String(parsed.version || '').trim() || 'unknown';
+  } catch {
+    return 'unknown';
+  }
+}
+
 function printHelp() {
   const commands = [...getRegistry().values()].sort((a, b) => a.name.localeCompare(b.name));
-  process.stdout.write('Usage: xbbcli <command> [options]\n\nCommands:\n');
+  process.stdout.write('Usage: xbbcli <command> [options]\n       xbbcli -v | --version\n\nCommands:\n');
   for (const command of commands) {
     process.stdout.write(`  ${command.name.padEnd(34)} ${command.description || ''}\n`);
   }
+  process.stdout.write(`\n  ${'-v, --version'.padEnd(34)} show version\n`);
 }
 
 function printCommandHelp(command) {
@@ -100,7 +110,10 @@ function outputRows(rows, command, format) {
 
 await loadCommands();
 const [commandName, ...argv] = process.argv.slice(2);
-if (!commandName || commandName === '--help' || commandName === '-h') {
+if (commandName === '--version' || commandName === '-v') {
+  process.stdout.write(`${readVersion()}\n`);
+  process.exitCode = 0;
+} else if (!commandName || commandName === '--help' || commandName === '-h') {
   printHelp();
   process.exitCode = 0;
 } else {

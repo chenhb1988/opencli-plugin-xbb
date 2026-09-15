@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { cli, Strategy } from './xbb-registry.js';
+import { isEnvActive, isEnvOnly, getEnvVarNames } from './xbb-config.js';
 
 const CONFIG_DIR = path.join(os.homedir(), '.xbbcli');
 const CONFIG_FILE = path.join(CONFIG_DIR, 'config.env');
@@ -64,6 +65,10 @@ async function useCompany(kwargs) {
   const corpid = String(kwargs.corpid || '').trim();
   if (!corpid) {
     return createResult('error', '缺少 --corpid', '', '', '');
+  }
+
+  if (isEnvOnly() || isEnvActive()) {
+    return createResult('error', `当前为环境变量模式（${getEnvVarNames().join(', ')}），不支持切换公司；如需多公司请改用 config.env`, corpid, '', '');
   }
 
   const companies = readCompanies();

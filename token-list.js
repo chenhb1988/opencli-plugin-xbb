@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { cli, Strategy } from './xbb-registry.js';
+import { readEnvConfig, hasEnvConfig, isEnvOnly } from './xbb-config.js';
 
 const CONFIG_DIR = path.join(os.homedir(), '.xbbcli');
 const CONFIG_FILE = path.join(CONFIG_DIR, 'config.env');
@@ -50,7 +51,7 @@ function maskToken(token) {
   return `${value.slice(0, 8)}****${value.slice(-4)}`;
 }
 function makeErrorRow(code, msg) {
-  return [{ enable: '', corpid: '', corpName: '', userName: '', userId: '', baseurl: '', token: '', code, msg }];
+  return [{ enable: '', corpid: '', corpName: '', userName: '', userId: '', baseurl: '', token: '', code, msg, source: '' }];
 }
 
 cli({
@@ -64,9 +65,24 @@ cli({
   args: [
     { name: 'showToken', type: 'bool', default: false, help: '显示完整 token；默认只显示脱敏预览' },
   ],
-  columns: ['enable', 'corpid', 'userId', 'baseurl', 'token', 'corpName', 'userName', 'code', 'msg'],
+  columns: ['enable', 'corpid', 'userId', 'baseurl', 'token', 'corpName', 'userName', 'code', 'msg', 'source'],
   func: async (kwargs) => {
     const companies = readCompanies();
+    const envConfig = readEnvConfig();
+    if (isEnvOnly() || (!companies.some((item) => item && item.enable === true) && hasEnvConfig(envConfig))) {
+      return [{
+        enable: 'true',
+        corpid: String(envConfig.corpid || ''),
+        userId: String(envConfig.userId || ''),
+        baseurl: String(envConfig.baseurl || ''),
+        token: Boolean(kwargs.showToken) ? String(envConfig.token || '') : maskToken(envConfig.token),
+        corpName: String(envConfig.corpName || ''),
+        userName: String(envConfig.userName || ''),
+        code: '',
+        msg: '来源为环境变量 XBB_*（环境变量模式不支持多公司切换）',
+        source: 'env',
+      }];
+    }
     if (!companies.length) {
       return makeErrorRow('NO_CONFIG', '缺少本地配置；请先执行 xbbcli token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>');
     }
@@ -82,6 +98,7 @@ cli({
       userName: String(item.userName || ''),
       code: '',
       msg: '',
+      source: 'config',
     }));
     if (enabledCount !== 1) {
       rows.push({
@@ -92,6 +109,7 @@ cli({
         token: '',
         corpName: '',
         userName: '',
+        source: 'config',
         code: 'INVALID_ENABLE',
         msg: `配置中启用（enable=true）的公司数量为 ${enabledCount}，请用 xbbcli token-use --corpid <CORPID> 修正`,
       });

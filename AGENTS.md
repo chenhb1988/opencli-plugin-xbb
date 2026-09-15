@@ -14,7 +14,7 @@ opencli plugin install github:chenhb1988/opencli-plugin-xbb
 opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>
 ```
 
-凭证保存在 `~/.xbbcli/config.env`，文件是 JSON 数组，支持保存多家公司，每家公司含 `corpid`/`corpName`/`token`/`baseurl`/`userId`/`userName`/`enable`，任何时刻仅且只有一个公司的 `enable` 为 `true`。`token-set` 会按 `corpid` 新增或覆盖配置并把该公司置为启用，同时将表单列表缓存写入 `~/.xbbcli/<corpid>.formlist.json`、命令映射写入 `~/.xbbcli/<corpid>.command-map.md`、部门与员工清单缓存写入 `~/.xbbcli/<corpid>.department-user.json`，并从部门 `id` 为 `1` 的部门名称得到公司名写入该公司的 `corpName`、从员工列表按 `userId` 匹配姓名写入 `userName`。除 `token-set`/`token-list`/`token-use`/`token-del` 外，其余命令都从该配置读取当前启用公司的 `corpid` 与 `token`。
+凭证保存在 `~/.xbbcli/config.env`，文件是 JSON 数组，支持保存多家公司，每家公司含 `corpid`/`corpName`/`token`/`baseurl`/`userId`/`userName`/`enable`，任何时刻仅且只有一个公司的 `enable` 为 `true`。`token-set` 会按 `corpid` 新增或覆盖配置并把该公司置为启用，同时将表单列表缓存写入 `~/.xbbcli/<corpid>.formlist.json`、命令映射写入 `~/.xbbcli/<corpid>.command-map.md`、部门与员工清单缓存写入 `~/.xbbcli/<corpid>.department-user.json`，并从部门 `id` 为 `1` 的部门名称得到公司名写入该公司的 `corpName`、从员工列表按 `userId` 匹配姓名写入 `userName`。除 `token-set`/`token-list`/`token-use`/`token-del` 外，其余命令都从该配置读取当前启用公司的 `corpid` 与 `token`。此外支持环境变量兼容模式（只支持单公司）：`config.env` 缺失、解析失败或没有启用公司时，回落到 `XBB_CORPID`/`XBB_TOKEN`/`XBB_BASEURL`/`XBB_USERID`/`XBB_CORPNAME`/`XBB_USERNAME`；`XBB_ENV_ONLY=1` 强制只用环境变量；`token-set` 成功后会自动写入这 6 个环境变量（Windows 用 `setx` 写用户级变量、其他平台写 `~/.xbbcli/env.sh`），`--noEnv` 可跳过。所有命令的配置读取统一走 `xbb-config.js`，不要在命令文件里内联解析 `config.env`。
 
 ## 验证方式
 
@@ -32,7 +32,7 @@ opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>
 每个命令文件遵循以下结构（参考 `user-list.js`、`customer-list.js` 作为标准示例）：
 
 1. 硬编码 API URL 常量 + 配置路径（`~/.opencli/xbb/config.env`）
-2. `readConfig()` — 解析配置文件，失败返回 `{}`
+2. `readConfig()` — 委托给 `./xbb-config.js` 的 `readActiveConfig()`：`config.env` 有启用公司时用配置，否则回落 `XBB_*` 环境变量
 3. `getRuntimeConfig(kwargs)` — 合并 CLI 参数与配置文件
 4. `buildPayload(kwargs)` — 忽略 `undefined` 字段，不发送未提供的参数
 5. `getValidationError(payload, token)` — 返回 `{code, msg}` 或 `null`

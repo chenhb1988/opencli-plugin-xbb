@@ -3,6 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { cli, Strategy } from './xbb-registry.js';
+import { readActiveConfig } from './xbb-config.js';
 
 const CONFIG_DIR = path.join(os.homedir(), '.xbbcli');
 const CONFIG_FILE = path.join(CONFIG_DIR, 'config.env');
@@ -10,20 +11,7 @@ const API_URL = 'https://proapi.xbongbong.com/pro/v2/api/paymentSheet/addWriteOf
 const DEFAULT_BASE_URL = 'https://proapi.xbongbong.com';
 
 function readConfig() {
-  try {
-    const parsed = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
-    const companies = Array.isArray(parsed)
-      ? parsed
-      : Array.isArray(parsed?.companies)
-        ? parsed.companies
-        : null;
-    if (companies) {
-      return companies.find((item) => item && item.enable) || {};
-    }
-    return parsed || {};
-  } catch {
-    return {};
-  }
+  return readActiveConfig();
 }
 
 function getRuntimeConfig() {

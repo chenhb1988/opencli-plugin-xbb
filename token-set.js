@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { cli, Strategy, getRegistry } from './xbb-registry.js';
+import { persistEnvVars } from './xbb-config.js';
 
 const CONFIG_DIR = path.join(os.homedir(), '.xbbcli');
 const CONFIG_FILE = path.join(CONFIG_DIR, 'config.env');
@@ -264,7 +265,7 @@ function writeCommandMap(corpid) {
   return commandMapFile;
 }
 
-function createResult(status, message, corpid, baseurl, userId, formlistFile = '', commandMapFile = '', enable = '', companyCount = '', departmentUserFile = '', corpName = '', userName = '') {
+function createResult(status, message, corpid, baseurl, userId, formlistFile = '', commandMapFile = '', enable = '', companyCount = '', departmentUserFile = '', corpName = '', userName = '', envStored = '', envFile = '') {
   return [{
     status,
     message,
@@ -279,6 +280,8 @@ function createResult(status, message, corpid, baseurl, userId, formlistFile = '
     departmentUserFile,
     corpName,
     userName,
+    envStored,
+    envFile,
   }];
 }
 
@@ -353,7 +356,19 @@ async function setToken(kwargs) {
     const commandMapFile = writeCommandMap(corpid);
     const { file: departmentUserFile, corpName, userName } = await writeDepartmentUserFile(corpid, userId);
     writeCompanyProfile(corpid, { corpName, userName });
-    return createResult('ok', '已保存 corpid、token、baseurl、userId，并同步表单模板缓存、命令映射文件与部门/员工缓存', corpid, baseurl, userId, formlistFile, commandMapFile, true, companies.length, departmentUserFile, corpName, userName);
+    let envStored = 'skipped';
+    let envFile = '';
+    if (!kwargs.noEnv) {
+      try {
+        const envResult = persistEnvVars({ corpid, token: personalToken, baseurl, userId, corpName, userName });
+        envStored = envResult.stored;
+        envFile = envResult.file;
+      } catch (error) {
+        envStored = 'failed';
+        envFile = String(error.message || error);
+      }
+    }
+    return createResult('ok', '已保存 corpid、token、baseurl、userId，并同步表单模板缓存、命令映射文件与部门/员工缓存', corpid, baseurl, userId, formlistFile, commandMapFile, true, companies.length, departmentUserFile, corpName, userName, envStored, envFile);
   } catch (error) {
     return createResult(
       'partial',
@@ -381,7 +396,8 @@ cli({
     { name: 'corpid', type: 'str', help: '公司id（必填）' },
     { name: 'token', type: 'str', help: '要保存的 API token' },
     { name: 'userId', type: 'str', help: '操作人id（必填）' },
+    { name: 'noEnv', type: 'bool', default: false, help: '不写入环境变量，仅保存到 config.env' },
   ],
-  columns: ['status', 'message', 'configFile', 'corpid', 'baseurl', 'userId', 'enable', 'companyCount', 'formlistFile', 'commandMapFile', 'departmentUserFile', 'corpName', 'userName'],
+  columns: ['status', 'message', 'configFile', 'corpid', 'baseurl', 'userId', 'enable', 'companyCount', 'formlistFile', 'commandMapFile', 'departmentUserFile', 'corpName', 'userName', 'envStored', 'envFile'],
   func: setToken,
 });
