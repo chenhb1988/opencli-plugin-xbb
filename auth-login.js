@@ -287,7 +287,7 @@ async function authLogin(kwargs) {
 cli({
   site: 'xbb',
   name: 'auth-login',
-  description: '打开浏览器完成销帮帮登录，自动换取 API token 并保存配置（等价于完整 token-set 初始化）',
+  description: '打开浏览器完成销帮帮登录授权（等价于token-set）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

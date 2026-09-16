@@ -91,7 +91,7 @@ async function authStatus(kwargs) {
 cli({
   site: 'xbb',
   name: 'auth-status',
-  description: '以键值对回显当前激活配置的 corpid / corpName / userName / userId / baseurl / token（token 默认中间掩码）',
+  description: '回显当前激活的配置',
   strategy: Strategy.PUBLIC,
   access: 'read',
   browser: false,

@@ -160,7 +160,7 @@ async function authLogout(kwargs) {
 cli({
   site: 'xbb',
   name: 'auth-logout',
-  description: '登出：删除 config.env 中处于激活状态（enable=true）的公司配置，删除前备份为 config.env.bak，并默认同时清除 XBB_* 环境变量（--noEnv 跳过）',
+  description: '登出',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

@@ -6,7 +6,7 @@ import { cli, Strategy } from './xbb-registry.js';
 import { readActiveConfig } from './xbb-config.js';
 
 const CONFIG_FILE = path.join(os.homedir(), '.opencli', 'xbb', 'config.env');
-const API_URL = 'https://proapi.xbongbong.com/pro/v2/api/hkh/call/addTask';
+const API_URL = 'https://proapi.xbongbong.com/pro/v2/api/hkh/call/aiWords';
 const DEFAULT_BASE_URL = 'https://proapi.xbongbong.com';
 const MISSING_TOKEN_MESSAGE = '缺少 token；请先执行 opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>';
 
@@ -29,58 +29,31 @@ function buildApiUrl(baseUrl, apiUrl) {
   return `${baseUrl.replace(/\/+$/, '')}${apiPath}`;
 }
 
-function parseJsonArray(raw) {
-  const text = String(raw || '').trim();
-  if (!text) {
-    return null;
-  }
-  try {
-    const parsed = JSON.parse(text);
-    return Array.isArray(parsed) ? parsed : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
 function makeErrorRow(code, msg) {
-  return [{ code, msg }];
+  return [{ rank: '', id: '', wordsname: '', isonline: '', isuse: '', ismarket: '', ispy: '', code, msg }];
 }
 
 cli({
   site: 'xbb',
-  name: 'ai-call-add-task',
-  description: '批量AI呼叫接口（businessType: -1；业务模块: hkh AI呼叫）',
+  name: 'hkh-word-list',
+  description: '获取AI话术列表接口（businessType: -1；业务模块: hkh AI呼叫）',
   strategy: Strategy.PUBLIC,
-  access: 'write',
+  access: 'read',
   browser: false,
   domain: 'proapi.xbongbong.com',
   args: [
-    { name: 'formId', type: 'int', help: '表单id（必填）' },
-    { name: 'dataIdList', type: 'str', help: '客户id列表，JSON数组字符串（必填）' },
-    { name: 'id', type: 'int', help: 'AI话术ID（必填，可通过 ai-word-list 获取）' },
-    { name: 'businessType', type: 'int', help: '业务类型（必填）' },
     { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
   ],
-  columns: ['code', 'msg'],
+  columns: ['rank', 'id', 'wordsname', 'isonline', 'isuse', 'ismarket', 'ispy', 'code', 'msg'],
   func: async function (kwargs) {
     const debug = Boolean(kwargs.debug);
     const { corpid, token, baseUrl, userId } = getRuntimeConfig();
     const runtimeUserId = String(kwargs.userId || userId || '').trim();
     const payload = { corpid };
-    payload.formId = Number(kwargs.formId || 0);
-    const parsedDataIdList = parseJsonArray(kwargs.dataIdList);
-    if (Array.isArray(parsedDataIdList)) payload.dataIdList = parsedDataIdList;
-    payload.id = Number(kwargs.id || 0);
-    payload.businessType = Number(kwargs.businessType || 0);
     if (runtimeUserId) payload.userId = runtimeUserId;
     const requestBody = JSON.stringify(payload);
     if (!payload.corpid) return makeErrorRow('NO_CORPID', '缺少本地 corpid；请先执行 opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>');
-    if (!payload.formId) return makeErrorRow('NO_FORMID', '缺少 --formId');
-    if (parsedDataIdList === null) return makeErrorRow('NO_DATAIDLIST', '缺少 --dataIdList');
-    if (parsedDataIdList === undefined) return makeErrorRow('INVALID_DATAIDLIST', '--dataIdList 必须是 JSON 数组字符串');
-    if (!payload.id) return makeErrorRow('NO_ID', '缺少 --id');
-    if (!payload.businessType) return makeErrorRow('NO_BUSINESSTYPE', '缺少 --businessType');
     if (!token) return makeErrorRow('NO_TOKEN', MISSING_TOKEN_MESSAGE);
     const sign = crypto.createHash('sha256').update(requestBody + token).digest('hex');
     const headers = Object.assign({ 'Content-Type': 'application/json;charset=UTF-8', sign }, runtimeUserId ? { userId: runtimeUserId } : {});
@@ -98,6 +71,8 @@ cli({
     const responseBody = JSON.stringify(data);
     if (debug) process.stderr.write(`[debug] ResponseBody: ${responseBody}\n`);
     if (data.code !== 1) return makeErrorRow(data.code ?? '', data.msg ?? '未知错误');
-    return [{ code: data.code ?? '', msg: data.msg || '' }];
+    const list = Array.isArray(data.result?.wordList) ? data.result.wordList : [];
+    if (!list.length) return makeErrorRow('NO_DATA', '接口成功，但 wordList 为空');
+    return list.map((item, index) => ({ rank: index + 1, id: item.id || '', wordsname: item.wordsname || '', isonline: item.isonline ?? '', isuse: item.isuse ?? '', ismarket: item.ismarket ?? '', ispy: item.ispy ?? '', code: '', msg: '' }));
   },
 });
