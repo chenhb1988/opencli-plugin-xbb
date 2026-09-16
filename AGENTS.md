@@ -16,16 +16,20 @@ opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>
 
 凭证保存在 `~/.xbbcli/config.env`，文件是 JSON 数组，支持保存多家公司，每家公司含 `corpid`/`corpName`/`token`/`baseurl`/`userId`/`userName`/`enable`，任何时刻仅且只有一个公司的 `enable` 为 `true`。`token-set` 会按 `corpid` 新增或覆盖配置并把该公司置为启用，同时将表单列表缓存写入 `~/.xbbcli/<corpid>.formlist.json`、命令映射写入 `~/.xbbcli/<corpid>.command-map.md`、部门与员工清单缓存写入 `~/.xbbcli/<corpid>.department-user.json`，并从部门 `id` 为 `1` 的部门名称得到公司名写入该公司的 `corpName`、从员工列表按 `userId` 匹配姓名写入 `userName`。除 `token-set`/`token-list`/`token-use`/`token-del` 外，其余命令都从该配置读取当前启用公司的 `corpid` 与 `token`。此外支持环境变量兼容模式（只支持单公司）：`config.env` 缺失、解析失败或没有启用公司时，回落到 `XBB_CORPID`/`XBB_TOKEN`/`XBB_BASEURL`/`XBB_USERID`/`XBB_CORPNAME`/`XBB_USERNAME`；`XBB_ENV_ONLY=1` 强制只用环境变量；`token-set` 成功后会自动写入这 6 个环境变量（Windows 用 `setx` 写用户级变量、其他平台写 `~/.xbbcli/env.sh`），`--noEnv` 可跳过。所有命令的配置读取统一走 `xbb-config.js`，不要在命令文件里内联解析 `config.env`。
 
+`login` 是 `token-set` 的浏览器前置：用 `node:child_process` 拉起系统 Chrome/Edge（`--remote-debugging-pipe` + `--user-data-dir=~/.xbbcli/browser-profile`，fd3 写 / fd4 读，NUL 分隔的 CDP JSON，不开任何调试端口），用户在浏览器中自行完成登录（账号密码 / 短信 / 扫码均可），CLI 通过 `Target.getTargets` + `Target.attachToTarget` 后轮询页面 `localStorage` 读取 `{corpid, userId, xbbAccessToken}`，再在页面内 `fetch` `https://appgateway.xbongbong.com/pro/v1/apiToken/getApiToken`（body `{corpid, userId, platform:'web'}`，header `corpid` 与 `sign = SHA256(body + xbbAccessToken)`）换取个人 token，最后复用 `token-set` 的落盘逻辑。`xbbAccessToken` 是 `appgateway` 的 Web 会话域，**不能**直接用于业务命令（网关返回 `100012`）。浏览器与 CDP 的复用封装在 `xbb-browser.js`，`token-set` 与 `login` 共用的落盘逻辑在 `xbb-token-store.js`；`login.js` 只负责浏览器交互与换 token。参数：`--browser <chrome|edge|路径>`、`--timeout <秒>`（默认 300）、`--corpid`、`--keepOpen`、`--noEnv`、`--debug`、`--raw`。错误一律返回合成行：`NO_BROWSER`/`BROWSER_SPAWN_FAILED`/`BROWSER_LAUNCH_FAILED`/`BROWSER_CLOSED`/`LOGIN_TIMEOUT`/`API_TOKEN_FAILED`/`CORPID_MISMATCH`/`SAVE_FAILED`/`INVALID_TIMEOUT`。
+
 ## 验证方式
 
 无自动化测试。修改命令后，加 `--debug` 对真实 API 运行，检查序列化后的请求体和原始响应。
+
+`login` 的验证方式：`xbbcli login --browser edge --timeout 15 --keepOpen -f json`，应在 15s 后返回 `LOGIN_TIMEOUT` 合成错误行（浏览器已拉起、页面停在登录页）；`--browser nonexistent` 应返回 `NO_BROWSER`；`xbb-browser.js` 可单独用 headless 自检（`openBrowser({headless:true})` → `waitForPage()` → `close()`，`close()` 必须返回 `true`）。
 
 ## 代码风格规范
 
 - **仅使用 ESM** — `package.json` 中 `"type": "module"`，始终使用 `import`/`export`。
 - **Node 内置模块加 `node:` 前缀** — `node:fs`、`node:path`、`node:crypto` 等。
 - **所有命令从 `./opencli-registry.js` 导入**，不直接引用 `@jackwener/opencli`。
-- **不引入共享工具模块** — 跨文件复制代码，而非抽象共享，除非同一改动需同时应用于多个文件。
+- **不引入新的共享工具模块** — 跨文件优先复制代码，而非抽象共享，除非同一改动需同时应用于多个文件。仓库现有的共享模块只有两个，且都不注册命令：`xbb-config.js`（配置读取/环境变量）与 `xbb-token-store.js`（token-set 落盘：写 config.env、表单缓存、命令映射、部门/员工缓存、环境变量），`xbb-browser.js` 提供 `login` 用的浏览器 + CDP 能力。新增共享模块前先确认是否真的多处复用。
 
 ## 命令模块结构
 

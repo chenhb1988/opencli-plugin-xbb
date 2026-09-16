@@ -1,6 +1,6 @@
 # xbbcli
 
-销帮帮 CRM (`xbb`) 命令行工具。所有命令直接调用 HTTP API，不依赖 `opencli` 或浏览器。
+销帮帮 CRM (`xbb`) 命令行工具。业务命令全部直接调用 HTTP API，不依赖 `opencli`；只有 `login` 会拉起本地浏览器完成一次交互式登录。
 
 ## 安装
 
@@ -15,9 +15,13 @@ xbbcli --help
 
 
 
-首次使用时配置销帮帮凭证：
+首次使用时配置销帮帮凭证（二选一）：
 
 ```bash
+# 方式一：浏览器登录（推荐），自动换取 API token 并完成初始化
+xbbcli login
+
+# 方式二：手动填入已有 token
 xbbcli token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>
 ```
 
@@ -74,6 +78,25 @@ xbbcli token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>
   }
 ]
 ```
+
+### 浏览器登录（login，推荐）
+
+不带参数执行 `xbbcli login`：命令会拉起本地 Chrome / Edge 打开销帮帮登录页，你在浏览器里用**任意方式**完成登录（账号密码、短信验证码、钉钉 / 企微 / 飞书扫码都可以），命令检测到登录态后自动换取 API token：
+
+```bash
+xbbcli login                 # 自动探测 Chrome / Edge
+xbbcli login --browser edge  # 指定浏览器（chrome / edge / 可执行文件路径）
+xbbcli login --timeout 600   # 等待登录完成的秒数，默认 300
+xbbcli login --corpid <CORPID>  # 校验登录的企业，不一致时报错
+xbbcli login --keepOpen      # 登录成功后保留浏览器窗口（默认自动关闭）
+```
+
+执行后与 `token-set` 等价：写入 `~/.xbbcli/config.env`、刷新表单缓存、命令映射与部门/员工缓存，并同步 `XBB_*` 环境变量（加 `--noEnv` 可跳过）。
+
+技术实现：零依赖，用 `node:child_process` 以 `--remote-debugging-pipe` 启动浏览器（fd3 写 / fd4 读 CDP，**不开任何调试端口**），profile 固定为 `~/.xbbcli/browser-profile`（与日常浏览器隔离，登录态可复用）；CLI 读取页面 `localStorage` 的 `{corpid, userId, xbbAccessToken}`，再在页面内 `fetch` 网关 `apiToken/getApiToken` 换取个人 token。只支持 Chromium 内核浏览器（Chrome / Edge / Chromium），更多细节见 [`doc/login-command-design.md`](doc/login-command-design.md)。
+
+- `--debug` 输出请求体、返回体与浏览器信息（密钥只显示掩码），`--raw` 输出换取 API token 接口的原始响应
+- 失败时返回合成错误行：`NO_BROWSER`、`BROWSER_CLOSED`、`LOGIN_TIMEOUT`、`API_TOKEN_FAILED`、`CORPID_MISMATCH`、`SAVE_FAILED` 等
 
 `token-set` 会按 `corpid` 新增或覆盖一家公司，并把该公司置为 `enable=true`（其余公司自动置为 `false`），同时写入公司名称 `corpName`（取部门 `id` 为 `1` 的部门名称）和操作人姓名 `userName`（从员工列表中按 `userId` 匹配）。除 `token-set`、`token-list`、`token-use`、`token-del` 外，其余命令都使用 `enable` 为 `true` 的公司配置。
 
@@ -148,6 +171,7 @@ xbbcli user-list --pageSize 200 -f json
 
 ### 配置
 
+- `login`：拉起本地浏览器完成交互式登录（账号密码 / 短信 / 扫码均可），自动读取 Web 会话、换取 API token 并复用 `token-set` 落盘；支持 `--browser`、`--timeout`、`--corpid`、`--keepOpen`、`--noEnv`、`--debug`、`--raw`
 - `token-set`：保存个人 token、`corpid`、`userId`、`baseurl`，并刷新本地表单缓存、命令映射文件与部门/员工缓存；传入的 token 不以 `user_` 开头时，会先为该 `userId` 刷新并保存个人 token；成功后同步写入 `XBB_*` 环境变量（Windows 用 `setx`，其他平台写 `~/.xbbcli/env.sh`），`--noEnv` 可跳过；返回 `envStored` / `envFile` 两列
 - `token-list`：列出本地保存的所有公司配置和唯一启用的公司（含 `corpName` 公司名称与 `userName` 操作人姓名，`source` 列标记来源 `config`/`env`）；`--showToken` 显示完整 token（默认脱敏）；环境变量模式下单行显示
 - `token-use`：切换当前启用的公司（`xbbcli token-use --corpid <CORPID>`），保证仅且只有一个公司被启用
@@ -416,6 +440,7 @@ xbbcli user-list --pageSize 200 -f json
 ### 基础配置/初始化
 
 ```bash
+xbbcli login
 xbbcli token-set --corpid your_corpid --token your_token --userId your_userid
 ```
 
