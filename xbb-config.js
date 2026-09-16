@@ -111,3 +111,36 @@ export function persistEnvVars(values) {
   fs.writeFileSync(ENV_FILE, `${lines.join('\n')}\n`, { encoding: 'utf8', mode: 0o600 });
   return { stored: 'file', file: ENV_FILE, failed: [] };
 }
+
+// auth-logout --env：清除 XBB_* 环境变量（Windows 删除用户级变量，其他平台清理 env.sh 里的 export 行）
+export function clearEnvVars() {
+  const names = getEnvVarNames();
+  for (const name of names) {
+    delete process.env[name];
+  }
+  if (process.platform === 'win32') {
+    const failed = [];
+    let deleted = 0;
+    for (const name of names) {
+      const result = spawnSync('reg', ['delete', 'HKCU\\Environment', '/f', '/v', name], { encoding: 'utf8', windowsHide: true });
+      // 变量原本就不存在时 reg 返回非 0，这里只把进程无法启动视为失败
+      if (result.error) failed.push(name);
+      else if (result.status === 0) deleted += 1;
+    }
+    if (failed.length) {
+      throw new Error(`清除用户环境变量失败：${failed.join(', ')}`);
+    }
+    return { stored: deleted ? 'user' : 'none', file: '' };
+  }
+  if (!fs.existsSync(ENV_FILE)) {
+    return { stored: 'none', file: ENV_FILE };
+  }
+  const pattern = new RegExp('^\\s*export\\s+(' + names.join('|') + ')(\\s|=)');
+  const kept = fs.readFileSync(ENV_FILE, 'utf8').split(/\r?\n/).filter((line) => line.trim() !== '' && !pattern.test(line));
+  if (!kept.length) {
+    fs.rmSync(ENV_FILE, { force: true });
+    return { stored: 'removed', file: ENV_FILE };
+  }
+  fs.writeFileSync(ENV_FILE, `${kept.join('\n')}\n`, { encoding: 'utf8', mode: 0o600 });
+  return { stored: 'cleared', file: ENV_FILE };
+}

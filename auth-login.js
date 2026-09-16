@@ -3,8 +3,12 @@ import { cli, Strategy } from './xbb-registry.js';
 import { openBrowser, findBrowserExecutable, LOGIN_PAGE_URL } from './xbb-browser.js';
 import { saveCompanyCredentials } from './xbb-token-store.js';
 
-const GET_API_TOKEN_URL = 'https://appgateway.xbongbong.com/pro/v1/apiToken/getApiToken';
+const API_TOKEN_PATH = '/pro/v1/apiToken/getApiToken';
+const PRO_GATEWAY_ORIGIN = 'https://progateway.xbongbong.com';
+const APP_GATEWAY_ORIGIN = 'https://appgateway.xbongbong.com';
 const PLATFORM = 'web';
+// 登录成功判据：页面已跳转到工作台首页 /#/app/home
+const LOGIN_SUCCESS_PATTERN = /#\/app\/home/;
 const DEFAULT_TIMEOUT_SECONDS = 300;
 const POLL_INTERVAL_MS = 1000;
 // 网关提示登录态过期时，清掉页面里的旧会话并继续等待用户重新登录
@@ -16,6 +20,13 @@ function delay(ms) {
 
 function normalizeArg(value) {
   return String(value ?? '').trim();
+}
+
+// 网关域名与企业 baseurl 用同一套 corpid 判定：ding 开头或含 $$ding 走 pro 网关
+function resolveGatewayUrl(corpid) {
+  const value = normalizeArg(corpid);
+  const origin = value.startsWith('ding') || value.includes('$$ding') ? PRO_GATEWAY_ORIGIN : APP_GATEWAY_ORIGIN;
+  return `${origin}${API_TOKEN_PATH}`;
 }
 
 function buildSign(body, secret) {
@@ -82,10 +93,11 @@ async function readSession(session) {
 
 // 在页面内调用网关换取 API token：CORS 全开，sign = SHA256(JSON body + xbbAccessToken)
 async function exchangeApiToken(session, loginSession, debug) {
+  const url = resolveGatewayUrl(loginSession.corpid);
   const body = JSON.stringify({ corpid: loginSession.corpid, userId: loginSession.userId, platform: PLATFORM });
   const sign = buildSign(body, loginSession.accessToken);
   const expression = `(async () => {
-  const response = await fetch(${JSON.stringify(GET_API_TOKEN_URL)}, {
+  const response = await fetch(${JSON.stringify(url)}, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json;charset=UTF-8', corpid: ${JSON.stringify(loginSession.corpid)}, sign: ${JSON.stringify(sign)} },
     body: ${JSON.stringify(body)}
@@ -94,7 +106,7 @@ async function exchangeApiToken(session, loginSession, debug) {
 })()`;
 
   if (debug) {
-    process.stderr.write(`[debug] URL: ${GET_API_TOKEN_URL}\n[debug] Headers: ${JSON.stringify({ 'Content-Type': 'application/json;charset=UTF-8', corpid: loginSession.corpid, sign })}\n[debug] RequestBody: ${body}\n[debug] SessionToken: ${maskSecret(loginSession.accessToken)}\n`);
+    process.stderr.write(`[debug] Gateway: ${url}\n[debug] Headers: ${JSON.stringify({ 'Content-Type': 'application/json;charset=UTF-8', corpid: loginSession.corpid, sign })}\n[debug] RequestBody: ${body}\n[debug] SessionToken: ${maskSecret(loginSession.accessToken)}\n`);
   }
 
   const text = await session.evaluate(expression, { attempts: 3, delayMs: 200 });
@@ -148,7 +160,7 @@ async function finish(session, keepOpen) {
   }
 }
 
-async function login(kwargs) {
+async function authLogin(kwargs) {
   const debug = Boolean(kwargs.debug);
   const explicitBrowser = normalizeArg(kwargs.browser);
   const keepOpen = Boolean(kwargs.keepOpen);
@@ -201,6 +213,13 @@ async function login(kwargs) {
     }
 
     if (!current.accessToken) {
+      await delay(POLL_INTERVAL_MS);
+      continue;
+    }
+
+    // accessToken 已写入但页面还在登录流程中：等跳转到工作台首页再换取，避免会话未就绪时误判
+    if (!LOGIN_SUCCESS_PATTERN.test(current.href)) {
+      lastMessage = `页面地址为 ${current.href || '未知'}，尚未跳转到登录成功页 /#/app/home`;
       await delay(POLL_INTERVAL_MS);
       continue;
     }
@@ -261,13 +280,13 @@ async function login(kwargs) {
   await finish(session, keepOpen);
   return makeErrorRow(
     'LOGIN_TIMEOUT',
-    `等待登录超时（${timeoutSeconds}s），未在浏览器中检测到登录态${lastMessage ? `；最后一次页面读取失败：${lastMessage}` : ''}`,
+    `等待登录超时（${timeoutSeconds}s），未在浏览器中检测到登录成功态${lastMessage ? `；${lastMessage}` : ''}`,
   );
 }
 
 cli({
   site: 'xbb',
-  name: 'login',
+  name: 'auth-login',
   description: '打开浏览器完成销帮帮登录，自动换取 API token 并保存配置（等价于完整 token-set 初始化）',
   strategy: Strategy.PUBLIC,
   access: 'write',
@@ -283,5 +302,5 @@ cli({
     { name: 'raw', type: 'bool', default: false, help: '输出换取 API token 接口返回的原文' },
   ],
   columns: ['status', 'message', 'configFile', 'corpid', 'baseurl', 'userId', 'enable', 'companyCount', 'formlistFile', 'commandMapFile', 'departmentUserFile', 'corpName', 'userName', 'envStored', 'envFile', 'code', 'msg'],
-  func: login,
+  func: authLogin,
 });

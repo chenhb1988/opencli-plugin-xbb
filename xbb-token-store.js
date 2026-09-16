@@ -4,7 +4,7 @@ import path from 'node:path';
 import { getRegistry } from './xbb-registry.js';
 import { persistEnvVars } from './xbb-config.js';
 
-// token-set 与 login 共用的凭证落盘逻辑：写 config.env、表单缓存、命令映射、部门/员工缓存、环境变量
+// token-set 与 auth-login 共用的凭证落盘逻辑：写 config.env、表单缓存、命令映射、部门/员工缓存、环境变量
 export const CONFIG_DIR = path.join(os.homedir(), '.xbbcli');
 export const CONFIG_FILE = path.join(CONFIG_DIR, 'config.env');
 export const FORMLIST_FILE_SUFFIX = '.formlist.json';
@@ -321,7 +321,7 @@ export function upsertCompany(companies, entry) {
   return next;
 }
 
-// token-set / login 共用：保存一家公司的凭证并刷新本地缓存，返回与 token-set 相同结构的行
+// token-set / auth-login 共用：保存一家公司的凭证并刷新本地缓存，返回与 token-set 相同结构的行
 export async function saveCompanyCredentials(kwargs) {
   const corpid = normalizeArg(kwargs.corpid);
   const token = normalizeArg(kwargs.token);
