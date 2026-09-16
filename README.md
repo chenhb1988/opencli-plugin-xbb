@@ -1,6 +1,6 @@
 # xbbcli
 
-销帮帮 CRM (`xbb`) 命令行工具。业务命令全部直接调用 HTTP API，不依赖 `opencli`；只有 `login` 会拉起本地浏览器完成一次交互式登录。
+销帮帮 CRM (`xbb`) 命令行工具。业务命令全部直接调用 HTTP API，不依赖 `opencli`；只有 `auth-login` 会拉起本地浏览器完成一次交互式登录。
 
 ## 安装
 
@@ -19,7 +19,7 @@ xbbcli --help
 
 ```bash
 # 方式一：浏览器登录（推荐），自动换取 API token 并完成初始化
-xbbcli login
+xbbcli auth-login
 
 # 方式二：手动填入已有 token
 xbbcli token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>
@@ -79,26 +79,26 @@ xbbcli token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>
 ]
 ```
 
-### 浏览器登录（login，推荐）
+### 浏览器登录（auth-login，推荐）
 
-不带参数执行 `xbbcli login`：命令会拉起本地 Chrome / Edge 打开销帮帮登录页，你在浏览器里用**任意方式**完成登录（账号密码、短信验证码、钉钉 / 企微 / 飞书扫码都可以），命令检测到登录态后自动换取 API token：
+不带参数执行 `xbbcli auth-login`：命令会拉起本地 Chrome / Edge 打开销帮帮登录页，你在浏览器里用**任意方式**完成登录（账号密码、短信验证码、钉钉 / 企微 / 飞书扫码都可以），命令检测到登录态后自动换取 API token：
 
 ```bash
-xbbcli login                 # 自动探测 Chrome / Edge
-xbbcli login --browser edge  # 指定浏览器（chrome / edge / 可执行文件路径）
-xbbcli login --timeout 600   # 等待登录完成的秒数，默认 300
-xbbcli login --corpid <CORPID>  # 校验登录的企业，不一致时报错
-xbbcli login --keepOpen      # 登录成功后保留浏览器窗口（默认自动关闭）
+xbbcli auth-login                 # 自动探测 Chrome / Edge
+xbbcli auth-login --browser edge  # 指定浏览器（chrome / edge / 可执行文件路径）
+xbbcli auth-login --timeout 600   # 等待登录完成的秒数，默认 300
+xbbcli auth-login --corpid <CORPID>  # 校验登录的企业，不一致时报错
+xbbcli auth-login --keepOpen      # 登录成功后保留浏览器窗口（默认自动关闭）
 ```
 
 执行后与 `token-set` 等价：写入 `~/.xbbcli/config.env`、刷新表单缓存、命令映射与部门/员工缓存，并同步 `XBB_*` 环境变量（加 `--noEnv` 可跳过）。
 
-技术实现：零依赖，用 `node:child_process` 以 `--remote-debugging-pipe` 启动浏览器（fd3 写 / fd4 读 CDP，**不开任何调试端口**），profile 固定为 `~/.xbbcli/browser-profile`（与日常浏览器隔离，登录态可复用）；CLI 读取页面 `localStorage` 的 `{corpid, userId, xbbAccessToken}`，再在页面内 `fetch` 网关 `apiToken/getApiToken` 换取个人 token。只支持 Chromium 内核浏览器（Chrome / Edge / Chromium），更多细节见 [`doc/login-command-design.md`](doc/login-command-design.md)。
+技术实现：零依赖，用 `node:child_process` 以 `--remote-debugging-pipe` 启动浏览器（fd3 写 / fd4 读 CDP，**不开任何调试端口**），profile 固定为 `~/.xbbcli/browser-profile`（与日常浏览器隔离，登录态可复用）；CLI 读取页面 `localStorage` 的 `{corpid, userId, xbbAccessToken}`，再在页面内 `fetch` 网关 `apiToken/getApiToken` 换取个人 token。只支持 Chromium 内核浏览器（Chrome / Edge / Chromium），更多细节见 [`doc/auth-login-command-design.md`](doc/auth-login-command-design.md)。
 
 - `--debug` 输出请求体、返回体与浏览器信息（密钥只显示掩码），`--raw` 输出换取 API token 接口的原始响应
 - 失败时返回合成错误行：`NO_BROWSER`、`BROWSER_CLOSED`、`LOGIN_TIMEOUT`、`API_TOKEN_FAILED`、`CORPID_MISMATCH`、`SAVE_FAILED` 等
 
-`token-set` 会按 `corpid` 新增或覆盖一家公司，并把该公司置为 `enable=true`（其余公司自动置为 `false`），同时写入公司名称 `corpName`（取部门 `id` 为 `1` 的部门名称）和操作人姓名 `userName`（从员工列表中按 `userId` 匹配）。除 `token-set`、`token-list`、`token-use`、`token-del` 外，其余命令都使用 `enable` 为 `true` 的公司配置。
+`token-set` 会按 `corpid` 新增或覆盖一家公司，并把该公司置为 `enable=true`（其余公司自动置为 `false`），同时写入公司名称 `corpName`（取部门 `id` 为 `1` 的部门名称）和操作人姓名 `userName`（从员工列表中按 `userId` 匹配）。除 `token-set`、`token-list`、`token-use`、`token-del`、`auth-status`、`auth-logout` 外，其余命令都使用 `enable` 为 `true` 的公司配置。
 
 同时会自动拉取两份表单清单并合并缓存到：
 
@@ -139,6 +139,37 @@ xbbcli user-list --pageSize 200 -f json
 - `corpid` 以 `ding` 开头，或包含 `$$ding` 时，使用 `https://proapi.xbongbong.com`
 - 其他 `corpid` 使用 `https://appapi.xbongbong.com`
 
+## 查看当前配置与登出
+
+```bash
+xbbcli auth-status                # 回显当前激活的配置（token 默认掩码）
+xbbcli auth-status --showToken    # 需要完整 token 时
+xbbcli auth-logout                # 登出：删除激活的那一家配置 + 清除 XBB_* 环境变量
+xbbcli auth-logout --noEnv        # 只删 config.env，保留环境变量
+```
+
+- `auth-status` 以 `key` / `value` 两列回显当前生效的配置值，固定 6 行：`corpid`、`corpName`、`userName`、`userId`、`baseurl`、`token`；不再输出 `status`、`source`、`message`、`enable`、`companyCount`、`envActive`、`configFile`、`code`、`msg` 这些元信息列。
+
+```text
+key       value
+corpid    dinge3fa697f86d461d2
+corpName  杭州逍邦网络科技有限公司
+userName  陈会兵
+userId    02415643151585
+baseurl   https://proapi.xbongbong.com
+token     user_6***a7da
+note      以上取值来自环境变量 XBB_*（config.env 中没有启用公司，回落到环境变量）；环境变量模式不支持多公司切换
+```
+
+- 来源（`config.env` 启用公司 还是 `XBB_*`）与冲突提醒只在需要时以 `note` 行追加：环境变量与 `config.env` 同时存在时提示「config.env 启用项优先」；`config.env` 里出现多个 `enable=true` 时提示用 `token-use` 修正。
+- 没有任何生效配置时，6 个值一律留空并给出 `note` 提示下一步命令（即使 `XBB_BASEURL` / `XBB_USERID` 单独残留也不会当成生效值回显）。配置文件路径、公司数量、生效的环境变量名改用 `--debug` 输出到 stderr。
+- `auth-status` 默认把 token 掩码为「前 6 + `***` + 后 4」（长度不足 11 时只保留前 2 位），只有 `--showToken` 才输出明文。
+- `auth-logout` 只删除 `enable=true` 的那一条，**不会**把其他公司自动提升为启用：登出后本地可能一个启用公司都没有，需要 `xbbcli token-use --corpid <CORPID>` 或重新 `auth-login` / `token-set`。想保留其他公司并可切换时，用 `xbbcli token-del --corpid <CORPID>`（它会保证剩余配置仍有且仅有一个启用）。
+- 删除前 `config.env` 会整份备份到 `~/.xbbcli/config.env.bak`（每次登出覆盖），`backupFile` 列给出路径；误删把 `.bak` 复制回 `config.env` 即可恢复。
+- 默认**同时**清除 `XBB_*` 环境变量：Windows 用 `reg delete HKCU\Environment` 删除用户级变量（已打开的终端要重开才生效，`envStored` 为 `user`，原本就不存在时为 `none`）；macOS/Linux 清理 `~/.xbbcli/env.sh` 里的 `export XBB_*` 行（文件清空则删除，`envStored` 为 `cleared` / `removed` / `none`）。加 `--noEnv`（或 `--env=false`）时只删 `config.env`，此时若环境变量仍在，`message` 会提示「业务命令会回落到它，本次不算彻底登出」（`XBB_ENV_ONLY=1` 时提示为「已强制只用环境变量」）。
+- `config.env` 没有启用公司时：只有在环境变量确实存在时才只清环境变量（`config.env` 保持不动）；两者都不存在则返回 `NO_ACTIVE_CONFIG`，不写任何文件。
+- 任何情况都不改动 `<corpid>.formlist.json` / `<corpid>.command-map.md` / `<corpid>.department-user.json` 三份缓存，重新启用该公司时无需再次拉取。
+
 ## 环境变量模式（单公司）
 
 除 `config.env` 外，命令也支持从环境变量读取一家公司的凭证，便于 CI、容器与其他工具集成：
@@ -165,13 +196,15 @@ xbbcli user-list --pageSize 200 -f json
 
 环境变量模式只支持一家公司：此时 `token-list` 以 `source=env` 单行显示，`token-use` / `token-del` 会返回不支持多公司的错误行，并提示改用 `config.env`。
 
-> 注意：`token-del` 不会清理已经写入的环境变量。如需移除环境变量模式，Windows 下执行 `setx XBB_TOKEN ""`（其余 `XBB_*` 同理）并重开终端；macOS/Linux 下删除 `~/.xbbcli/env.sh`，再 `unset` 当前 shell 中已导出的变量。
+> 注意：`token-del` 不会清理已经写入的环境变量。要连环境变量一起登出，执行 `xbbcli auth-logout`（默认就会清除 `XBB_*`）；也可以手工执行 `setx XBB_TOKEN ""`（其余 `XBB_*` 同理，Windows 需重开终端）或删除 `~/.xbbcli/env.sh` 并 `unset` 当前 shell 中已导出的变量。
 
 ## 当前支持的命令
 
 ### 配置
 
-- `login`：拉起本地浏览器完成交互式登录（账号密码 / 短信 / 扫码均可），自动读取 Web 会话、换取 API token 并复用 `token-set` 落盘；支持 `--browser`、`--timeout`、`--corpid`、`--keepOpen`、`--noEnv`、`--debug`、`--raw`
+- `auth-login`：拉起本地浏览器完成交互式登录（账号密码 / 短信 / 扫码均可），自动读取 Web 会话、换取 API token 并复用 `token-set` 落盘；支持 `--browser`、`--timeout`、`--corpid`、`--keepOpen`、`--noEnv`、`--debug`、`--raw`
+- `auth-status`：以 `key` / `value` 两列回显当前激活配置的 `corpid`、`corpName`、`userName`、`userId`、`baseurl`、`token`（token 默认中间掩码，`--showToken` 出明文），来源与冲突提醒以 `note` 行追加，无生效配置时六个值留空并给出 `note`；`--debug` 在 stderr 输出配置文件路径、公司数量与生效的环境变量名
+- `auth-logout`：删除 `config.env` 中 `enable=true` 的那一条配置，删除前整份备份为 `~/.xbbcli/config.env.bak`；不自动把其他公司提升为启用；默认同时清除 `XBB_*` 环境变量（`--noEnv` / `--env=false` 跳过，返回 `envStored` / `envFile`）；既无启用公司又无环境变量时返回 `NO_ACTIVE_CONFIG` 且不改动文件
 - `token-set`：保存个人 token、`corpid`、`userId`、`baseurl`，并刷新本地表单缓存、命令映射文件与部门/员工缓存；传入的 token 不以 `user_` 开头时，会先为该 `userId` 刷新并保存个人 token；成功后同步写入 `XBB_*` 环境变量（Windows 用 `setx`，其他平台写 `~/.xbbcli/env.sh`），`--noEnv` 可跳过；返回 `envStored` / `envFile` 两列
 - `token-list`：列出本地保存的所有公司配置和唯一启用的公司（含 `corpName` 公司名称与 `userName` 操作人姓名，`source` 列标记来源 `config`/`env`）；`--showToken` 显示完整 token（默认脱敏）；环境变量模式下单行显示
 - `token-use`：切换当前启用的公司（`xbbcli token-use --corpid <CORPID>`），保证仅且只有一个公司被启用
@@ -418,7 +451,8 @@ xbbcli user-list --pageSize 200 -f json
 
 ## 通用行为
 
-- 先执行一次 `token-set` 保存有效的 `corpid`、`token`、`userId`
+- 先执行一次 `token-set`（或 `auth-login`）保存有效的 `corpid`、`token`、`userId`
+- 用 `xbbcli auth-status` 查看当前生效的配置来自 `config.env` 还是环境变量；`xbbcli auth-logout` 删除激活配置并默认清除 `XBB_*` 环境变量（`--noEnv` 保留）
 - 除 `token-set` 外，其余命令都会从 `~/.xbbcli/config.env` 读取 `corpid`
 - 大部分命令会从 `~/.xbbcli/config.env` 读取 `token`
 - 未配置 `config.env`（或其中没有启用公司）时，命令会回落到 `XBB_CORPID` / `XBB_TOKEN` / `XBB_BASEURL` / `XBB_USERID` / `XBB_CORPNAME` / `XBB_USERNAME` 环境变量；`XBB_ENV_ONLY=1` 可强制只用环境变量
@@ -440,8 +474,10 @@ xbbcli user-list --pageSize 200 -f json
 ### 基础配置/初始化
 
 ```bash
-xbbcli login
+xbbcli auth-login
 xbbcli token-set --corpid your_corpid --token your_token --userId your_userid
+xbbcli auth-status
+xbbcli auth-logout
 ```
 
 ### 员工信息

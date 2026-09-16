@@ -1,12 +1,12 @@
-# `xbbcli login` 命令设计（浏览器登录，A 方案）
+# `xbbcli auth-login` 命令设计（浏览器登录，A 方案）
 
 ## 目标
 
-`xbbcli login` 让用户**不用手动复制 token**：命令拉起浏览器，用户在浏览器里完成任意一种登录（账号密码、短信、钉钉/企微/飞书扫码……），命令检测到登录态后自动换取 API token，并复用 `token-set` 的落盘流程。
+`xbbcli auth-login` 让用户**不用手动复制 token**：命令拉起浏览器，用户在浏览器里完成任意一种登录（账号密码、短信、钉钉/企微/飞书扫码……），命令检测到登录态后自动换取 API token，并复用 `token-set` 的落盘流程。
 
 ```bash
-xbbcli login                 # 自动探测 Chrome / Edge
-xbbcli login --browser edge  # 指定浏览器
+xbbcli auth-login                 # 自动探测 Chrome / Edge
+xbbcli auth-login --browser edge  # 指定浏览器
 ```
 
 一次调用完成后，本地配置与 `xbbcli token-set` 完全等价：写入 `~/.xbbcli/config.env`、表单缓存、命令映射文件、部门/员工缓存，并同步 `XBB_*` 环境变量（`--noEnv` 可跳过）。
@@ -16,11 +16,11 @@ xbbcli login --browser edge  # 指定浏览器
 零依赖，只用 `node:child_process` 与 `node:crypto`，不安装 Playwright / Puppeteer，不监听任何 TCP 端口（避免开放调试端口的风险）。
 
 ```text
-xbbcli login
+xbbcli auth-login
   └─ spawn(<chrome|edge>, ['--remote-debugging-pipe', '--user-data-dir=~/.xbbcli/browser-profile', '--new-window', 登录页])
        ├─ fd3 写 CDP 指令、fd4 读 CDP 消息（NUL 分隔 JSON）
        ├─ Target.getTargets / Target.attachToTarget → Runtime.evaluate
-       ├─ 轮询 localStorage {corpid, userId, xbbAccessToken}
+       ├─ 轮询 localStorage {corpid, userId, xbbAccessToken}，并等 href 命中 /#/app/home 判定登录成功
        └─ 页面内 fetch 网关换取 API token → saveCompanyCredentials(...) → Browser.close
 ```
 
@@ -37,27 +37,27 @@ xbbcli login
 | 凭证 | 签发接口 | 域名 | 用途 |
 | --- | --- | --- | --- |
 | `xbbAccessToken` | 登录页登录成功后写入 `localStorage` | `appwebfront` / `appgateway` | Web 前端会话 |
-| API token（`user_*`） | `/pro/v1/apiToken/getApiToken` | `appgateway.xbongbong.com` | 换取个人 token 的中间票 |
+| API token（`user_*`） | `/pro/v1/apiToken/getApiToken` | `appgateway` / `progateway` | 换取个人 token 的中间票 |
 | 个人 token（`user_*`） | `/pro/v2/api/user/generateToken` | `proapi` / `appapi` | 本仓库所有业务命令（`sign = SHA256(body + token)`） |
 
-`xbbAccessToken` **不能**直接用于业务命令：实测用它请求 `proapi` 业务接口会被拒绝，请求网关也会返回 `100012 登录验证过期`。个人 token 反过来也不能当 `xbbAccessToken` 用（实测 `getApiToken` 返回 `100012`）。因此 `login` 的模型是「浏览器完成 Web 登录 → 读 Web 会话 → 换个人 token → 落盘」。
+`xbbAccessToken` **不能**直接用于业务命令：实测用它请求 `proapi` 业务接口会被拒绝，请求网关也会返回 `100012 登录验证过期`。个人 token 反过来也不能当 `xbbAccessToken` 用（实测 `getApiToken` 返回 `100012`）。因此 `auth-login` 的模型是「浏览器完成 Web 登录 → 读 Web 会话 → 换个人 token → 落盘」。
 
 ## 登录前端的网络约定（已实测复现）
 
 ```text
-baseURL = https://appgateway.xbongbong.com
+baseURL = https://appgateway.xbongbong.com   # corpid 以 ding 开头或含 $$ding 时改为 https://progateway.xbongbong.com
 前缀    = /pro/v1
 body    = { corpid, userId, platform: 'web' }
 header  corpid = localStorage.corpid || '1'
 header  sign   = SHA256(JSON.stringify(body) + xbbAccessToken)
 ```
 
-`appgateway` 的 CORS 为全开（`access-control-allow-origin: *`，允许 `sign` / `corpid` 请求头），所以换 token 的 `fetch` 可以直接在登录页里执行，不需要 CLI 侧持有 Cookie。
+`appgateway` / `progateway` 的 CORS 均为全开（`access-control-allow-origin: *`，允许 `sign` / `corpid` 请求头），所以换 token 的 `fetch` 可以直接在登录页里执行，不需要 CLI 侧持有 Cookie。
 
 ## 换 API token
 
 ```text
-POST https://appgateway.xbongbong.com/pro/v1/apiToken/getApiToken
+POST https://{appgateway|progateway}.xbongbong.com/pro/v1/apiToken/getApiToken
 body: { corpid, userId, platform: 'web' }
 header: corpid=<corpid>, sign=SHA256(body + xbbAccessToken)
 → result: { corpid, userId, token, whiteList }
@@ -73,7 +73,7 @@ header: corpid=<corpid>, sign=SHA256(body + xbbAccessToken)
 | `BROWSER_SPAWN_FAILED` | 启动浏览器进程失败（如 profile 被占用） |
 | `BROWSER_LAUNCH_FAILED` | 打开登录页失败 |
 | `BROWSER_CLOSED` | 用户中途关闭了浏览器窗口 |
-| `LOGIN_TIMEOUT` | 超时仍未检测到登录态 |
+| `LOGIN_TIMEOUT` | 超时仍未检测到登录成功态（页面未跳转到 `/#/app/home`） |
 | `API_TOKEN_FAILED` | 换取 API token 接口返回错误 |
 | `CORPID_MISMATCH` | 实际登录企业与 `--corpid` 不一致 |
 | `SAVE_FAILED` | 落盘 / 初始化缓存失败 |
