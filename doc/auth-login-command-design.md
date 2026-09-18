@@ -9,7 +9,7 @@ xbbcli auth-login                 # 自动探测 Chrome / Edge
 xbbcli auth-login --browser edge  # 指定浏览器
 ```
 
-一次调用完成后，本地配置与 `xbbcli token-set` 完全等价：写入 `~/.xbbcli/config.env`、表单缓存、命令映射文件、部门/员工缓存，并同步 `XBB_*` 环境变量（`--noEnv` 可跳过）。
+一次调用完成后，本地配置与 `xbbcli token-set` 完全等价，由 `--env` 控制存储方式：`--env 0`（默认）写入 `~/.xbbcli/config.env`、表单缓存、命令映射文件、部门/员工缓存（不写环境变量）；`--env 1` 仅写入 `XBB_*` 环境变量，不写任何本地文件。
 
 ## 技术方案：`--remote-debugging-pipe` + CDP
 
@@ -87,7 +87,7 @@ header: corpid=<corpid>, sign=SHA256(body + xbbAccessToken)
 | `--timeout <秒>` | 等待登录完成的时间，默认 300 |
 | `--corpid <CORPID>` | 期望登录的企业，不一致时报 `CORPID_MISMATCH` |
 | `--keepOpen` | 登录成功后保留浏览器窗口 |
-| `--noEnv` | 不写入环境变量 |
+| `--env <0\|1>` | 存储方式：`0`（默认）仅写本地文件，`1` 仅写环境变量（不写本地文件） |
 | `--debug` | 输出请求体 / 返回体 / 浏览器信息（密钥只显示掩码） |
 | `--raw` | 输出换取 API token 接口的原始响应 |
 

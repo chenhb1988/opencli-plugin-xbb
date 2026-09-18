@@ -254,7 +254,7 @@ async function authLogin(kwargs) {
         corpid: exchange.corpid,
         token: exchange.token,
         userId: exchange.userId,
-        noEnv: Boolean(kwargs.noEnv),
+        env: String(kwargs.env ?? '0'),
       });
     } catch (error) {
       await finish(session, keepOpen);
@@ -297,7 +297,7 @@ cli({
     { name: 'timeout', type: 'str', default: '', help: `等待登录完成的秒数（默认 ${DEFAULT_TIMEOUT_SECONDS}）` },
     { name: 'corpid', type: 'str', default: '', help: '期望登录的企业 ID；与实际登录企业不一致时报错（可选）' },
     { name: 'keepOpen', type: 'bool', default: false, help: '登录成功后保留浏览器窗口（默认自动关闭）' },
-    { name: 'noEnv', type: 'bool', default: false, help: '不写入环境变量，仅保存到 config.env' },
+    { name: 'env', type: 'str', default: '0', help: '存储方式：0 仅写入 config.env 文件（默认），1 仅写入环境变量（不写任何本地文件）' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体、返回体与浏览器信息（密钥只显示掩码）' },
     { name: 'raw', type: 'bool', default: false, help: '输出换取 API token 接口返回的原文' },
   ],

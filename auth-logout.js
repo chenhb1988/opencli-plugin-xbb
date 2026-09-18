@@ -61,7 +61,7 @@ function previewCorpids(companies) {
 }
 
 async function authLogout(kwargs) {
-  const alsoEnv = !kwargs.noEnv && kwargs.env !== false;
+  const alsoEnv = String(kwargs.env ?? '1').trim() !== '0';
   const companies = readCompanies();
   const index = companies.findIndex((item) => item && item.enable === true);
   const envPresent = hasEnvConfig();
@@ -76,7 +76,7 @@ async function authLogout(kwargs) {
       ? `本地共 ${companies.length} 家公司（${previewCorpids(companies)}）且均未启用；要登出某家请先用 xbbcli token-use --corpid <CORPID> 启用，或改用 xbbcli token-del --corpid <CORPID> 直接删除`
       : '本地没有任何公司配置';
     const envNote = envPresent
-      ? '环境变量 XBB_* 仍存在，本次未清除（去掉 --noEnv / --env=false 即可一并清除）'
+      ? '环境变量 XBB_* 仍存在，本次未清除（用 --env 1 或不指定该参数即可一并清除）'
       : '环境变量 XBB_* 也不存在，本次无可清除内容';
     const hint = `${scope}；${envNote}`;
     return createRow({
@@ -139,7 +139,7 @@ async function authLogout(kwargs) {
     }
   } else if (envBefore) {
     const forced = isEnvOnly() ? '且 XBB_ENV_ONLY=1 已强制只用环境变量' : '业务命令会回落到它';
-    parts.push(`注意：环境变量 XBB_*（corpid=${envBefore}）仍然有效，${forced}，本次不算彻底登出；如需一并清除请去掉 --noEnv（auth-logout 默认会清除环境变量）`);
+    parts.push(`注意：环境变量 XBB_*（corpid=${envBefore}）仍然有效，${forced}，本次不算彻底登出；如需一并清除请改用 --env 1（或不指定该参数，auth-logout 默认会清除环境变量）`);
   }
 
   const remainingCompanies = target ? remaining : readCompanies();
@@ -166,8 +166,7 @@ cli({
   browser: false,
   domain: 'proapi.xbongbong.com',
   args: [
-    { name: 'env', type: 'bool', default: true, help: '同时清除 XBB_* 环境变量（默认开启；--env=false 跳过）。Windows 删除用户级变量，其他平台清理 ~/.xbbcli/env.sh' },
-    { name: 'noEnv', type: 'bool', default: false, help: '不清除环境变量，仅删除 config.env 中的激活配置（与 token-set 的 --noEnv 一致）' },
+    { name: 'env', type: 'str', default: '1', help: '是否同时清除 XBB_* 环境变量：1 清除（默认），0 仅删除 config.env 保留环境变量。Windows 删除用户级变量，其他平台清理 ~/.xbbcli/env.sh' },
     { name: 'debug', type: 'bool', default: false, help: '输出配置文件、备份路径与生效的环境变量名（不打印 token）' },
   ],
   columns: ['status', 'message', 'configFile', 'backupFile', 'corpid', 'corpName', 'userId', 'companyCount', 'hasActive', 'envStored', 'envFile', 'code', 'msg'],

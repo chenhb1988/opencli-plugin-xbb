@@ -53,6 +53,10 @@ async function getFormlistRows(corpid, saasMark) {
 
   const errorRow = rows.find((item) => item && item.code);
   if (errorRow) {
+    // 该公司在某个 saasMark 下没有表单时，form-list 返回 NO_DATA 属正常情况，按空清单继续
+    if (String(errorRow.code) === 'NO_DATA') {
+      return [];
+    }
     throw new Error(`form-list 获取失败（saasMark=${saasMark}）：${errorRow.code} ${errorRow.msg || ''}`.trim());
   }
 
@@ -349,6 +353,20 @@ export async function saveCompanyCredentials(kwargs) {
   }
 
   const baseurl = resolveBaseUrl(corpid);
+  const envOnly = String(kwargs.env ?? '0').trim() === '1';
+
+  // env=1：仅写入环境变量，跳过所有本地文件写入（config.env、表单缓存、命令映射、部门/员工缓存）
+  if (envOnly) {
+    try {
+      const envResult = persistEnvVars({ corpid, token: personalToken, baseurl, userId });
+      return createResult('ok', '已写入环境变量（未写入任何本地文件）', corpid, baseurl, userId, '', '', '', '', '', '', '', envResult.stored, envResult.file);
+    } catch (error) {
+      const detail = String(error.message || error);
+      return createResult('error', `写入环境变量失败：${detail}`, corpid, baseurl, userId, '', '', '', '', '', '', '', 'failed', detail);
+    }
+  }
+
+  // env=0（默认）：仅写入 config.env 文件与各类缓存，不写入环境变量
   const companies = upsertCompany(readCompanies(), { corpid, token: personalToken, baseurl, userId });
 
   fs.mkdirSync(CONFIG_DIR, { recursive: true });
@@ -359,19 +377,7 @@ export async function saveCompanyCredentials(kwargs) {
     const commandMapFile = writeCommandMap(corpid);
     const { file: departmentUserFile, corpName, userName } = await writeDepartmentUserFile(corpid, userId);
     writeCompanyProfile(corpid, { corpName, userName });
-    let envStored = 'skipped';
-    let envFile = '';
-    if (!kwargs.noEnv) {
-      try {
-        const envResult = persistEnvVars({ corpid, token: personalToken, baseurl, userId, corpName, userName });
-        envStored = envResult.stored;
-        envFile = envResult.file;
-      } catch (error) {
-        envStored = 'failed';
-        envFile = String(error.message || error);
-      }
-    }
-    return createResult('ok', '已保存 corpid、token、baseurl、userId，并同步表单模板缓存、命令映射文件与部门/员工缓存', corpid, baseurl, userId, formlistFile, commandMapFile, true, companies.length, departmentUserFile, corpName, userName, envStored, envFile);
+    return createResult('ok', '已保存 corpid、token、baseurl、userId，并同步表单模板缓存、命令映射文件与部门/员工缓存', corpid, baseurl, userId, formlistFile, commandMapFile, true, companies.length, departmentUserFile, corpName, userName, 'skipped', '');
   } catch (error) {
     return createResult(
       'partial',

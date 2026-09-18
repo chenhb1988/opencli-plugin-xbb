@@ -12,7 +12,7 @@ cli({
     { name: 'corpid', type: 'str', help: '公司id（必填）' },
     { name: 'token', type: 'str', help: '要保存的 API token' },
     { name: 'userId', type: 'str', help: '操作人id（必填）' },
-    { name: 'noEnv', type: 'bool', default: false, help: '不写入环境变量，仅保存到 config.env' },
+    { name: 'env', type: 'str', default: '0', help: '存储方式：0 仅写入 config.env 文件（默认），1 仅写入环境变量（不写任何本地文件）' },
   ],
   columns: ['status', 'message', 'configFile', 'corpid', 'baseurl', 'userId', 'enable', 'companyCount', 'formlistFile', 'commandMapFile', 'departmentUserFile', 'corpName', 'userName', 'envStored', 'envFile'],
   func: saveCompanyCredentials,
