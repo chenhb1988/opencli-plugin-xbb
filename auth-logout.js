@@ -138,7 +138,7 @@ async function authLogout(kwargs) {
       parts.push(`清除环境变量失败：${envFile}`);
     }
   } else if (envBefore) {
-    const forced = isEnvOnly() ? '且 XBB_ENV_ONLY=1 已强制只用环境变量' : '业务命令会回落到它';
+    const forced = isEnvOnly() ? '且 XBB_ENV_ONLY=1 已强制只用环境变量' : '且其优先级高于 config.env，业务命令仍会使用它';
     parts.push(`注意：环境变量 XBB_*（corpid=${envBefore}）仍然有效，${forced}，本次不算彻底登出；如需一并清除请改用 --env 1（或不指定该参数，auth-logout 默认会清除环境变量）`);
   }
 

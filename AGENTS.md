@@ -40,7 +40,7 @@ opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>
 每个命令文件遵循以下结构（参考 `user-list.js`、`customer-list.js` 作为标准示例）：
 
 1. 硬编码 API URL 常量 + 配置路径（`~/.opencli/xbb/config.env`）
-2. `readConfig()` — 委托给 `./xbb-config.js` 的 `readActiveConfig()`：`config.env` 有启用公司时用配置，否则回落 `XBB_*` 环境变量
+2. `readConfig()` — 委托给 `./xbb-config.js` 的 `readActiveConfig()`：`XBB_*` 环境变量中 `XBB_CORPID`/`XBB_TOKEN` 非空时优先用环境变量，否则用 `config.env` 里 `enable=true` 的公司
 3. `getRuntimeConfig(kwargs)` — 合并 CLI 参数与配置文件
 4. `buildPayload(kwargs)` — 忽略 `undefined` 字段，不发送未提供的参数
 5. `getValidationError(payload, token)` — 返回 `{code, msg}` 或 `null`

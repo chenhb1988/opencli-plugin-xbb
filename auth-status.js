@@ -1,8 +1,8 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { cli, Strategy } from './xbb-registry.js';
-import { readActiveConfig, hasEnvConfig, isEnvActive, isEnvOnly, getEnvVarNames } from './xbb-config.js';
+import { cli, Strategy, getRegistry } from './xbb-registry.js';
+import { readActiveConfig, isEnvActive, isEnvOnly, getEnvVarNames } from './xbb-config.js';
 
 const CONFIG_DIR = path.join(os.homedir(), '.xbbcli');
 const CONFIG_FILE = path.join(CONFIG_DIR, 'config.env');
@@ -50,9 +50,35 @@ function withNotes(rows, notes) {
   return [...rows, ...notes.map((value) => ({ key: 'note', value }))];
 }
 
+const VERIFY_VALID = '有效';
+const VERIFY_INVALID = '无效-请重新配置token';
+
+// 用一次轻量调用（等价于 user-list --pageSize 1）验证当前 token 是否有效
+// 判定：业务错误码（code 非空且非 NO_DATA）或请求异常 → 无效；成功（含 NO_DATA 空清单）→ 有效
+async function verifyToken() {
+  const command = getRegistry().get('xbb/user-list');
+  if (!command || typeof command.func !== 'function') {
+    return { valid: false, detail: '找不到 user-list 命令，无法验证' };
+  }
+  try {
+    const rows = await command.func({ page: '1', pageSize: '1' });
+    const list = Array.isArray(rows) ? rows : [];
+    const errorRow = list.find((item) => item && String(item.code ?? '') !== '');
+    if (!errorRow) return { valid: true, detail: 'user-list 调用成功' };
+    // NO_DATA 表示接口成功但清单为空，token 仍然有效
+    if (String(errorRow.code) === 'NO_DATA') return { valid: true, detail: 'user-list 调用成功（无数据）' };
+    return { valid: false, detail: `user-list 返回 ${errorRow.code} ${errorRow.msg || ''}`.trim() };
+  } catch (error) {
+    return { valid: false, detail: `user-list 调用异常：${String(error.message || error)}` };
+  }
+}
+
+function withVerify(rows, verify) {
+  return [...rows, { key: 'token验证', value: verify.valid ? VERIFY_VALID : VERIFY_INVALID }];
+}
+
 async function authStatus(kwargs) {
   const showToken = Boolean(kwargs.showToken);
-  const envActive = hasEnvConfig();
   const envUsed = isEnvActive();
   const active = readActiveConfig();
   const companies = readCompanies();
@@ -67,31 +93,49 @@ async function authStatus(kwargs) {
   const token = trim(active.token);
   const rows = toRows({ ...active, token: showToken ? token : maskToken(token) });
 
+  // 没有生效配置或缺少 token 时无需发起调用，直接判定为无效
+  let verify;
+  if (source === 'none' || !token) {
+    verify = { valid: false, detail: source === 'none' ? '没有生效配置，无法验证' : '生效配置缺少 token，无法验证' };
+  } else {
+    verify = await verifyToken();
+  }
+  if (kwargs.debug) {
+    process.stderr.write(`[debug] Verify: ${verify.valid ? 'valid' : 'invalid'}（${verify.detail}）\n`);
+  }
+  const verifiedRows = withVerify(rows, verify);
+
   if (source === 'none') {
     // 没有生效配置时不把残留的环境变量值当真值回显（XBB_BASEURL 等可能单独存在）
-    return withNotes(toRows({}), [
+    return withNotes(verifiedRows, [
       '没有处于激活状态的配置：config.env 中不存在 enable=true 的公司，环境变量 XBB_* 也为空；请先执行 xbbcli auth-login 或 xbbcli token-set',
     ]);
   }
 
   if (source === 'env') {
-    const reason = isEnvOnly() ? 'XBB_ENV_ONLY=1 已强制使用环境变量' : 'config.env 中没有启用公司，回落到环境变量';
-    return withNotes(rows, [
-      `以上取值来自环境变量 XBB_*（${reason}）；环境变量模式不支持多公司切换，配置文件路径与公司数量见 --debug`,
-    ]);
+    const enabledCount = companies.filter((item) => item.enable === true).length;
+    const reason = isEnvOnly()
+      ? 'XBB_ENV_ONLY=1 已强制使用环境变量'
+      : enabledCount > 0
+        ? '环境变量优先于 config.env，其中 enable=true 的公司被覆盖'
+        : 'config.env 中没有启用公司，回落到环境变量';
+    const notes = [`以上取值来自环境变量 XBB_*（${reason}）；环境变量模式不支持多公司切换，配置文件路径与公司数量见 --debug`];
+    if (!isEnvOnly() && enabledCount > 0) {
+      notes.push('如需改用 config.env 中的启用公司，请先清除 XBB_* 环境变量（或执行 xbbcli auth-logout）');
+    }
+    return withNotes(verifiedRows, notes);
   }
 
   const notes = [];
-  if (envActive) notes.push('环境变量 XBB_* 同时存在，但 config.env 启用项优先；如需彻底登出请执行 xbbcli auth-logout');
   const enabledCount = companies.filter((item) => item.enable === true).length;
   if (enabledCount > 1) notes.push(`config.env 中存在 ${enabledCount} 个 enable=true，仅第一条生效，请用 xbbcli token-use 修正`);
-  return withNotes(rows, notes);
+  return withNotes(verifiedRows, notes);
 }
 
 cli({
   site: 'xbb',
   name: 'auth-status',
-  description: '回显当前激活的配置',
+  description: '回显当前激活的配置，并验证 token 是否有效',
   strategy: Strategy.PUBLIC,
   access: 'read',
   browser: false,

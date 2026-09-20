@@ -67,40 +67,59 @@ cli({
   ],
   columns: ['enable', 'corpid', 'userId', 'baseurl', 'token', 'corpName', 'userName', 'code', 'msg', 'source'],
   func: async (kwargs) => {
+    const showToken = Boolean(kwargs.showToken);
     const companies = readCompanies();
     const envConfig = readEnvConfig();
-    if (isEnvOnly() || (!companies.some((item) => item && item.enable === true) && hasEnvConfig(envConfig))) {
-      return [{
+    const envPresent = hasEnvConfig(envConfig);
+    const envOnly = isEnvOnly();
+    const rows = [];
+
+    // 环境变量行：XBB_CORPID / XBB_TOKEN 有值就回显，source=env（优先级高于 config.env）
+    if (envPresent) {
+      rows.push({
         enable: 'true',
         corpid: String(envConfig.corpid || ''),
         userId: String(envConfig.userId || ''),
         baseurl: String(envConfig.baseurl || ''),
-        token: Boolean(kwargs.showToken) ? String(envConfig.token || '') : maskToken(envConfig.token),
+        token: showToken ? String(envConfig.token || '') : maskToken(envConfig.token),
         corpName: String(envConfig.corpName || ''),
         userName: String(envConfig.userName || ''),
         code: '',
-        msg: '来源为环境变量 XBB_*（环境变量模式不支持多公司切换）',
+        msg: envOnly
+          ? '来源为环境变量 XBB_*（XBB_ENV_ONLY=1 已强制只用环境变量，config.env 被忽略）'
+          : '来源为环境变量 XBB_*（优先级高于 config.env，当前生效）',
         source: 'env',
-      }];
+      });
     }
-    if (!companies.length) {
+
+    const enabledCount = companies.filter((item) => item.enable === true).length;
+    for (const item of companies) {
+      const isEnabled = item.enable === true;
+      rows.push({
+        enable: isEnabled ? 'true' : 'false',
+        corpid: String(item.corpid || ''),
+        userId: String(item.userId || ''),
+        baseurl: String(item.baseurl || ''),
+        token: showToken ? String(item.token || '') : maskToken(item.token),
+        corpName: String(item.corpName || ''),
+        userName: String(item.userName || ''),
+        code: '',
+        msg: isEnabled
+          ? envOnly
+            ? '来源为 config.env，但 XBB_ENV_ONLY=1 已将其忽略，当前不生效'
+            : envPresent
+              ? '来源为 config.env，但已被环境变量 XBB_* 覆盖，当前不生效'
+              : '来源为 config.env，当前生效'
+          : '',
+        source: 'config',
+      });
+    }
+
+    if (!rows.length) {
       return makeErrorRow('NO_CONFIG', '缺少本地配置；请先执行 xbbcli token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>');
     }
-    const showToken = Boolean(kwargs.showToken);
-    const enabledCount = companies.filter((item) => item.enable === true).length;
-    const rows = companies.map((item) => ({
-      enable: item.enable === true ? 'true' : 'false',
-      corpid: String(item.corpid || ''),
-      userId: String(item.userId || ''),
-      baseurl: String(item.baseurl || ''),
-      token: showToken ? String(item.token || '') : maskToken(item.token),
-      corpName: String(item.corpName || ''),
-      userName: String(item.userName || ''),
-      code: '',
-      msg: '',
-      source: 'config',
-    }));
-    if (enabledCount !== 1) {
+
+    if (companies.length && enabledCount !== 1) {
       rows.push({
         enable: '',
         corpid: '',

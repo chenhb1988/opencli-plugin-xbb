@@ -62,25 +62,21 @@ function readFileConfig() {
   }
 }
 
-// 配置文件优先：有启用公司就用配置，否则回落到环境变量
+// 环境变量优先：XBB_* 中 corpid/token 非空时只用环境变量，否则用 config.env 里 enable=true 的公司
 export function readActiveConfig() {
   const envConfig = readEnvConfig();
   if (isEnvOnly()) {
     return envConfig;
   }
-  const fileConfig = readFileConfig();
-  if (Object.keys(fileConfig).length > 0) {
-    return fileConfig;
+  if (hasEnvConfig(envConfig)) {
+    return envConfig;
   }
-  return envConfig;
+  return readFileConfig();
 }
 
 // 当前生效来源是否为环境变量
 export function isEnvActive() {
-  if (isEnvOnly()) {
-    return hasEnvConfig();
-  }
-  return Object.keys(readFileConfig()).length === 0 && hasEnvConfig();
+  return hasEnvConfig();
 }
 
 export function getEnvVarNames() {

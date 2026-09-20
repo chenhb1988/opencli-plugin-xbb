@@ -2,7 +2,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { cli, Strategy } from './xbb-registry.js';
-import { isEnvActive, isEnvOnly, getEnvVarNames } from './xbb-config.js';
+import { hasEnvConfig, isEnvOnly, getEnvVarNames, persistEnvVars } from './xbb-config.js';
+import { resolveBaseUrl } from './xbb-token-store.js';
 
 const CONFIG_DIR = path.join(os.homedir(), '.xbbcli');
 const CONFIG_FILE = path.join(CONFIG_DIR, 'config.env');
@@ -67,8 +68,10 @@ async function useCompany(kwargs) {
     return createResult('error', '缺少 --corpid', '', '', '');
   }
 
-  if (isEnvOnly() || isEnvActive()) {
-    return createResult('error', `当前为环境变量模式（${getEnvVarNames().join(', ')}），不支持切换公司；如需多公司请改用 config.env`, corpid, '', '');
+  const envPresent = hasEnvConfig();
+  // XBB_ENV_ONLY=1 且 XBB_* 全空：config.env 被强制忽略，写入也无法生效
+  if (isEnvOnly() && !envPresent) {
+    return createResult('error', `当前 XBB_ENV_ONLY=1 已强制只用环境变量，但 ${getEnvVarNames().join(', ')} 均为空；请先执行 xbbcli token-set --env 1 写入环境变量`, corpid, '', '');
   }
 
   const companies = readCompanies();
@@ -81,15 +84,45 @@ async function useCompany(kwargs) {
     return createResult('error', `未找到 corpid=${corpid} 的本地配置`, corpid, '', companies.length);
   }
 
+  const target = companies[index];
+  // 同步 XBB_* 需要完整凭证：缺 token 时直接拒绝，避免残留上一家公司的 XBB_TOKEN 被继续使用
+  if (envPresent && !String(target.token || '').trim()) {
+    return createResult('error', `corpid=${corpid} 的本地配置缺少 token，无法同步到 XBB_* 环境变量；请先执行 xbbcli token-set --corpid ${corpid} --token <TOKEN> --userId <USERID>`, corpid, '', companies.length);
+  }
+
   const next = enableOnly(companies, index);
   writeCompanies(next);
-  return createResult('ok', `已启用 corpid=${corpid}，其余公司已标记为 enable=false`, corpid, 'true', next.length);
+
+  const parts = [`已启用 corpid=${corpid}，其余公司已标记为 enable=false`];
+
+  // 环境变量中有值时把生效公司同步写回 XBB_*，否则切换会被优先级更高的环境变量覆盖
+  if (envPresent) {
+    try {
+      persistEnvVars({
+        corpid: target.corpid,
+        token: target.token,
+        // 条目缺少 baseurl 时按 corpid 规则推导，避免残留上一家公司的 XBB_BASEURL
+        baseurl: target.baseurl || resolveBaseUrl(target.corpid),
+        userId: target.userId,
+        corpName: target.corpName,
+        userName: target.userName,
+      });
+      const suffix = process.platform === 'win32'
+        ? '（Windows 需重开终端后才生效）'
+        : '（重新 source ~/.xbbcli/env.sh 后才生效）';
+      parts.push(`检测到环境变量 XBB_* 有值，已同步更新为该公司凭证${suffix}`);
+    } catch (error) {
+      return createResult('partial', `已启用 corpid=${corpid}，但同步更新环境变量失败：${String(error.message || error)}`, corpid, 'true', next.length);
+    }
+  }
+
+  return createResult('ok', parts.join('；'), corpid, 'true', next.length);
 }
 
 cli({
   site: 'xbb',
   name: 'token-use',
-  description: '切换当前启用的公司（enable），保证仅且只有一个公司被启用',
+  description: '切换当前启用的公司（enable），保证仅且只有一个公司被启用；XBB_* 环境变量有值时同步更新为该公司凭证',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,
