@@ -98,6 +98,20 @@ xbbcli auth-login --keepOpen      # 登录成功后保留浏览器窗口（默�
 - `--debug` 输出请求体、返回体与浏览器信息（密钥只显示掩码），`--raw` 输出换取 API token 接口的原始响应
 - 失败时返回合成错误行：`NO_BROWSER`、`BROWSER_CLOSED`、`LOGIN_TIMEOUT`、`API_TOKEN_FAILED`、`CORPID_MISMATCH`、`SAVE_FAILED` 等
 
+### 刷新本地缓存（auth-refresh-cache）
+
+`token-set` / `auth-login` 保存凭证时会顺带刷新三份本地缓存。插件升级（新增命令导致命令映射变化）、缓存过期或被删除后，可以单独重刷，不需要重新输入 token：
+
+```bash
+xbbcli auth-refresh-cache -f json
+```
+
+- 刷新范围（仅当前启用公司）：`~/.xbbcli/<corpid>.formlist.json`（表单清单）、`~/.xbbcli/<corpid>.command-map.md`（命令映射）、`~/.xbbcli/<corpid>.department-user.json`（部门/员工清单），并把 `corpName` / `userName` 回填进 `config.env`
+- 环境变量模式（`XBB_*`）下同样可用：只刷新缓存文件，不回填 `config.env`
+- 只支持当前启用公司：底层接口一律使用启用公司的凭证，切换公司请先用 `xbbcli token-use`
+- `--userId` 覆盖用于匹配 `userName` 的员工 id（默认取配置里的 `userId`）；`--debug` 在 stderr 输出配置来源、corpid 与三份缓存文件路径
+- 失败时返回 `status=error`、`code=CACHE_REFRESH_FAILED`，`message` 以「步骤 formlist / command-map / department-user / profile」指出中断位置，已完成的部分照常在对应列输出
+
 `token-set` 会按 `corpid` 新增或覆盖一家公司，并把该公司置为 `enable=true`（其余公司自动置为 `false`），同时写入公司名称 `corpName`（取部门 `id` 为 `1` 的部门名称）和操作人姓名 `userName`（从员工列表中按 `userId` 匹配）。除 `token-set`、`token-list`、`token-use`、`token-del`、`auth-status`、`auth-logout` 外，其余命令都使用 `enable` 为 `true` 的公司配置。
 
 同时会自动拉取两份表单清单并合并缓存到：
@@ -205,6 +219,7 @@ note      以上取值来自环境变量 XBB_*（config.env 中没有启用公�
 - `auth-login`：拉起本地浏览器完成交互式登录（账号密码 / 短信 / 扫码均可），自动读取 Web 会话、换取 API token 并复用 `token-set` 落盘；支持 `--browser`、`--timeout`、`--corpid`、`--keepOpen`、`--env`、`--debug`、`--raw`
 - `auth-status`：以 `key` / `value` 两列回显当前激活配置的 `corpid`、`corpName`、`userName`、`userId`、`baseurl`、`token`（token 默认中间掩码，`--showToken` 出明文），来源与冲突提醒以 `note` 行追加，无生效配置时六个值留空并给出 `note`；`--debug` 在 stderr 输出配置文件路径、公司数量与生效的环境变量名
 - `auth-logout`：删除 `config.env` 中 `enable=true` 的那一条配置，删除前整份备份为 `~/.xbbcli/config.env.bak`；不自动把其他公司提升为启用；默认同时清除 `XBB_*` 环境变量（`--env 0` 跳过，返回 `envStored` / `envFile`）；既无启用公司又无环境变量时返回 `NO_ACTIVE_CONFIG` 且不改动文件
+- `auth-refresh-cache`：对当前启用公司重新拉取表单缓存、命令映射与部门/员工缓存，并回填 `corpName` / `userName`；失败时返回 `code=CACHE_REFRESH_FAILED`，`message` 注明中断步骤（`formlist` / `command-map` / `department-user` / `profile`），已完成的部分照常输出；支持 `--userId`、`--debug`
 - `token-set`：保存个人 token、`corpid`、`userId`、`baseurl`，并刷新本地表单缓存、命令映射文件与部门/员工缓存；传入的 token 不以 `user_` 开头时，会先为该 `userId` 刷新并保存个人 token；`--env` 控制存储方式：`0`（默认）仅写入本地文件，`1` 仅写入 `XBB_*` 环境变量（Windows 用 `setx`，其他平台写 `~/.xbbcli/env.sh`）且不写任何本地文件；返回 `envStored` / `envFile` 两列
 - `token-list`：列出本地保存的所有公司配置和唯一启用的公司（含 `corpName` 公司名称与 `userName` 操作人姓名，`source` 列标记来源 `config`/`env`）；`--showToken` 显示完整 token（默认脱敏）；环境变量模式下单行显示
 - `token-use`：切换当前启用的公司（`xbbcli token-use --corpid <CORPID>`），保证仅且只有一个公司被启用

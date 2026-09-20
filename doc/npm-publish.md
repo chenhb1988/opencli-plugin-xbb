@@ -28,9 +28,4 @@ npm config set "//registry.npmjs.org/:_authToken" "<NPM_TOKEN>"
 ```bash
 npm publish --access public
 ```
-
-发布完成后删除本地 Token：
-
-```bash
-npm config delete "//registry.npmjs.org/:_authToken"
-```
+ 

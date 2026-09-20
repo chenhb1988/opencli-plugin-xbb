@@ -109,7 +109,7 @@ async function writeFormlistFile(corpid) {
   const mergedRows = [...customForms, ...systemForms];
 
   fs.writeFileSync(formlistFile, JSON.stringify(mergedRows, null, 2) + '\n', 'utf8');
-  return formlistFile;
+  return { file: formlistFile, count: mergedRows.length };
 }
 
 async function fetchAllRows(name, pageSize) {
@@ -178,7 +178,7 @@ async function writeDepartmentUserFile(corpid, userId) {
   const file = getDepartmentUserFile(corpid);
   fs.mkdirSync(CONFIG_DIR, { recursive: true });
   fs.writeFileSync(file, JSON.stringify(payload, null, 2) + '\n', 'utf8');
-  return { file, corpName: getCorpName(departmentRows), userName: getUserName(userRows, userId) };
+  return { file, corpName: getCorpName(departmentRows), userName: getUserName(userRows, userId), departmentCount: departmentRows.length, userCount: userRows.length };
 }
 
 function getCorpName(departmentRows) {
@@ -196,16 +196,89 @@ function getUserName(userRows, userId) {
   return matched ? String(matched.name || '').trim() : '';
 }
 
+// 把 corpName / userName 合并进 config.env 对应公司，返回是否真的写过文件
+// config.env 里没有这家公司的条目时（纯环境变量模式）直接跳过，避免凭空生成一份只有 corpName 的 config.env
 export function writeCompanyProfile(corpid, profile) {
+  const target = String(corpid || '').trim();
   const fields = Object.entries(profile).filter(([, value]) => String(value || '').trim() !== '');
-  if (!fields.length) {
-    return;
+  if (!target || !fields.length) {
+    return false;
+  }
+  const companies = readCompanies();
+  const index = companies.findIndex((item) => String(item.corpid || '').trim() === target);
+  if (index === -1) {
+    return false;
   }
   const patch = Object.fromEntries(fields);
-  const companies = readCompanies().map((item) => (
-    String(item.corpid || '').trim() === corpid ? { ...item, ...patch } : item
-  ));
-  fs.writeFileSync(CONFIG_FILE, JSON.stringify(companies, null, 2) + '\n', 'utf8');
+  const next = companies.map((item, itemIndex) => (itemIndex === index ? { ...item, ...patch } : item));
+  fs.writeFileSync(CONFIG_FILE, JSON.stringify(next, null, 2) + '\n', 'utf8');
+  return true;
+}
+
+// token-set / auth-login / auth-refresh-cache 共用：刷新三份本地缓存并回填 corpName、userName
+// 失败时抛出的 error 上带 step（formlist/command-map/department-user/profile）与已完成部分的 cache，便于命令回显进度
+export async function refreshLocalCaches(corpid, userId) {
+  const target = String(corpid || '').trim();
+  if (!target) {
+    const error = new Error('缺少 corpid，无法确定要刷新哪家公司的缓存');
+    error.step = 'formlist';
+    error.cache = { formlistFile: '', commandMapFile: '', departmentUserFile: '', formlistCount: '', departmentCount: '', userCount: '', corpName: '', userName: '', profileUpdated: false };
+    throw error;
+  }
+  const cache = {
+    formlistFile: getFormlistFile(target),
+    commandMapFile: '',
+    departmentUserFile: '',
+    formlistCount: '',
+    departmentCount: '',
+    userCount: '',
+    corpName: '',
+    userName: '',
+    profileUpdated: false,
+  };
+
+  fs.mkdirSync(CONFIG_DIR, { recursive: true });
+
+  try {
+    const formlist = await writeFormlistFile(target);
+    cache.formlistFile = formlist.file;
+    cache.formlistCount = formlist.count;
+  } catch (error) {
+    error.step = 'formlist';
+    error.cache = cache;
+    throw error;
+  }
+
+  try {
+    cache.commandMapFile = writeCommandMap(target);
+  } catch (error) {
+    error.step = 'command-map';
+    error.cache = cache;
+    throw error;
+  }
+
+  try {
+    const departmentUser = await writeDepartmentUserFile(target, userId);
+    cache.departmentUserFile = departmentUser.file;
+    cache.corpName = departmentUser.corpName;
+    cache.userName = departmentUser.userName;
+    cache.departmentCount = departmentUser.departmentCount;
+    cache.userCount = departmentUser.userCount;
+  } catch (error) {
+    error.step = 'department-user';
+    error.cache = cache;
+    throw error;
+  }
+
+  try {
+    cache.profileUpdated = writeCompanyProfile(target, { corpName: cache.corpName, userName: cache.userName });
+  } catch (error) {
+    error.step = 'profile';
+    error.cache = cache;
+    throw error;
+  }
+
+  return cache;
 }
 
 function normalizeBusinessType(value) {
@@ -373,15 +446,13 @@ export async function saveCompanyCredentials(kwargs) {
   fs.writeFileSync(CONFIG_FILE, JSON.stringify(companies, null, 2) + '\n', 'utf8');
 
   try {
-    const formlistFile = await writeFormlistFile(corpid);
-    const commandMapFile = writeCommandMap(corpid);
-    const { file: departmentUserFile, corpName, userName } = await writeDepartmentUserFile(corpid, userId);
-    writeCompanyProfile(corpid, { corpName, userName });
+    const cache = await refreshLocalCaches(corpid, userId);
+    const { formlistFile, commandMapFile, departmentUserFile, corpName, userName } = cache;
     return createResult('ok', '已保存 corpid、token、baseurl、userId，并同步表单模板缓存、命令映射文件与部门/员工缓存', corpid, baseurl, userId, formlistFile, commandMapFile, true, companies.length, departmentUserFile, corpName, userName, 'skipped', '');
   } catch (error) {
     return createResult(
       'partial',
-      `已保存 corpid、token、baseurl、userId，但同步缓存失败：${error.message}`,
+      `已保存 corpid、token、baseurl、userId，但同步缓存失败${error.step ? `（步骤 ${error.step}）` : ''}：${error.message}`,
       corpid,
       baseurl,
       userId,
