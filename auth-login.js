@@ -39,6 +39,11 @@ function maskSecret(value) {
   return `${text.slice(0, 6)}***(${text.length})`;
 }
 
+// debug 回显换取响应前对 token 字段做掩码（凭证明文只允许走 --raw 出口）
+function maskResponseTokens(text) {
+  return String(text || '').replace(/"(?:personalToken|token)"\s*:\s*"([^"]*)"/gi, (match, value) => match.replace(value, maskSecret(value)));
+}
+
 // 统一输出：成功时与 token-set 的列保持一致，失败时回落到合成错误行（不抛异常）
 function makeRow(fields) {
   return [{
@@ -112,7 +117,7 @@ async function exchangeApiToken(session, loginSession, resetToken, debug) {
 
   const text = await session.evaluate(expression, { attempts: 3, delayMs: 200 });
   const responseText = typeof text === 'string' ? text : JSON.stringify(text);
-  if (debug) process.stderr.write(`[debug] ResponseBody: ${responseText}\n`);
+  if (debug) process.stderr.write(`[debug] ResponseBody: ${maskResponseTokens(responseText)}\n`);
 
   let data;
   try {
@@ -234,7 +239,19 @@ async function authLogin(kwargs) {
       continue;
     }
 
-    const exchange = await exchangeApiTokenWithFallback(session, current, debug);
+    let exchange;
+    try {
+      exchange = await exchangeApiTokenWithFallback(session, current, debug);
+    } catch (error) {
+      // 页面导航、执行上下文重建等瞬时失败：记录原因后继续轮询；浏览器已关闭则直接返回
+      if (session.isClosed()) {
+        await finish(session, keepOpen);
+        return makeErrorRow('BROWSER_CLOSED', '浏览器已被关闭，登录未完成');
+      }
+      lastMessage = String(error.message || error);
+      await delay(POLL_INTERVAL_MS);
+      continue;
+    }
     if (exchange.sessionExpired) {
       // 旧会话已过期：清掉后继续等待用户重新登录
       await clearAccessToken(session);
