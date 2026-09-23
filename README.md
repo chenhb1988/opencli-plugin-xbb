@@ -93,7 +93,7 @@ xbbcli auth-login --keepOpen      # 登录成功后保留浏览器窗口（默�
 
 执行后与 `token-set` 等价：`--env 0`（默认）写入 `~/.xbbcli/config.env`、刷新表单缓存、命令映射与部门/员工缓存（不写环境变量）；`--env 1` 仅写入 `XBB_*` 环境变量，不写任何本地文件。
 
-技术实现：零依赖，用 `node:child_process` 以 `--remote-debugging-pipe` 启动浏览器（fd3 写 / fd4 读 CDP，**不开任何调试端口**），profile 固定为 `~/.xbbcli/browser-profile`（与日常浏览器隔离，登录态可复用）；CLI 读取页面 `localStorage` 的 `{corpid, userId, xbbAccessToken}`，再在页面内 `fetch` 网关 `apiToken/getApiToken` 换取个人 token。只支持 Chromium 内核浏览器（Chrome / Edge / Chromium），更多细节见 [`doc/auth-login-command-design.md`](doc/auth-login-command-design.md)。
+技术实现：零依赖，用 `node:child_process` 以 `--remote-debugging-pipe` 启动浏览器（fd3 写 / fd4 读 CDP，**不开任何调试端口**），profile 固定为 `~/.xbbcli/browser-profile`（与日常浏览器隔离，登录态可复用）；CLI 读取页面 `localStorage` 的 `{corpid, userId, xbbAccessToken}`，再在页面内 `fetch` 网关 `apiPersonalToken/generate` 换取个人 token。只支持 Chromium 内核浏览器（Chrome / Edge / Chromium），更多细节见 [`doc/auth-login-command-design.md`](doc/auth-login-command-design.md)。
 
 - `--debug` 输出请求体、返回体与浏览器信息（密钥只显示掩码），`--raw` 输出换取 API token 接口的原始响应
 - 失败时返回合成错误行：`NO_BROWSER`、`BROWSER_CLOSED`、`LOGIN_TIMEOUT`、`API_TOKEN_FAILED`、`CORPID_MISMATCH`、`SAVE_FAILED` 等

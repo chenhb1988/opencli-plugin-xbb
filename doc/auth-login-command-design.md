@@ -37,33 +37,35 @@ xbbcli auth-login
 | 凭证 | 签发接口 | 域名 | 用途 |
 | --- | --- | --- | --- |
 | `xbbAccessToken` | 登录页登录成功后写入 `localStorage` | `appwebfront` / `appgateway` | Web 前端会话 |
-| API token（`user_*`） | `/pro/v1/apiToken/getApiToken` | `appgateway` / `progateway` | 换取个人 token 的中间票 |
-| 个人 token（`user_*`） | `/pro/v2/api/user/generateToken` | `proapi` / `appapi` | 本仓库所有业务命令（`sign = SHA256(body + token)`） |
+| 个人 token（`user_*`） | `/pro/v1/apiPersonalToken/generate` | `appgateway` / `progateway` | `auth-login` 换取（复用/生成），响应字段 `personalToken` |
+| 个人 token（`user_*`） | `/pro/v2/api/user/generateToken` | `proapi` / `appapi` | 非 `user_` 前缀 token 的转换通道；本仓库所有业务命令携带（`sign = SHA256(body + token)`） |
 
-`xbbAccessToken` **不能**直接用于业务命令：实测用它请求 `proapi` 业务接口会被拒绝，请求网关也会返回 `100012 登录验证过期`。个人 token 反过来也不能当 `xbbAccessToken` 用（实测 `getApiToken` 返回 `100012`）。因此 `auth-login` 的模型是「浏览器完成 Web 登录 → 读 Web 会话 → 换个人 token → 落盘」。
+`xbbAccessToken` **不能**直接用于业务命令：实测用它请求 `proapi` 业务接口会被拒绝，请求网关也会返回 `100012 登录验证过期`。个人 token 反过来也不能当 `xbbAccessToken` 用（实测用个人 token 请求换取接口也会返回 `100012`）。因此 `auth-login` 的模型是「浏览器完成 Web 登录 → 读 Web 会话 → 换个人 token → 落盘」。
 
 ## 登录前端的网络约定（已实测复现）
 
 ```text
 baseURL = https://appgateway.xbongbong.com   # corpid 以 ding 开头或含 $$ding 时改为 https://progateway.xbongbong.com
 前缀    = /pro/v1
-body    = { corpid, userId, platform: 'web' }
+body    = { corpid, userId, platform: 'web', resetToken, checkUserId }
 header  corpid = localStorage.corpid || '1'
 header  sign   = SHA256(JSON.stringify(body) + xbbAccessToken)
 ```
 
 `appgateway` / `progateway` 的 CORS 均为全开（`access-control-allow-origin: *`，允许 `sign` / `corpid` 请求头），所以换 token 的 `fetch` 可以直接在登录页里执行，不需要 CLI 侧持有 Cookie。
 
-## 换 API token
+## 换个人 token
 
 ```text
-POST https://{appgateway|progateway}.xbongbong.com/pro/v1/apiToken/getApiToken
-body: { corpid, userId, platform: 'web' }
+POST https://{appgateway|progateway}.xbongbong.com/pro/v1/apiPersonalToken/generate
+body: { corpid, userId, platform: 'web', resetToken, checkUserId }
 header: corpid=<corpid>, sign=SHA256(body + xbbAccessToken)
-→ result: { corpid, userId, token, whiteList }
+→ result: { corpid, userId, personalToken, whiteList }
 ```
 
-之后 `token-set` 的公共逻辑会用该 token 调 `proapi` / `appapi` 的 `/pro/v2/api/user/generateToken`：先 `resetToken=0` 查询是否已有个人 token，返回空串时再 `resetToken=1` 生成，最终保存 `user_*`。
+- `checkUserId`：生成 / 获取个人 token 对应的人员，自助登录时与登录用户一致
+- `resetToken`：0 复用已有 token、1 重新生成；先按 0 请求，返回空 token 时再按 1 重试
+- 返回的 `personalToken` 以 `user_` 开头，`saveCompanyCredentials` 直接落盘，无需再调 `/pro/v2/api/user/generateToken`；仅当传入 token 非 `user_` 前缀时（如手工 `token-set`）才走 v2 接口转换：先 `resetToken=0` 查询、空串再 `resetToken=1` 生成
 
 ## 错误返回（合成行，不抛异常）
 

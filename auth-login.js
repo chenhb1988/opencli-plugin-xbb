@@ -3,7 +3,7 @@ import { cli, Strategy } from './xbb-registry.js';
 import { openBrowser, findBrowserExecutable, LOGIN_PAGE_URL } from './xbb-browser.js';
 import { saveCompanyCredentials } from './xbb-token-store.js';
 
-const API_TOKEN_PATH = '/pro/v1/apiToken/getApiToken';
+const API_TOKEN_PATH = '/pro/v1/apiPersonalToken/generate';
 const PRO_GATEWAY_ORIGIN = 'https://progateway.xbongbong.com';
 const APP_GATEWAY_ORIGIN = 'https://appgateway.xbongbong.com';
 const PLATFORM = 'web';
@@ -91,10 +91,11 @@ async function readSession(session) {
   };
 }
 
-// 在页面内调用网关换取 API token：CORS 全开，sign = SHA256(JSON body + xbbAccessToken)
-async function exchangeApiToken(session, loginSession, debug) {
+// 在页面内调用网关换取个人 token：CORS 全开，sign = SHA256(JSON body + xbbAccessToken)
+// resetToken=0 复用已有 token、1 重新生成；checkUserId 为目标人员，自助登录时与登录用户一致
+async function exchangeApiToken(session, loginSession, resetToken, debug) {
   const url = resolveGatewayUrl(loginSession.corpid);
-  const body = JSON.stringify({ corpid: loginSession.corpid, userId: loginSession.userId, platform: PLATFORM });
+  const body = JSON.stringify({ corpid: loginSession.corpid, userId: loginSession.userId, checkUserId: loginSession.userId, platform: PLATFORM, resetToken });
   const sign = buildSign(body, loginSession.accessToken);
   const expression = `(async () => {
   const response = await fetch(${JSON.stringify(url)}, {
@@ -127,16 +128,25 @@ async function exchangeApiToken(session, loginSession, debug) {
   }
 
   const result = data.result;
-  const token = normalizeArg(typeof result === 'string' ? result : (result && result.token));
-  if (!token) {
-    return { error: '接口未返回 API token；可到销帮帮「个人中心 - API 设置」复制 token 后执行 xbbcli token-set' };
-  }
+  const token = normalizeArg(typeof result === 'string' ? result : (result && (result.personalToken || result.token)));
   return {
     token,
     corpid: normalizeArg(result && result.corpid) || loginSession.corpid,
     userId: normalizeArg(result && result.userId) || loginSession.userId,
     responseText,
   };
+}
+
+// resetToken=0 复用已有 token；接口返回空 token 时改用 resetToken=1 重新生成，仍未返回则给出合成错误
+async function exchangeApiTokenWithFallback(session, loginSession, debug) {
+  const existing = await exchangeApiToken(session, loginSession, 0, debug);
+  if (existing.error || existing.sessionExpired || existing.token) return existing;
+
+  const regenerated = await exchangeApiToken(session, loginSession, 1, debug);
+  if (!regenerated.error && !regenerated.sessionExpired && !regenerated.token) {
+    return { ...regenerated, error: '接口未返回 API token；可到销帮帮「个人中心 - API 设置」复制 token 后执行 xbbcli token-set' };
+  }
+  return regenerated;
 }
 
 async function clearAccessToken(session) {
@@ -224,7 +234,7 @@ async function authLogin(kwargs) {
       continue;
     }
 
-    const exchange = await exchangeApiToken(session, current, debug);
+    const exchange = await exchangeApiTokenWithFallback(session, current, debug);
     if (exchange.sessionExpired) {
       // 旧会话已过期：清掉后继续等待用户重新登录
       await clearAccessToken(session);
