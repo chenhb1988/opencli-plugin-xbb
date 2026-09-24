@@ -31,15 +31,24 @@ function buildApiUrl(baseUrl, defaultUrl) {
 }
 
 function buildConditions(kwargs) {
-  const conditions = [];
+  const conditions = kwargs.conditions;
+  if (typeof conditions === 'string' && conditions.trim()) {
+    const parsed = JSON.parse(conditions);
+    if (!Array.isArray(parsed)) {
+      throw new Error('INVALID_CONDITIONS:conditions 必须是 JSON 数组');
+    }
+    return parsed;
+  }
+
+  const result = [];
   if (kwargs.attr && kwargs.value) {
-    conditions.push({
+    result.push({
       attr: String(kwargs.attr),
       value: [String(kwargs.value)],
       symbol: String(kwargs.symbol || 'equal'),
     });
   }
-  return conditions;
+  return result;
 }
 
 function buildPayload(kwargs, corpid) {
@@ -85,6 +94,7 @@ cli({
     { name: 'formId', type: 'int', help: '表单id（必填）' },
     { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
     { name: 'viewApproval', type: 'str', default: '', help: '是否查询审批中数据，1是，0否' },
+    { name: 'conditions', type: 'str', default: '', help: '条件集合 JSON 数组字符串，优先级高于 --attr/--value' },
     { name: 'attr', type: 'str', default: '', help: '筛选字段 attr，例如 serialNo' },
     { name: 'value', type: 'str', default: '', help: '筛选值，和 --attr 配合使用' },
     { name: 'symbol', type: 'str', default: 'equal', help: '筛选操作符，默认 equal' },
@@ -98,7 +108,16 @@ cli({
   func: async (kwargs) => {
     const debug = Boolean(kwargs.debug);
     const { corpid, token, baseUrl, userId } = getRuntimeConfig();
-    const payload = buildPayload(kwargs, corpid);
+    let payload;
+    try {
+      payload = buildPayload(kwargs, corpid);
+    } catch (error) {
+      const message = String(error?.message || error);
+      const separatorIndex = message.indexOf(':');
+      const code = separatorIndex > 0 ? message.slice(0, separatorIndex) : 'INVALID_PAYLOAD';
+      const detail = separatorIndex > 0 ? message.slice(separatorIndex + 1) : message;
+      return makeErrorRow(code, detail);
+    }
     const body = JSON.stringify(payload);
 
     if (!payload.corpid) {
