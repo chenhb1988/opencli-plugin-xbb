@@ -7,7 +7,7 @@ const CONFIG_DIR = path.join(os.homedir(), '.xbbcli');
 const CONFIG_FILE = path.join(CONFIG_DIR, 'config.env');
 const ENV_FILE = path.join(CONFIG_DIR, 'env.sh');
 
-// config.env 字段名 -> 对应环境变量名（环境变量模式只支持单公司）
+// config.env 字段名 -> 对应环境变量名；仅供写入、同步、清除与展示类命令检测使用，业务命令不再读取
 export const ENV_VAR_NAMES = Object.freeze({
   corpid: 'XBB_CORPID',
   token: 'XBB_TOKEN',
@@ -19,10 +19,6 @@ export const ENV_VAR_NAMES = Object.freeze({
 
 function trim(value) {
   return String(value ?? '').trim();
-}
-
-function isTruthy(value) {
-  return ['1', 'true', 'yes', 'on'].includes(trim(value).toLowerCase());
 }
 
 // 读取环境中非空的 XBB_* 变量，返回与 config.env 单条配置同构的对象
@@ -39,12 +35,7 @@ export function hasEnvConfig(config = readEnvConfig()) {
   return Boolean(trim(config.corpid) || trim(config.token));
 }
 
-// XBB_ENV_ONLY=1 时强制只使用环境变量，忽略 config.env
-export function isEnvOnly() {
-  return isTruthy(process.env.XBB_ENV_ONLY);
-}
-
-// 与旧版每个命令内联的 readConfig 行为保持一致：优先返回 enable=true 的公司
+// 与旧版每个命令内联的 readConfig 行为保持一致：返回 enable=true 的公司
 function readFileConfig() {
   try {
     const parsed = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
@@ -62,21 +53,9 @@ function readFileConfig() {
   }
 }
 
-// 环境变量优先：XBB_* 中 corpid/token 非空时只用环境变量，否则用 config.env 里 enable=true 的公司
+// 业务命令统一从 config.env 读取 enable=true 的公司；XBB_* 环境变量不再参与读取
 export function readActiveConfig() {
-  const envConfig = readEnvConfig();
-  if (isEnvOnly()) {
-    return envConfig;
-  }
-  if (hasEnvConfig(envConfig)) {
-    return envConfig;
-  }
   return readFileConfig();
-}
-
-// 当前生效来源是否为环境变量
-export function isEnvActive() {
-  return hasEnvConfig();
 }
 
 export function getEnvVarNames() {

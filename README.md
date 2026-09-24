@@ -91,7 +91,7 @@ xbbcli auth-login --corpid <CORPID>  # 校验登录的企业，不一致时报�
 xbbcli auth-login --keepOpen      # 登录成功后保留浏览器窗口（默认自动关闭）
 ```
 
-执行后与 `token-set` 等价：`--env 0`（默认）写入 `~/.xbbcli/config.env`、刷新表单缓存、命令映射与部门/员工缓存（不写环境变量）；`--env 1` 仅写入 `XBB_*` 环境变量，不写任何本地文件。
+执行后与 `token-set` 等价：`--env 0`（默认）写入 `~/.xbbcli/config.env`、刷新表单缓存、命令映射与部门/员工缓存（不写环境变量）；`--env 1` 仅写入 `XBB_*` 环境变量（供外部系统使用，本 CLI 不读取），不写任何本地文件。
 
 技术实现：零依赖，用 `node:child_process` 以 `--remote-debugging-pipe` 启动浏览器（fd3 写 / fd4 读 CDP，**不开任何调试端口**），profile 固定为 `~/.xbbcli/browser-profile`（与日常浏览器隔离，登录态可复用）；CLI 读取页面 `localStorage` 的 `{corpid, userId, xbbAccessToken}`，再在页面内 `fetch` 网关 `apiPersonalToken/generate` 换取个人 token。只支持 Chromium 内核浏览器（Chrome / Edge / Chromium），更多细节见 [`doc/auth-login-command-design.md`](doc/auth-login-command-design.md)。
 
@@ -107,9 +107,8 @@ xbbcli auth-refresh-cache -f json
 ```
 
 - 刷新范围（仅当前启用公司）：`~/.xbbcli/<corpid>.formlist.json`（表单清单）、`~/.xbbcli/<corpid>.command-map.md`（命令映射）、`~/.xbbcli/<corpid>.department-user.json`（部门/员工清单），并把 `corpName` / `userName` 回填进 `config.env`
-- 环境变量模式（`XBB_*`）下同样可用：只刷新缓存文件，不回填 `config.env`
 - 只支持当前启用公司：底层接口一律使用启用公司的凭证，切换公司请先用 `xbbcli token-use`
-- `--userId` 覆盖用于匹配 `userName` 的员工 id（默认取配置里的 `userId`）；`--debug` 在 stderr 输出配置来源、corpid 与三份缓存文件路径
+- `--userId` 覆盖用于匹配 `userName` 的员工 id（默认取配置里的 `userId`）；`--debug` 在 stderr 输出 corpid、userId 与三份缓存文件路径
 - 失败时返回 `status=error`、`code=CACHE_REFRESH_FAILED`，`message` 以「步骤 formlist / command-map / department-user / profile」指出中断位置，已完成的部分照常在对应列输出
 
 `token-set` 会按 `corpid` 新增或覆盖一家公司，并把该公司置为 `enable=true`（其余公司自动置为 `false`），同时写入公司名称 `corpName`（取部门 `id` 为 `1` 的部门名称）和操作人姓名 `userName`（从员工列表中按 `userId` 匹配）。除 `token-set`、`token-list`、`token-use`、`token-del`、`auth-status`、`auth-logout` 外，其余命令都使用 `enable` 为 `true` 的公司配置。
@@ -173,22 +172,22 @@ userId    02415643151585
 baseurl   https://proapi.xbongbong.com
 token     user_6***a7da
 验证      有效
-note      以上取值来自环境变量 XBB_*（config.env 中没有启用公司，回落到环境变量）；环境变量模式不支持多公司切换
+note      config.env 中存在 2 个 enable=true，仅第一条生效，请用 xbbcli token-use 修正
 ```
 
-- 来源（`config.env` 启用公司 还是 `XBB_*`）与冲突提醒只在需要时以 `note` 行追加：环境变量与 `config.env` 同时存在时提示「环境变量优先，`config.env` 中启用（`enable=true`）的公司被覆盖」并提示清除环境变量可切回配置文件；`config.env` 里出现多个 `enable=true` 时提示用 `token-use` 修正。
+- 冲突提醒只在需要时以 `note` 行追加：`config.env` 里出现多个 `enable=true` 时提示用 `token-use` 修正；没有任何生效配置时提示下一步命令，若同时检测到 `XBB_*` 环境变量，会追加一条「检测到 XBB_* 环境变量，但本版本不再读取环境变量」。
 - `auth-status` 的 `验证` 行会实打实发起一次 `user-list --pageSize 1` 请求（等价于手工执行 `xbbcli user-list --pageSize 1`）：接口成功（含 `NO_DATA` 空清单）→ `有效`；接口返回业务错误码或请求异常 → `无效-请重新配置token`。没有生效配置或缺少 token 时不再发起请求，直接给出 `无效-请重新配置token`；`--debug` 会输出判定结果与原因。
-- 没有任何生效配置时，6 个配置值一律留空（`验证` 行为 `无效-请重新配置token`）并给出 `note` 提示下一步命令（即使 `XBB_BASEURL` / `XBB_USERID` 单独残留也不会当成生效值回显）。配置文件路径、公司数量、生效的环境变量名改用 `--debug` 输出到 stderr。
+- 没有任何生效配置时，6 个配置值一律留空（`验证` 行为 `无效-请重新配置token`）并给出 `note` 提示下一步命令（即使 `XBB_BASEURL` / `XBB_USERID` 单独残留也不会当成生效值回显）；检测到 `XBB_*` 环境变量时追加提示「本版本不再读取环境变量」。配置文件路径、公司数量与检测到的 `XBB_*` 环境变量名改用 `--debug` 输出到 stderr。
 - `auth-status` 默认把 token 掩码为「前 6 + `***` + 后 4」（长度不足 11 时只保留前 2 位），只有 `--showToken` 才输出明文。
 - `auth-logout` 只删除 `enable=true` 的那一条，**不会**把其他公司自动提升为启用：登出后本地可能一个启用公司都没有，需要 `xbbcli token-use --corpid <CORPID>` 或重新 `auth-login` / `token-set`。想保留其他公司并可切换时，用 `xbbcli token-del --corpid <CORPID>`（它会保证剩余配置仍有且仅有一个启用；默认还会删除 `XBB_*` 环境变量，传 `--env 0` 可保留）。
 - 删除前 `config.env` 会整份备份到 `~/.xbbcli/config.env.bak`（每次登出覆盖），`backupFile` 列给出路径；误删把 `.bak` 复制回 `config.env` 即可恢复。
-- 默认**同时**清除 `XBB_*` 环境变量：Windows 用 `reg delete HKCU\Environment` 删除用户级变量（已打开的终端要重开才生效，`envStored` 为 `user`，原本就不存在时为 `none`）；macOS/Linux 清理 `~/.xbbcli/env.sh` 里的 `export XBB_*` 行（文件清空则删除，`envStored` 为 `cleared` / `removed` / `none`）。传 `--env 0` 时只删 `config.env`，此时若环境变量仍在，`message` 会提示「其优先级高于 config.env，业务命令仍会使用它，本次不算彻底登出」（`XBB_ENV_ONLY=1` 时提示为「已强制只用环境变量」）。
+- 默认**同时**清除 `XBB_*` 环境变量：Windows 用 `reg delete HKCU\Environment` 删除用户级变量（已打开的终端要重开才生效，`envStored` 为 `user`，原本就不存在时为 `none`）；macOS/Linux 清理 `~/.xbbcli/env.sh` 里的 `export XBB_*` 行（文件清空则删除，`envStored` 为 `cleared` / `removed` / `none`）。传 `--env 0` 时只删 `config.env`，此时若环境变量仍在，`message` 会提示环境变量仍存在（供外部系统使用；业务命令不再读取），并给出改用 `--env 1` 一并清除的建议。
 - `config.env` 没有启用公司时：只有在环境变量确实存在时才只清环境变量（`config.env` 保持不动）；两者都不存在则返回 `NO_ACTIVE_CONFIG`，不写任何文件。
 - 任何情况都不改动 `<corpid>.formlist.json` / `<corpid>.command-map.md` / `<corpid>.department-user.json` 三份缓存，重新启用该公司时无需再次拉取。
 
-## 环境变量模式（单公司）
+## 环境变量输出（供外部集成）
 
-除 `config.env` 外，命令也支持从环境变量读取一家公司的凭证，便于 CI、容器与其他工具集成：
+自本版本起，业务命令不再读取 `XBB_*` 环境变量，凭证来源唯一化为 `config.env` 中 `enable=true` 的公司；`token-set` / `auth-login` 的 `--env 1` 仍会把凭证写入环境变量，供 CI、容器与其他外部工具集成消费：
 
 | 环境变量 | 对应字段 |
 | --- | --- |
@@ -199,34 +198,26 @@ note      以上取值来自环境变量 XBB_*（config.env 中没有启用公�
 | `XBB_CORPNAME` | `corpName` |
 | `XBB_USERNAME` | `userName` |
 
-读取优先级：
-
-1. 环境变量 `XBB_*` 中 `XBB_CORPID` / `XBB_TOKEN` 有值时，优先使用环境变量（`config.env` 中 `enable=true` 的公司被覆盖，命令会以环境变量为准）
-2. 环境变量不存在时，使用 `config.env` 中存在 `enable=true` 的公司（多公司切换行为不变）
-3. 设置 `XBB_ENV_ONLY=1` 可强制只使用环境变量（完全忽略 `config.env`）
-
-> 注意：由于环境变量优先，早先 `--env 1` 写入的 `XBB_*` 会覆盖之后 `token-set --env 0` 写入的 `config.env`（`token-set` 的 `message` 会给出提示）。要切回 `config.env` 请先清除 `XBB_*` 环境变量，或执行 `xbbcli auth-logout`（默认会一并清除）。
-
 `token-set` / `auth-login` 通过 `--env` 控制存储方式：`--env 0`（默认）仅写入本地文件（`config.env` 与各类缓存），`--env 1` 仅写入环境变量（不写任何本地文件）。选 `--env 1` 时会把 `corpid`/`token`/`baseurl`/`userId` 写入环境变量：
 
 - Windows：用 `setx` 写入用户级环境变量，**只对新开的终端生效**
 - macOS/Linux：写入 `~/.xbbcli/env.sh`（`export` 形式，权限 600），需要 `source ~/.xbbcli/env.sh` 才在当前 shell 生效
 
-环境变量模式只支持一家公司：此时 `token-list` 会把环境变量行（`source=env`）与 `config.env` 中的公司行（`source=config`）一起列出，并在 `msg` 列标注各自当前是否生效；`token-use` 会在切换 `config.env` 启用公司的同时，把该公司凭证同步写回 `XBB_*` 环境变量（目标公司缺 `token` 时拒绝切换，避免残留旧 `XBB_TOKEN`）；`token-del` 默认在删除公司的同时一并删除 `XBB_*` 环境变量（`--env 0` 可保留），并在 `message` 说明删除后的实际生效来源。
+`token-list` 会把环境变量行（`source=env`）与 `config.env` 中的公司行（`source=config`）一起列出：环境变量行在 `msg` 列标注「XBB_* 环境变量存在（仅供外部系统，业务命令不再读取）」，`config.env` 的启用行固定标注「来源为 config.env，当前生效」；`token-use` 在切换 `config.env` 启用公司的同时，若检测到 `XBB_*` 有值，会把该公司凭证同步写回环境变量（目标公司缺 `token` 时拒绝切换，避免残留旧 `XBB_TOKEN`），便于外部系统跟随切换；`token-del` 默认在删除公司的同时一并删除 `XBB_*` 环境变量（`--env 0` 可保留），并在 `message` 说明删除后的实际生效来源。
 
-> 注意：`token-del --env 0` 保留环境变量时，若 `XBB_*` 仍有效，其优先级高于 `config.env`，业务命令仍会使用它（`message` 会给出提示）；要连环境变量一起清理，用 `token-del` 默认行为（不传 `--env`）或执行 `xbbcli auth-logout`（默认就会清除 `XBB_*`）；也可以手工执行 `setx XBB_TOKEN ""`（其余 `XBB_*` 同理，Windows 需重开终端）或删除 `~/.xbbcli/env.sh` 并 `unset` 当前 shell 中已导出的变量。
+> 注意：`token-del --env 0` 保留环境变量时，`XBB_*` 仍会存在（仅供外部系统使用；业务命令不再读取），`message` 会给出提示；要连环境变量一起清理，用 `token-del` 默认行为（不传 `--env`）或执行 `xbbcli auth-logout`（默认就会清除 `XBB_*`）；也可以手工执行 `setx XBB_TOKEN ""`（其余 `XBB_*` 同理，Windows 需重开终端）或删除 `~/.xbbcli/env.sh` 并 `unset` 当前 shell 中已导出的变量。
 
 ## 当前支持的命令
 
 ### 配置
 
 - `auth-login`：拉起本地浏览器完成交互式登录（账号密码 / 短信 / 扫码均可），自动读取 Web 会话、换取 API token 并复用 `token-set` 落盘；支持 `--browser`、`--timeout`、`--corpid`、`--keepOpen`、`--env`、`--debug`、`--raw`
-- `auth-status`：以 `key` / `value` 两列回显当前激活配置的 `corpid`、`corpName`、`userName`、`userId`、`baseurl`、`token`（token 默认中间掩码，`--showToken` 出明文），并追加 `验证` 行（调用一次 `user-list --pageSize 1` 实测 token，`有效` / `无效-请重新配置token`）；来源与冲突提醒以 `note` 行追加，无生效配置时六个值留空并给出 `note`；`--debug` 在 stderr 输出配置文件路径、公司数量、生效的环境变量名与验证结果
+- `auth-status`：以 `key` / `value` 两列回显当前激活配置的 `corpid`、`corpName`、`userName`、`userId`、`baseurl`、`token`（token 默认中间掩码，`--showToken` 出明文），并追加 `验证` 行（调用一次 `user-list --pageSize 1` 实测 token，`有效` / `无效-请重新配置token`）；来源与冲突提醒以 `note` 行追加（多个 `enable=true`；无生效配置时提示下一步命令，检测到 `XBB_*` 时说明本版本不再读取）；`--debug` 在 stderr 输出配置文件路径、公司数量、检测到的 `XBB_*` 环境变量名与验证结果
 - `auth-logout`：删除 `config.env` 中 `enable=true` 的那一条配置，删除前整份备份为 `~/.xbbcli/config.env.bak`；不自动把其他公司提升为启用；默认同时清除 `XBB_*` 环境变量（`--env 0` 跳过，返回 `envStored` / `envFile`）；既无启用公司又无环境变量时返回 `NO_ACTIVE_CONFIG` 且不改动文件
 - `auth-refresh-cache`：对当前启用公司重新拉取表单缓存、命令映射与部门/员工缓存，并回填 `corpName` / `userName`；失败时返回 `code=CACHE_REFRESH_FAILED`，`message` 注明中断步骤（`formlist` / `command-map` / `department-user` / `profile`），已完成的部分照常输出；支持 `--userId`、`--debug`
-- `token-set`：保存个人 token、`corpid`、`userId`、`baseurl`，并刷新本地表单缓存、命令映射文件与部门/员工缓存；传入的 token 不以 `user_` 开头时，会先为该 `userId` 刷新并保存个人 token；`--env` 控制存储方式：`0`（默认）仅写入本地文件，`1` 仅写入 `XBB_*` 环境变量（Windows 用 `setx`，其他平台写 `~/.xbbcli/env.sh`）且不写任何本地文件；返回 `envStored` / `envFile` 两列
-- `token-list`：同时列出环境变量行（`source=env`，仅 `XBB_CORPID` / `XBB_TOKEN` 有值时出现）与 `config.env` 中保存的全部公司（`source=config`，含 `corpName` 公司名称与 `userName` 操作人姓名），`msg` 列标注各行当前状态（当前生效 / 被环境变量覆盖 / 被 `XBB_ENV_ONLY=1` 忽略）；`--showToken` 显示完整 token（默认脱敏）
-- `token-use`：切换当前启用的公司（`xbbcli token-use --corpid <CORPID>`），保证仅且只有一个公司被启用；若环境变量 `XBB_*` 有值，同时把该公司凭证（`corpid`/`token`/`baseurl`/`userId`/`corpName`/`userName`，缺 `baseurl` 时按 `corpid` 推导）同步写回环境变量——Windows 用 `setx`（需重开终端）、macOS/Linux 写 `~/.xbbcli/env.sh`（需重新 `source`）；同步失败时返回 `status=partial`，目标公司缺 `token` 时返回错误且不改动任何配置
+- `token-set`：保存个人 token、`corpid`、`userId`、`baseurl`，并刷新本地表单缓存、命令映射文件与部门/员工缓存；传入的 token 不以 `user_` 开头时，会先为该 `userId` 刷新并保存个人 token；`--env` 控制存储方式：`0`（默认）仅写入本地文件，`1` 仅写入 `XBB_*` 环境变量（供外部系统使用，本 CLI 不读取；Windows 用 `setx`，其他平台写 `~/.xbbcli/env.sh`）且不写任何本地文件；返回 `envStored` / `envFile` 两列
+- `token-list`：同时列出环境变量行（`source=env`，仅 `XBB_CORPID` / `XBB_TOKEN` 有值时出现，`msg` 标注「仅供外部系统，业务命令不再读取」）与 `config.env` 中保存的全部公司（`source=config`，含 `corpName` 公司名称与 `userName` 操作人姓名），config 启用行在 `msg` 列标注「来源为 config.env，当前生效」；`--showToken` 显示完整 token（默认脱敏）
+- `token-use`：切换当前启用的公司（`xbbcli token-use --corpid <CORPID>`），保证仅且只有一个公司被启用；若环境变量 `XBB_*` 有值，同时把该公司凭证（`corpid`/`token`/`baseurl`/`userId`/`corpName`/`userName`，缺 `baseurl` 时按 `corpid` 推导）同步写回环境变量（供外部系统使用，本 CLI 不读取）——Windows 用 `setx`（需重开终端）、macOS/Linux 写 `~/.xbbcli/env.sh`（需重新 `source`）；同步失败时返回 `status=partial`，目标公司缺 `token` 时返回错误且不改动任何配置
 - `token-del`：删除指定公司的本地配置（`xbbcli token-del --corpid <CORPID>`），并保证剩余配置中仅且只有一个公司被启用；默认同时删除 `XBB_*` 环境变量（`--env 0` 保留，返回 `envStored` / `envFile` 两列）
 - `token-generate`：生成/获取个人 token，`--resetToken 0` 获取（默认）、`1` 刷新；`--checkUserId` 未传则用配置中的 `userId`
 
@@ -242,6 +233,11 @@ note      以上取值来自环境变量 XBB_*（config.env 中没有启用公�
 - `department-edit`：编辑部门
 - `department-del`：删除部门
 - `role-list`：角色列表
+
+### 企业工商信息
+
+- `business-info-search`：按关键词搜索企业，返回企业准确全称与 `pid`（供 `business-info-detail` 使用）
+- `business-info-detail`：按 `pid` 查询企业工商登记信息，key/value 逐字段回显；`dateOfEstablishment` / `approvalDate` / `cancellationDate` 等时间戳转为 `YYYY-MM-DD`（UTC+8），`registeredAddress` / `shareholder` 为 JSON 字符串
 
 ### CRM 主数据
 
@@ -471,10 +467,10 @@ note      以上取值来自环境变量 XBB_*（config.env 中没有启用公�
 ## 通用行为
 
 - 先执行一次 `token-set`（或 `auth-login`）保存有效的 `corpid`、`token`、`userId`
-- 用 `xbbcli auth-status` 查看当前生效的配置来自 `config.env` 还是环境变量；`xbbcli auth-logout` 删除激活配置并默认清除 `XBB_*` 环境变量（`--env 0` 保留）
+- 用 `xbbcli auth-status` 查看当前生效的配置（`config.env` 中 `enable=true` 的公司）；`xbbcli auth-logout` 删除激活配置并默认清除 `XBB_*` 环境变量（`--env 0` 保留）
 - 除 `token-set` 外，其余命令都会从 `~/.xbbcli/config.env` 读取 `corpid`
 - 大部分命令会从 `~/.xbbcli/config.env` 读取 `token`
-- 环境变量 `XBB_*` 的优先级高于 `config.env`：`XBB_CORPID` / `XBB_TOKEN` 有值时，所有命令都以环境变量为准（`config.env` 中的启用公司被覆盖）；两者都不存在时才没有任何生效配置。`XBB_ENV_ONLY=1` 可强制只用环境变量
+- 业务命令不再读取 `XBB_*` 环境变量：凭证来源唯一化为 `config.env` 中 `enable=true` 的公司；`--env 1` 写入的 `XBB_*` 仅供外部系统集成使用
 - 所有命令会从配置中读取 `userId` 并附加到请求 header 中
 - 大部分命令需要 formId 参数，可以根据业务名称或 businessType 从 `~/.xbbcli/<corpid>.formlist.json` 中获取 formId
 - 需要查询部门 id/名称，或员工 userId/所属部门时，可以先查 `~/.xbbcli/<corpid>.department-user.json`（由 `token-set` 分页抓取并缓存全部部门与员工）
@@ -527,6 +523,13 @@ xbbcli customer-add --formId 19274 --dataList '{"text_1":"apiTest.001"}'
 xbbcli customer-edit --formId 19274 --dataId 310992 --dataList '{"text_1":"apiTest.001-编辑"}'
 xbbcli customer-detail --dataId 310992
 xbbcli customer-add-couser --dataId 310995 --businessUserIdList '["xbbTest002"]'
+```
+
+### 企业工商信息
+
+```bash
+xbbcli business-info-search --keyword 杭州逍邦网络科技有限公司
+xbbcli business-info-detail --pid 5bb73e72a9ae9a0318fd95ce
 ```
 
 ### 表单模型/业务数据

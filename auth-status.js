@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { cli, Strategy, getRegistry } from './xbb-registry.js';
-import { readActiveConfig, isEnvActive, isEnvOnly, getEnvVarNames } from './xbb-config.js';
+import { readActiveConfig, getEnvVarNames } from './xbb-config.js';
 
 const CONFIG_DIR = path.join(os.homedir(), '.xbbcli');
 const CONFIG_FILE = path.join(CONFIG_DIR, 'config.env');
@@ -79,15 +79,14 @@ function withVerify(rows, verify) {
 
 async function authStatus(kwargs) {
   const showToken = Boolean(kwargs.showToken);
-  const envUsed = isEnvActive();
   const active = readActiveConfig();
   const companies = readCompanies();
   const hasActive = Boolean(trim(active.corpid) || trim(active.token));
-  const source = hasActive ? (envUsed ? 'env' : 'config') : 'none';
+  const source = hasActive ? 'config' : 'none';
+  const envNames = getEnvVarNames().filter((name) => trim(process.env[name]));
 
   if (kwargs.debug) {
-    const envNames = getEnvVarNames().filter((name) => trim(process.env[name])).join(', ');
-    process.stderr.write(`[debug] ConfigFile: ${CONFIG_FILE}\n[debug] Companies: ${companies.length}\n[debug] Source: ${source}\n[debug] XBB_ENV_ONLY: ${trim(process.env.XBB_ENV_ONLY) || 'unset'}\n[debug] EnvVarsSet: ${envNames || 'none'}\n`);
+    process.stderr.write(`[debug] ConfigFile: ${CONFIG_FILE}\n[debug] Companies: ${companies.length}\n[debug] EnvVarsSet: ${envNames.join(', ') || 'none'}\n`);
   }
 
   const token = trim(active.token);
@@ -106,22 +105,10 @@ async function authStatus(kwargs) {
   const verifiedRows = withVerify(rows, verify);
 
   if (source === 'none') {
-    // 没有生效配置时不把残留的环境变量值当真值回显（XBB_BASEURL 等可能单独存在）
-    return withNotes(verifiedRows, [
-      '没有处于激活状态的配置：config.env 中不存在 enable=true 的公司，环境变量 XBB_* 也为空；请先执行 xbbcli auth-login 或 xbbcli token-set',
-    ]);
-  }
-
-  if (source === 'env') {
-    const enabledCount = companies.filter((item) => item.enable === true).length;
-    const reason = isEnvOnly()
-      ? 'XBB_ENV_ONLY=1 已强制使用环境变量'
-      : enabledCount > 0
-        ? '环境变量优先于 config.env，其中 enable=true 的公司被覆盖'
-        : 'config.env 中没有启用公司，回落到环境变量';
-    const notes = [`以上取值来自环境变量 XBB_*（${reason}）；环境变量模式不支持多公司切换，配置文件路径与公司数量见 --debug`];
-    if (!isEnvOnly() && enabledCount > 0) {
-      notes.push('如需改用 config.env 中的启用公司，请先清除 XBB_* 环境变量（或执行 xbbcli auth-logout）');
+    // 没有生效配置时不把残留的环境变量值当真值回显；检测到 XBB_* 时提示本版本不再读取
+    const notes = ['没有处于激活状态的配置：config.env 中不存在 enable=true 的公司；请先执行 xbbcli auth-login 或 xbbcli token-set'];
+    if (envNames.length) {
+      notes.push('检测到 XBB_* 环境变量，但本版本不再读取环境变量');
     }
     return withNotes(verifiedRows, notes);
   }

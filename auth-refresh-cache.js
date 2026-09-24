@@ -1,5 +1,5 @@
 import { cli, Strategy } from './xbb-registry.js';
-import { readActiveConfig, isEnvActive } from './xbb-config.js';
+import { readActiveConfig } from './xbb-config.js';
 import {
   refreshLocalCaches,
   getFormlistFile,
@@ -43,12 +43,11 @@ async function authRefreshCache(kwargs) {
   const userId = trim(kwargs.userId) || trim(active.userId);
 
   if (kwargs.debug) {
-    const source = isEnvActive() ? 'env' : 'config';
-    process.stderr.write(`[debug] ConfigSource: ${source}\n[debug] Corpid: ${corpid || '(none)'}\n[debug] UserId: ${userId || '(none)'}\n[debug] FormlistFile: ${corpid ? getFormlistFile(corpid) : ''}\n[debug] CommandMapFile: ${corpid ? getCommandMapFile(corpid) : ''}\n[debug] DepartmentUserFile: ${corpid ? getDepartmentUserFile(corpid) : ''}\n`);
+    process.stderr.write(`[debug] Corpid: ${corpid || '(none)'}\n[debug] UserId: ${userId || '(none)'}\n[debug] FormlistFile: ${corpid ? getFormlistFile(corpid) : ''}\n[debug] CommandMapFile: ${corpid ? getCommandMapFile(corpid) : ''}\n[debug] DepartmentUserFile: ${corpid ? getDepartmentUserFile(corpid) : ''}\n`);
   }
 
   if (!corpid) {
-    return makeErrorRow('NO_ACTIVE_CONFIG', '没有生效的配置：config.env 中不存在 enable=true 的公司，环境变量 XBB_* 也为空；请先执行 xbbcli auth-login 或 xbbcli token-set');
+    return makeErrorRow('NO_ACTIVE_CONFIG', '没有生效的配置：config.env 中不存在 enable=true 的公司；请先执行 xbbcli auth-login 或 xbbcli token-set');
   }
 
   let cache;
@@ -79,9 +78,7 @@ async function authRefreshCache(kwargs) {
 
   const message = cache.profileUpdated
     ? '已刷新表单清单缓存、命令映射与部门/员工缓存，并回填 corpName/userName 到 config.env'
-    : isEnvActive()
-      ? '已刷新表单清单缓存、命令映射与部门/员工缓存；当前为环境变量模式，corpName/userName 未回填 config.env'
-      : '已刷新表单清单缓存、命令映射与部门/员工缓存；该公司不在 config.env 中，corpName/userName 未回填';
+    : '已刷新表单清单缓存、命令映射与部门/员工缓存；该公司不在 config.env 中，corpName/userName 未回填';
 
   return makeRow({
     status: 'ok',

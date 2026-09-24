@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { getRegistry } from './xbb-registry.js';
-import { persistEnvVars, hasEnvConfig } from './xbb-config.js';
+import { persistEnvVars } from './xbb-config.js';
 
 // token-set 与 auth-login 共用的凭证落盘逻辑：写 config.env、表单缓存、命令映射、部门/员工缓存、环境变量
 export const CONFIG_DIR = path.join(os.homedir(), '.xbbcli');
@@ -445,19 +445,14 @@ export async function saveCompanyCredentials(kwargs) {
   fs.mkdirSync(CONFIG_DIR, { recursive: true });
   fs.writeFileSync(CONFIG_FILE, JSON.stringify(companies, null, 2) + '\n', 'utf8');
 
-  // 环境变量优先级高于 config.env：此时只写文件不会改变业务命令实际使用的凭证，需在结果里提示
-  const envShadow = hasEnvConfig()
-    ? '；注意：检测到 XBB_* 环境变量，其优先级高于 config.env，业务命令仍会使用环境变量；如需改用本次保存的配置，请清除 XBB_* 环境变量或执行 xbbcli auth-logout'
-    : '';
-
   try {
     const cache = await refreshLocalCaches(corpid, userId);
     const { formlistFile, commandMapFile, departmentUserFile, corpName, userName } = cache;
-    return createResult('ok', `已保存 corpid、token、baseurl、userId，并同步表单模板缓存、命令映射文件与部门/员工缓存${envShadow}`, corpid, baseurl, userId, formlistFile, commandMapFile, true, companies.length, departmentUserFile, corpName, userName, 'skipped', '');
+    return createResult('ok', '已保存 corpid、token、baseurl、userId，并同步表单模板缓存、命令映射文件与部门/员工缓存', corpid, baseurl, userId, formlistFile, commandMapFile, true, companies.length, departmentUserFile, corpName, userName, 'skipped', '');
   } catch (error) {
     return createResult(
       'partial',
-      `已保存 corpid、token、baseurl、userId，但同步缓存失败${error.step ? `（步骤 ${error.step}）` : ''}：${error.message}${envShadow}`,
+      `已保存 corpid、token、baseurl、userId，但同步缓存失败${error.step ? `（步骤 ${error.step}）` : ''}：${error.message}`,
       corpid,
       baseurl,
       userId,

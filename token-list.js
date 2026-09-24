@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { cli, Strategy } from './xbb-registry.js';
-import { readEnvConfig, hasEnvConfig, isEnvOnly } from './xbb-config.js';
+import { readEnvConfig, hasEnvConfig } from './xbb-config.js';
 
 const CONFIG_DIR = path.join(os.homedir(), '.xbbcli');
 const CONFIG_FILE = path.join(CONFIG_DIR, 'config.env');
@@ -71,13 +71,12 @@ cli({
     const companies = readCompanies();
     const envConfig = readEnvConfig();
     const envPresent = hasEnvConfig(envConfig);
-    const envOnly = isEnvOnly();
     const rows = [];
 
-    // 环境变量行：XBB_CORPID / XBB_TOKEN 有值就回显，source=env（优先级高于 config.env）
+    // 环境变量行：XBB_CORPID / XBB_TOKEN 有值就回显，source=env；仅供外部系统消费，业务命令不再读取
     if (envPresent) {
       rows.push({
-        enable: 'true',
+        enable: '',
         corpid: String(envConfig.corpid || ''),
         userId: String(envConfig.userId || ''),
         baseurl: String(envConfig.baseurl || ''),
@@ -85,9 +84,7 @@ cli({
         corpName: String(envConfig.corpName || ''),
         userName: String(envConfig.userName || ''),
         code: '',
-        msg: envOnly
-          ? '来源为环境变量 XBB_*（XBB_ENV_ONLY=1 已强制只用环境变量，config.env 被忽略）'
-          : '来源为环境变量 XBB_*（优先级高于 config.env，当前生效）',
+        msg: 'XBB_* 环境变量存在（仅供外部系统，业务命令不再读取）',
         source: 'env',
       });
     }
@@ -104,13 +101,7 @@ cli({
         corpName: String(item.corpName || ''),
         userName: String(item.userName || ''),
         code: '',
-        msg: isEnabled
-          ? envOnly
-            ? '来源为 config.env，但 XBB_ENV_ONLY=1 已将其忽略，当前不生效'
-            : envPresent
-              ? '来源为 config.env，但已被环境变量 XBB_* 覆盖，当前不生效'
-              : '来源为 config.env，当前生效'
-          : '',
+        msg: isEnabled ? '来源为 config.env，当前生效' : '',
         source: 'config',
       });
     }

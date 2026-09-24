@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { cli, Strategy } from './xbb-registry.js';
-import { clearEnvVars, getEnvVarNames, hasEnvConfig, isEnvOnly, readEnvConfig } from './xbb-config.js';
+import { clearEnvVars, getEnvVarNames, hasEnvConfig, readEnvConfig } from './xbb-config.js';
 
 const CONFIG_DIR = path.join(os.homedir(), '.xbbcli');
 const CONFIG_FILE = path.join(CONFIG_DIR, 'config.env');
@@ -76,7 +76,7 @@ async function authLogout(kwargs) {
       ? `本地共 ${companies.length} 家公司（${previewCorpids(companies)}）且均未启用；要登出某家请先用 xbbcli token-use --corpid <CORPID> 启用，或改用 xbbcli token-del --corpid <CORPID> 直接删除`
       : '本地没有任何公司配置';
     const envNote = envPresent
-      ? '环境变量 XBB_* 仍存在，本次未清除（用 --env 1 或不指定该参数即可一并清除）'
+      ? '环境变量 XBB_* 仍存在（供外部系统使用；业务命令不再读取），本次未清除（用 --env 1 或不指定该参数即可一并清除）'
       : '环境变量 XBB_* 也不存在，本次无可清除内容';
     const hint = `${scope}；${envNote}`;
     return createRow({
@@ -86,7 +86,7 @@ async function authLogout(kwargs) {
       hasActive: 'false',
       envStored: 'skipped',
       code: 'NO_ACTIVE_CONFIG',
-      msg: isEnvOnly() ? `${hint}（当前 XBB_ENV_ONLY=1，config.env 被忽略）` : hint,
+      msg: hint,
     });
   }
 
@@ -138,8 +138,7 @@ async function authLogout(kwargs) {
       parts.push(`清除环境变量失败：${envFile}`);
     }
   } else if (envBefore) {
-    const forced = isEnvOnly() ? '且 XBB_ENV_ONLY=1 已强制只用环境变量' : '且其优先级高于 config.env，业务命令仍会使用它';
-    parts.push(`注意：环境变量 XBB_*（corpid=${envBefore}）仍然有效，${forced}，本次不算彻底登出；如需一并清除请改用 --env 1（或不指定该参数，auth-logout 默认会清除环境变量）`);
+    parts.push(`注意：环境变量 XBB_*（corpid=${envBefore}）仍然存在（供外部系统使用；业务命令不再读取），本次不算彻底登出；如需一并清除请改用 --env 1（或不指定该参数，auth-logout 默认会清除环境变量）`);
   }
 
   const remainingCompanies = target ? remaining : readCompanies();

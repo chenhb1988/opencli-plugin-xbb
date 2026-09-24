@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { cli, Strategy } from './xbb-registry.js';
-import { clearEnvVars, getEnvVarNames, hasEnvConfig, isEnvOnly, readEnvConfig } from './xbb-config.js';
+import { clearEnvVars, getEnvVarNames, hasEnvConfig, readEnvConfig } from './xbb-config.js';
 
 const CONFIG_DIR = path.join(os.homedir(), '.xbbcli');
 const CONFIG_FILE = path.join(CONFIG_DIR, 'config.env');
@@ -106,9 +106,7 @@ async function delCompany(kwargs) {
       }
       // 环境变量已清空，说明删除后的实际生效来源
       if (envStored !== 'none' || envBefore) {
-        if (isEnvOnly()) {
-          parts.push('注意：XBB_ENV_ONLY=1 仍然开启，环境变量已清空，业务命令将报 NO_ACTIVE_CONFIG；如需恢复请先写入凭证或去掉该变量');
-        } else if (next.length) {
+        if (next.length) {
           parts.push(`此后业务命令使用 config.env 中启用的 corpid=${enabledCorpid}`);
         } else {
           parts.push('此后没有可用凭证，请重新执行 xbbcli token-set 或 xbbcli auth-login');
@@ -120,10 +118,7 @@ async function delCompany(kwargs) {
       return createResult('partial', `${parts.join('；')}；删除环境变量失败：${envFile}`, corpid, next.length ? 'true' : '', next.length, envStored, envFile);
     }
   } else if (envPresent) {
-    const forced = isEnvOnly()
-      ? '且 XBB_ENV_ONLY=1 已强制只用环境变量（config.env 被忽略）'
-      : '且其优先级高于 config.env';
-    parts.push(`注意：环境变量 XBB_*（corpid=${envBefore || '未知'}）仍然有效，${forced}，业务命令仍会使用它；如需一并删除请改用 --env 1（或不指定该参数）`);
+    parts.push(`注意：环境变量 XBB_*（corpid=${envBefore || '未知'}）仍然存在（供外部系统使用；业务命令不再读取）；如需一并删除请改用 --env 1（或不指定该参数）`);
   }
 
   return createResult('ok', parts.join('；'), corpid, next.length ? 'true' : '', next.length, envStored, envFile);
