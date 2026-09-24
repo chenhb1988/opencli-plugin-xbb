@@ -4,7 +4,7 @@ import { saveCompanyCredentials } from './xbb-token-store.js';
 cli({
   site: 'xbb',
   name: 'token-set',
-  description: '保存 xbb API token,corpid,formId清单 到本地配置文件，并缓存部门与员工清单(<corpid>.department-user.json)；其他命令需要意图识别或找formId时，优先查命令映射文件(<corpid>.command-map.md)',
+  description: '保存token,corpid,formId清单等文件 到本地，需意图识别或找formId时，优先查命令映射文件(<corpid>.command-map.md)',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

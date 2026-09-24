@@ -127,7 +127,7 @@ async function delCompany(kwargs) {
 cli({
   site: 'xbb',
   name: 'token-del',
-  description: '删除指定的已保存公司配置，并保证剩余配置中仅且只有一个被启用；默认同时删除 XBB_* 环境变量',
+  description: '删除指定的已保存公司配置',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

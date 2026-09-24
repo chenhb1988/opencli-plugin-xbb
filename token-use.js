@@ -118,7 +118,7 @@ async function useCompany(kwargs) {
 cli({
   site: 'xbb',
   name: 'token-use',
-  description: '切换当前启用的公司（enable），保证仅且只有一个公司被启用；XBB_* 环境变量有值时同步更新为该公司凭证（供外部系统使用，本 CLI 不读取）',
+  description: '切换当前启用的公司（enable），保证仅且只有一个公司被启用',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,
