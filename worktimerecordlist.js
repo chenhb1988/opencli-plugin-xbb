@@ -135,6 +135,7 @@ cli({
     { name: 'page', type: 'int', default: 1, help: '页码' },
     { name: 'pageSize', type: 'int', default: 20, help: '每页数量（最大100）' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
+    { name: 'raw', type: 'bool', default: false, help: '输出接口返回的原文' },
   ],
   columns: ['rank', 'dataId', 'formId', 'serialNo', 'creatorId', 'ownerId', 'coUserId', 'addTime', 'updateTime', 'data', 'code', 'msg'],
   footerExtra: () => (lastPagination ? `totalCount ${lastPagination.totalCount} / totalPage ${lastPagination.totalPage}` : undefined),
@@ -182,6 +183,7 @@ cli({
       : null;
     const responseBody = JSON.stringify(data);
     if (debug) process.stderr.write(`[debug] ResponseBody: ${responseBody}\n`);
+    if (kwargs.raw) return [{ raw: responseBody }];
     if (data.code !== 1) {
       return makeErrorRow(data.code ?? '', data.msg ?? '未知错误');
     }

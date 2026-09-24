@@ -216,7 +216,7 @@ note      config.env 中存在 2 个 enable=true，仅第一条生效，请用 x
 - `auth-logout`：删除 `config.env` 中 `enable=true` 的那一条配置，删除前整份备份为 `~/.xbbcli/config.env.bak`；不自动把其他公司提升为启用；默认同时清除 `XBB_*` 环境变量（`--env 0` 跳过，返回 `envStored` / `envFile`）；既无启用公司又无环境变量时返回 `NO_ACTIVE_CONFIG` 且不改动文件
 - `auth-refresh-cache`：对当前启用公司重新拉取表单缓存、命令映射与部门/员工缓存，并回填 `corpName` / `userName`；失败时返回 `code=CACHE_REFRESH_FAILED`，`message` 注明中断步骤（`formlist` / `command-map` / `department-user` / `profile`），已完成的部分照常输出；支持 `--userId`、`--debug`
 - `token-set`：保存个人 token、`corpid`、`userId`、`baseurl`，并刷新本地表单缓存、命令映射文件与部门/员工缓存；传入的 token 不以 `user_` 开头时，会先为该 `userId` 刷新并保存个人 token；`--env` 控制存储方式：`0`（默认）仅写入本地文件，`1` 仅写入 `XBB_*` 环境变量（供外部系统使用，本 CLI 不读取；Windows 用 `setx`，其他平台写 `~/.xbbcli/env.sh`）且不写任何本地文件；返回 `envStored` / `envFile` 两列
-- `token-list`：同时列出环境变量行（`source=env`，仅 `XBB_CORPID` / `XBB_TOKEN` 有值时出现，`msg` 标注「仅供外部系统，业务命令不再读取」）与 `config.env` 中保存的全部公司（`source=config`，含 `corpName` 公司名称与 `userName` 操作人姓名），config 启用行在 `msg` 列标注「来源为 config.env，当前生效」；`--showToken` 显示完整 token（默认脱敏）
+- `token-list`：同时列出环境变量行（`source=env`，仅 `XBB_CORPID` / `XBB_TOKEN` 有值时出现，`msg` 标注「仅供外部系统，业务命令不再读取」）与 `config.env` 中保存的全部公司（`source=config`，含 `corpName` 公司名称与 `userName` 操作人姓名），config 启用行在 `msg` 列标注「来源为 config.env，当前生效」；`--showToken` 显示完整 token（默认脱敏）；`--raw` 输出本地配置原文（token 仍按 `--showToken` 决定是否掩码）
 - `token-use`：切换当前启用的公司（`xbbcli token-use --corpid <CORPID>`），保证仅且只有一个公司被启用；若环境变量 `XBB_*` 有值，同时把该公司凭证（`corpid`/`token`/`baseurl`/`userId`/`corpName`/`userName`，缺 `baseurl` 时按 `corpid` 推导）同步写回环境变量（供外部系统使用，本 CLI 不读取）——Windows 用 `setx`（需重开终端）、macOS/Linux 写 `~/.xbbcli/env.sh`（需重新 `source`）；同步失败时返回 `status=partial`，目标公司缺 `token` 时返回错误且不改动任何配置
 - `token-del`：删除指定公司的本地配置（`xbbcli token-del --corpid <CORPID>`），并保证剩余配置中仅且只有一个公司被启用；默认同时删除 `XBB_*` 环境变量（`--env 0` 保留，返回 `envStored` / `envFile` 两列）
 - `token-generate`：生成/获取个人 token，`--resetToken 0` 获取（默认）、`1` 刷新；`--checkUserId` 未传则用配置中的 `userId`
@@ -477,7 +477,6 @@ note      config.env 中存在 2 个 enable=true，仅第一条生效，请用 x
 - 当前公司名称存在 `~/.xbbcli/config.env` 的 `corpName` 字段（取部门 `id` 为 `1` 的部门名称），操作人姓名存在 `userName` 字段（按 `userId` 匹配员工列表）
 - 未传入的可选参数不会进入请求体
 - `--attr` 和 `--value` 只有同时提供时才会拼入查询条件
-- `--limit` 是在响应映射之后截断结果
 - 失败时返回的是带 `code` / `msg` 的结果行，不抛异常
 - 加 `--debug` 可以输出 `requestBody` 和 `responseBody`
 - 加 `--raw` 可以输出接口返回的原始 JSON 字符串（所有 list 命令均支持）
