@@ -62,7 +62,7 @@ cli({
   domain: 'proapi.xbongbong.com',
   args: [
     { name: 'dataList', type: 'str', help: '访客计划数据JSON字符串（必填）' },
-    { name: 'formId', type: 'int', default: '', help: '表单模板id（可选）' },
+    { name: 'formId', type: 'str', default: '', help: '表单模板id（可选）' },
     { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
   ],

@@ -57,13 +57,14 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'token-list',
-  description: '列出本地保存的多家公司配置，并标记唯一启用的公司（enable=true）',
+  description: '列出本地保存的多家公司配置',
   strategy: Strategy.PUBLIC,
   access: 'read',
   browser: false,
   domain: 'proapi.xbongbong.com',
   args: [
     { name: 'showToken', type: 'bool', default: false, help: '显示完整 token；默认只显示脱敏预览' },
+    { name: 'raw', type: 'bool', default: false, help: '输出本地配置原文（token 仍按 --showToken 决定是否掩码）' },
   ],
   columns: ['enable', 'corpid', 'userId', 'baseurl', 'token', 'corpName', 'userName', 'code', 'msg', 'source'],
   func: async (kwargs) => {
@@ -72,6 +73,19 @@ cli({
     const envConfig = readEnvConfig();
     const envPresent = hasEnvConfig(envConfig);
     const envOnly = isEnvOnly();
+
+    // token-list 无网络请求；--raw 输出本地配置原始结构（token 仍按 --showToken 决定是否掩码）
+    if (kwargs.raw) {
+      const rawCompanies = companies.map((item) => ({
+        ...item,
+        token: showToken ? String(item.token || '') : maskToken(item.token),
+      }));
+      const rawEnv = envPresent
+        ? { ...envConfig, token: showToken ? String(envConfig.token || '') : maskToken(envConfig.token) }
+        : null;
+      return [{ raw: JSON.stringify({ companies: rawCompanies, env: rawEnv }, null, 2) }];
+    }
+
     const rows = [];
 
     // 环境变量行：XBB_CORPID / XBB_TOKEN 有值就回显，source=env（优先级高于 config.env）

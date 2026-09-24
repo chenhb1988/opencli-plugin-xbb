@@ -1,6 +1,6 @@
 {
   "name": "@xbongbong/xbbcli",
-  "version": "2.4.3",
+  "version": "2.4.5",
   "description": "销帮帮 CRM 的独立命令行工具",
   "type": "module",
   "bin": {
@@ -27,6 +27,12 @@
   "homepage": "https://github.com/chenhb1988/opencli-plugin-xbb#readme",
   "engines": {
     "node": ">=18"
+  },
+  "scripts": {
+    "test": "node test/commands-smoke-test.mjs",
+    "test:args": "node test/optional-numeric-args-test.mjs",
+    "test:real": "node test/real-api-test.mjs",
+    "test:real:sync-details": "node test/real-api-test.mjs --sync-details"
   },
   "publishConfig": {
     "access": "public"

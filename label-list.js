@@ -50,6 +50,7 @@ cli({
     { name: 'nameLike', type: 'str', default: '', help: '模糊查询标签名称（可选）' },
     { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
+    { name: 'raw', type: 'bool', default: false, help: '输出接口返回的原文' },
   ],
   columns: ['rank', 'dataId', 'name', 'color', 'groupId', 'formId', 'sort', 'code', 'msg'],
   func: async function (kwargs) {
@@ -86,6 +87,7 @@ cli({
     const data = await resp.json();
     const responseBody = JSON.stringify(data);
     if (debug) process.stderr.write(`[debug] ResponseBody: ${responseBody}\n`);
+    if (kwargs.raw) return [{ raw: responseBody }];
     if (data.code !== 1) return makeErrorRow(data.code ?? '', data.msg ?? '未知错误');
     const list = Array.isArray(data.result?.labelList) ? data.result.labelList : (Array.isArray(data.result?.labelListVO) ? data.result.labelListVO : []);
     if (!list.length) return makeErrorRow('NO_DATA', '接口成功，但标签列表为空');

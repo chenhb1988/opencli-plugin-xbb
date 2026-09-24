@@ -147,7 +147,7 @@ cli({
     { name: 'formId', type: 'int', help: '表单id（必填）' },
     { name: 'del', type: 'int', default: 0, help: '0线索列表，1回收站数据' },
     { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
-    { name: 'isPublic', type: 'int', default: '', help: '是否公海线索：0非公海，1公海，不传表示全部' },
+    { name: 'isPublic', type: 'str', default: '', help: '是否公海线索：0非公海，1公海，不传表示全部' },
     { name: 'viewApproval', type: 'str', default: '', help: '是否查询审批中数据，1是，0否' },
     { name: 'conditions', type: 'str', default: '', help: '条件集合 JSON 字符串，例如 [{"attr":"subForm_1","subAttr":"text_2","value":["133***"],"symbol":"equal"}]' },
     { name: 'attr', type: 'str', default: '', help: '筛选字段 attr，例如 text_1' },

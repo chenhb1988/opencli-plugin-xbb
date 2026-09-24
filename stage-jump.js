@@ -48,7 +48,7 @@ cli({
     { name: 'dataId', type: 'int', help: '表单数据id（必填）' },
     { name: 'toStageId', type: 'int', help: '目标阶段id（必填）' },
     { name: 'stageProcessId', type: 'int', help: '阶段流程id（必填）' },
-    { name: 'reasonId', type: 'int', default: '', help: '原因id（可选）' },
+    { name: 'reasonId', type: 'str', default: '', help: '原因id（可选）' },
     { name: 'memo', type: 'str', default: '', help: '备注（可选）' },
     { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },

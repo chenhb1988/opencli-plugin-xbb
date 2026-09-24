@@ -51,7 +51,7 @@ cli({
     { name: 'dataIdList', type: 'str', help: '需移交的工单id列表，JSON数组字符串（必填）' },
     { name: 'businessUserId', type: 'str', help: '移交人id（必填）' },
     { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
-    { name: 'retainMainUser', type: 'int', default: '', help: '保留原负责人为协同人：1保留，0不保留（可选）' },
+    { name: 'retainMainUser', type: 'str', default: '', help: '保留原负责人为协同人：1保留，0不保留（可选）' },
     { name: 'transfer', type: 'str', default: '', help: '移交原因（可选）' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
   ],

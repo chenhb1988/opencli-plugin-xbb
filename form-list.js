@@ -30,11 +30,6 @@ function buildApiUrl(baseUrl, defaultUrl) {
   return `${baseUrl.replace(/\/+$/, '')}${apiPath}`;
 }
 
-function hasCliArg(name) {
-  const flag = `--${name}`;
-  return process.argv.some((arg) => arg === flag || arg.startsWith(`${flag}=`));
-}
-
 function buildPayload(kwargs, corpid) {
   const payload = {
     corpid,
@@ -47,7 +42,7 @@ function buildPayload(kwargs, corpid) {
   if (kwargs.name) {
     payload.name = String(kwargs.name);
   }
-  if (hasCliArg('businessType')) {
+  if (String(kwargs.businessType ?? '') !== '') {
     payload.businessType = Number(kwargs.businessType);
   }
 
@@ -106,7 +101,7 @@ cli({
   domain: 'proapi.xbongbong.com',
   args: [
     { name: 'saasMark', type: 'int', help: '表单类型（必填）：1系统表单，2自定义表单' },
-    { name: 'businessType', type: 'int', default: '', help: '业务类型（可选）' },
+    { name: 'businessType', type: 'str', default: '', help: '业务类型（可选）' },
     { name: 'name', type: 'str', default: '', help: '模板名称模糊查询（可选）' },
     { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
