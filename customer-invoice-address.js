@@ -1,33 +1,8 @@
-import crypto from 'node:crypto';
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
 import { cli, Strategy } from './xbb-registry.js';
-import { readActiveConfig } from './xbb-config.js';
+import { getRuntimeConfig, requestGateway } from './xbb-http.js';
 
-const CONFIG_FILE = path.join(os.homedir(), '.xbbcli', 'config.env');
-const API_URL = 'https://proapi.xbongbong.com/pro/v2/api/customer/invoice/address';
-const DEFAULT_BASE_URL = 'https://proapi.xbongbong.com';
+const API_PATH = '/pro/v2/api/customer/invoice/address';
 const MISSING_TOKEN_MESSAGE = '缺少 token；请先执行 xbbcli token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>';
-
-function readConfig() {
-  return readActiveConfig();
-}
-
-function getRuntimeConfig() {
-  const config = readConfig();
-  return {
-    corpid: String(config.corpid || '').trim(),
-    token: String(config.token || '').trim(),
-    baseUrl: String(config.baseurl || DEFAULT_BASE_URL).trim(),
-    userId: String(config.userId || '').trim(),
-  };
-}
-
-function buildApiUrl(baseUrl, apiUrl) {
-  const apiPath = new URL(apiUrl).pathname;
-  return `${baseUrl.replace(/\/+$/, '')}${apiPath}`;
-}
 
 function makeErrorRow(code, msg) {
   return [{ addressId: '', addressName: '', phone: '', address: '', postcode: '', defaultFlag: '', code, msg }];
@@ -52,23 +27,23 @@ cli({
     const { corpid, token, baseUrl, userId } = getRuntimeConfig();
     const payload = { corpid, customerId: Number(kwargs.customerId || 0) };
     if (kwargs.userId) payload.userId = String(kwargs.userId);
-    const requestBody = JSON.stringify(payload);
     if (!payload.corpid) return makeErrorRow('NO_CORPID', '缺少本地 corpid；请先执行 xbbcli token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>');
     if (!payload.customerId) return makeErrorRow('NO_CUSTOMERID', '缺少 --customerId');
     if (!token) return makeErrorRow('NO_TOKEN', MISSING_TOKEN_MESSAGE);
-    const sign = crypto.createHash('sha256').update(requestBody + token).digest('hex');
-    const headers = Object.assign({ 'Content-Type': 'application/json;charset=UTF-8', sign }, userId ? { userId } : {});
-    if (debug) {
-      process.stderr.write(`[debug] URL: ${buildApiUrl(baseUrl, API_URL)}\n[debug] Headers: ${JSON.stringify(headers)}\n[debug] RequestBody: ${requestBody}\n`);
+    const gateway = await requestGateway({
+      baseUrl,
+      apiPath: API_PATH,
+      payload,
+      token,
+      userId,
+      debug,
+    });
+    if (!gateway.ok) return makeErrorRow(gateway.code, gateway.msg);
+    if (gateway.data.code !== 1) {
+      return makeErrorRow(gateway.data.code ?? '', gateway.data.msg ?? '未知错误');
     }
-    const resp = await fetch(buildApiUrl(baseUrl, API_URL), { method: 'POST', headers, body: requestBody });
-    if (!resp.ok) return makeErrorRow(resp.status, `HTTP ${resp.status} ${resp.statusText}`);
-    const data = await resp.json();
-    const responseBody = JSON.stringify(data);
-    if (debug) process.stderr.write(`[debug] ResponseBody: ${responseBody}\n`);
-    if (data.code !== 1) return makeErrorRow(data.code ?? '', data.msg ?? '未知错误');
-    const list = Array.isArray(data.result?.list) ? data.result.list : [];
-    if (!list.length) return [{ addressId: '', addressName: '', phone: '', address: '', postcode: '', defaultFlag: '', code: data.code ?? '', msg: data.msg || '' }];
+    const list = Array.isArray(gateway.data.result?.list) ? gateway.data.result.list : [];
+    if (!list.length) return [{ addressId: '', addressName: '', phone: '', address: '', postcode: '', defaultFlag: '', code: gateway.data.code ?? '', msg: gateway.data.msg || '' }];
     return list.map((item) => ({
       addressId: item.addressId || item.dataId || '',
       addressName: item.addressName || item.name || '',
@@ -76,8 +51,8 @@ cli({
       address: item.address || item.detailAddress || '',
       postcode: item.postcode || '',
       defaultFlag: String(item.defaultFlag ?? item.isDefault ?? ''),
-      code: data.code ?? '',
-      msg: data.msg || '',
+      code: gateway.data.code ?? '',
+      msg: gateway.data.msg || '',
     }));
   },
 });

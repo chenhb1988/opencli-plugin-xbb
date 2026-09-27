@@ -1,33 +1,8 @@
-import crypto from 'node:crypto';
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
 import { cli, Strategy } from './xbb-registry.js';
-import { readActiveConfig } from './xbb-config.js';
+import { getRuntimeConfig, requestGateway } from './xbb-http.js';
 
-const CONFIG_FILE = path.join(os.homedir(), '.xbbcli', 'config.env');
-const API_URL = 'https://proapi.xbongbong.com/pro/v2/api/customer/invoice/addressEdit';
-const DEFAULT_BASE_URL = 'https://proapi.xbongbong.com';
+const API_PATH = '/pro/v2/api/customer/invoice/addressEdit';
 const MISSING_TOKEN_MESSAGE = '缺少 token；请先执行 xbbcli token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>';
-
-function readConfig() {
-  return readActiveConfig();
-}
-
-function getRuntimeConfig() {
-  const config = readConfig();
-  return {
-    corpid: String(config.corpid || '').trim(),
-    token: String(config.token || '').trim(),
-    baseUrl: String(config.baseurl || DEFAULT_BASE_URL).trim(),
-    userId: String(config.userId || '').trim(),
-  };
-}
-
-function buildApiUrl(baseUrl, apiUrl) {
-  const apiPath = new URL(apiUrl).pathname;
-  return `${baseUrl.replace(/\/+$/, '')}${apiPath}`;
-}
 
 function parseDataList(raw) {
   if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
@@ -75,25 +50,25 @@ cli({
     const payload = { corpid, customerId: Number(kwargs.customerId || 0), addressId: Number(kwargs.addressId || 0) };
     if (kwargs.userId) payload.userId = String(kwargs.userId);
     if (parsedDataList) payload.dataList = parsedDataList;
-    const requestBody = JSON.stringify(payload);
     if (!payload.corpid) return makeErrorRow('NO_CORPID', '缺少本地 corpid；请先执行 xbbcli token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>');
     if (!payload.customerId) return makeErrorRow('NO_CUSTOMERID', '缺少 --customerId');
     if (!payload.addressId) return makeErrorRow('NO_ADDRESSID', '缺少 --addressId');
     if (!token) return makeErrorRow('NO_TOKEN', MISSING_TOKEN_MESSAGE);
     if (parsedDataList === null) return makeErrorRow('NO_DATALIST', '缺少 --dataList');
     if (parsedDataList === undefined) return makeErrorRow('INVALID_DATALIST', '--dataList 必须是 JSON 对象字符串');
-    const sign = crypto.createHash('sha256').update(requestBody + token).digest('hex');
-    const headers = Object.assign({ 'Content-Type': 'application/json;charset=UTF-8', sign }, userId ? { userId } : {});
-    if (debug) {
-      process.stderr.write(`[debug] URL: ${buildApiUrl(baseUrl, API_URL)}\n[debug] Headers: ${JSON.stringify(headers)}\n[debug] RequestBody: ${requestBody}\n`);
+    const gateway = await requestGateway({
+      baseUrl,
+      apiPath: API_PATH,
+      payload,
+      token,
+      userId,
+      debug,
+    });
+    if (!gateway.ok) return makeErrorRow(gateway.code, gateway.msg);
+    if (gateway.data.code !== 1) {
+      return makeErrorRow(gateway.data.code ?? '', gateway.data.msg ?? '未知错误');
     }
-    const resp = await fetch(buildApiUrl(baseUrl, API_URL), { method: 'POST', headers, body: requestBody });
-    if (!resp.ok) return makeErrorRow(resp.status, `HTTP ${resp.status} ${resp.statusText}`);
-    const data = await resp.json();
-    const responseBody = JSON.stringify(data);
-    if (debug) process.stderr.write(`[debug] ResponseBody: ${responseBody}\n`);
-    if (data.code !== 1) return makeErrorRow(data.code ?? '', data.msg ?? '未知错误');
-    const result = data.result || {};
-    return [{ addressId: result.addressId || payload.addressId || '', resultCode: result.code ?? '', resultMsg: result.msg || '', code: data.code ?? '', msg: data.msg || '' }];
+    const result = gateway.data.result || {};
+    return [{ addressId: result.addressId || payload.addressId || '', resultCode: result.code ?? '', resultMsg: result.msg || '', code: gateway.data.code ?? '', msg: gateway.data.msg || '' }];
   },
 });

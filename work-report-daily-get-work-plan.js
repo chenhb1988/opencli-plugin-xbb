@@ -1,33 +1,8 @@
-import crypto from 'node:crypto';
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
 import { cli, Strategy } from './xbb-registry.js';
-import { readActiveConfig } from './xbb-config.js';
+import { getRuntimeConfig, requestGateway } from './xbb-http.js';
 
-const CONFIG_FILE = path.join(os.homedir(), '.xbbcli', 'config.env');
-const API_URL = 'https://proapi.xbongbong.com/pro/v2/api/workReportDaily/getWorkPlan';
-const DEFAULT_BASE_URL = 'https://proapi.xbongbong.com';
+const API_PATH = '/pro/v2/api/workReportDaily/getWorkPlan';
 const MISSING_TOKEN_MESSAGE = '缺少 token；请先执行 xbbcli token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>';
-
-function readConfig() {
-  return readActiveConfig();
-}
-
-function getRuntimeConfig() {
-  const config = readConfig();
-  return {
-    corpid: String(config.corpid || '').trim(),
-    token: String(config.token || '').trim(),
-    baseUrl: String(config.baseurl || DEFAULT_BASE_URL).trim(),
-    userId: String(config.userId || '').trim(),
-  };
-}
-
-function buildApiUrl(baseUrl, apiUrl) {
-  const apiPath = new URL(apiUrl).pathname;
-  return `${baseUrl.replace(/\/+$/, '')}${apiPath}`;
-}
 
 function makeErrorRow(code, msg) {
   return [{ rank: '', num_1: '', text_1: '', text_2: '', code, msg }];
@@ -52,25 +27,24 @@ cli({
     const debug = Boolean(kwargs.debug);
     const { corpid, token, baseUrl, userId } = getRuntimeConfig();
     const payload = { corpid, reportUserId: String(kwargs.reportUserId || ''), type: Number(kwargs.type || 0), reportDate: Number(kwargs.reportDate || 0) };
-    const requestBody = JSON.stringify(payload);
     if (!payload.corpid) return makeErrorRow('NO_CORPID', '缺少本地 corpid；请先执行 xbbcli token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>');
     if (!payload.reportUserId) return makeErrorRow('NO_REPORTUSERID', '缺少 --reportUserId');
     if (!payload.type) return makeErrorRow('NO_TYPE', '缺少 --type');
     if (!payload.reportDate) return makeErrorRow('NO_REPORTDATE', '缺少 --reportDate');
     if (!token) return makeErrorRow('NO_TOKEN', MISSING_TOKEN_MESSAGE);
-    const sign = crypto.createHash('sha256').update(requestBody + token).digest('hex');
-    const headers = Object.assign({ 'Content-Type': 'application/json;charset=UTF-8', sign }, userId ? { userId } : {});
-    const apiUrl = buildApiUrl(baseUrl, API_URL);
-    if (debug) {
-      process.stderr.write(`[debug] URL: ${apiUrl}\n[debug] Headers: ${JSON.stringify(headers)}\n[debug] RequestBody: ${requestBody}\n`);
+    const gateway = await requestGateway({
+      baseUrl,
+      apiPath: API_PATH,
+      payload,
+      token,
+      userId,
+      debug,
+    });
+    if (!gateway.ok) return makeErrorRow(gateway.code, gateway.msg);
+    if (gateway.data.code !== 1) {
+      return makeErrorRow(gateway.data.code ?? '', gateway.data.msg ?? '未知错误');
     }
-    const resp = await fetch(apiUrl, { method: 'POST', headers, body: requestBody });
-    if (!resp.ok) return makeErrorRow(resp.status, `HTTP ${resp.status} ${resp.statusText}`);
-    const data = await resp.json();
-    const responseBody = JSON.stringify(data);
-    if (debug) process.stderr.write(`[debug] ResponseBody: ${responseBody}\n`);
-    if (data.code !== 1) return makeErrorRow(data.code ?? '', data.msg ?? '未知错误');
-    const list = Array.isArray(data.result?.workReportPlanList) ? data.result.workReportPlanList : [];
+    const list = Array.isArray(gateway.data.result?.workReportPlanList) ? gateway.data.result.workReportPlanList : [];
     if (!list.length) return makeErrorRow('NO_DATA', '接口成功，但 workReportPlanList 为空');
     return list.map((item, index) => ({ rank: index + 1, num_1: item.num_1 ?? '', text_1: item.text_1 || '', text_2: String(item.text_2 ?? ''), code: '', msg: '' }));
   },
