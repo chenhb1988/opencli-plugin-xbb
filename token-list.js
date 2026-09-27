@@ -65,13 +65,18 @@ cli({
   args: [
     { name: 'showToken', type: 'bool', default: false, help: '显示完整 token；默认只显示脱敏预览' },
     { name: 'raw', type: 'bool', default: false, help: '输出本地配置原文（token 仍按 --showToken 决定是否掩码）' },
+    { name: 'debug', type: 'bool', default: false, help: '输出配置路径等调试信息' },
   ],
   columns: ['enable', 'corpid', 'userId', 'baseurl', 'token', 'corpName', 'userName', 'code', 'msg', 'source'],
   func: async (kwargs) => {
     const showToken = Boolean(kwargs.showToken);
+    const debug = Boolean(kwargs.debug);
     const companies = readCompanies();
     const envConfig = readEnvConfig();
     const envPresent = hasEnvConfig(envConfig);
+    if (debug) {
+      process.stderr.write(`[debug] ConfigFile: ${CONFIG_FILE}\n[debug] CompanyCount: ${companies.length}\n`);
+    }
 
     // token-list 无网络请求；--raw 输出本地配置原始结构（token 仍按 --showToken 决定是否掩码）
     if (kwargs.raw) {

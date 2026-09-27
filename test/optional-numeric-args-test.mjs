@@ -61,7 +61,7 @@ function runCommand(args) {
 async function captureBody(label, args) {
   const before = receivedBodies.length;
   const result = await runCommand(args);
-  assert.equal(receivedBodies.length, before + 1, `${label}: 应恰好发起一次 HTTP 请求（stderr: ${result.stderr}）`);
+  assert.equal(receivedBodies.length, before + 1, `${label}: expected exactly one HTTP request (stderr: ${result.stderr})`);
   return receivedBodies[receivedBodies.length - 1];
 }
 
@@ -74,51 +74,51 @@ function report(label) {
 
 try {
   // communicate-plan-add：formId 可选
-  const planDefault = await captureBody('communicate-plan-add 默认', [
+  const planDefault = await captureBody('communicate-plan-add default', [
     'communicate-plan-add', '--dataList', '{"text_1":"test"}',
   ]);
-  assert.equal(Object.hasOwn(planDefault, 'formId'), false, '未传 --formId 时请求体不应包含 formId');
-  report('communicate-plan-add 未传 --formId 时请求体不含 formId');
+  assert.equal(Object.hasOwn(planDefault, 'formId'), false, 'request body must not contain formId when --formId is omitted');
+  report('communicate-plan-add omits formId when --formId is not provided');
   assert.equal(planDefault.corpid, 'xbb-optional-numeric-test');
   assert.deepEqual(planDefault.dataList, { text_1: 'test' });
 
   const planZero = await captureBody('communicate-plan-add formId=0', [
     'communicate-plan-add', '--dataList', '{"text_1":"test"}', '--formId', '0',
   ]);
-  assert.equal(planZero.formId, 0, '--formId 0 时应以数字 0 写入请求体');
-  report('communicate-plan-add 显式 --formId 0 时请求体包含 formId: 0');
+  assert.equal(planZero.formId, 0, '--formId 0 must be serialized as the number 0');
+  report('communicate-plan-add writes formId: 0 when --formId 0 is provided');
 
   // stage-jump：reasonId 可选
   const stageArgs = ['--formId', '4885596', '--businessType', '301', '--saasMark', '1', '--dataId', '1', '--toStageId', '2', '--stageProcessId', '3'];
-  const stageDefault = await captureBody('stage-jump 默认', ['stage-jump', ...stageArgs]);
-  assert.equal(Object.hasOwn(stageDefault, 'reasonId'), false, '未传 --reasonId 时请求体不应包含 reasonId');
-  report('stage-jump 未传 --reasonId 时请求体不含 reasonId');
+  const stageDefault = await captureBody('stage-jump default', ['stage-jump', ...stageArgs]);
+  assert.equal(Object.hasOwn(stageDefault, 'reasonId'), false, 'request body must not contain reasonId when --reasonId is omitted');
+  report('stage-jump omits reasonId when --reasonId is not provided');
   assert.equal(stageDefault.toStageId, 2);
 
   const stageZero = await captureBody('stage-jump reasonId=0', ['stage-jump', ...stageArgs, '--reasonId', '0']);
-  assert.equal(stageZero.reasonId, 0, '--reasonId 0 时应以数字 0 写入请求体');
-  report('stage-jump 显式 --reasonId 0 时请求体包含 reasonId: 0');
+  assert.equal(stageZero.reasonId, 0, '--reasonId 0 must be serialized as the number 0');
+  report('stage-jump writes reasonId: 0 when --reasonId 0 is provided');
 
   // workorder-handover：retainMainUser 可选
   const handoverArgs = ['--formId', '4885594', '--dataIdList', '[1]', '--businessUserId', 'test-user'];
-  const handoverDefault = await captureBody('workorder-handover 默认', ['workorder-handover', ...handoverArgs]);
-  assert.equal(Object.hasOwn(handoverDefault, 'retainMainUser'), false, '未传 --retainMainUser 时请求体不应包含 retainMainUser');
-  report('workorder-handover 未传 --retainMainUser 时请求体不含 retainMainUser');
+  const handoverDefault = await captureBody('workorder-handover default', ['workorder-handover', ...handoverArgs]);
+  assert.equal(Object.hasOwn(handoverDefault, 'retainMainUser'), false, 'request body must not contain retainMainUser when --retainMainUser is omitted');
+  report('workorder-handover omits retainMainUser when --retainMainUser is not provided');
   assert.deepEqual(handoverDefault.dataIdList, [1]);
 
   const handoverZero = await captureBody('workorder-handover retainMainUser=0', ['workorder-handover', ...handoverArgs, '--retainMainUser', '0']);
-  assert.equal(handoverZero.retainMainUser, 0, '--retainMainUser 0 时应以数字 0 写入请求体');
-  report('workorder-handover 显式 --retainMainUser 0 时请求体包含 retainMainUser: 0');
+  assert.equal(handoverZero.retainMainUser, 0, '--retainMainUser 0 must be serialized as the number 0');
+  report('workorder-handover writes retainMainUser: 0 when --retainMainUser 0 is provided');
 
   // clue-list：isPublic 可选
-  const clueDefault = await captureBody('clue-list 默认', ['clue-list', '--formId', '4885596']);
-  assert.equal(Object.hasOwn(clueDefault, 'isPublic'), false, '未传 --isPublic 时请求体不应包含 isPublic');
-  report('clue-list 未传 --isPublic 时请求体不含 isPublic');
+  const clueDefault = await captureBody('clue-list default', ['clue-list', '--formId', '4885596']);
+  assert.equal(Object.hasOwn(clueDefault, 'isPublic'), false, 'request body must not contain isPublic when --isPublic is omitted');
+  report('clue-list omits isPublic when --isPublic is not provided');
   assert.equal(clueDefault.formId, 4885596);
 
   const clueZero = await captureBody('clue-list isPublic=0', ['clue-list', '--formId', '4885596', '--isPublic', '0']);
-  assert.equal(clueZero.isPublic, 0, '--isPublic 0 时应以数字 0 写入请求体');
-  report('clue-list 显式 --isPublic 0 时请求体包含 isPublic: 0');
+  assert.equal(clueZero.isPublic, 0, '--isPublic 0 must be serialized as the number 0');
+  report('clue-list writes isPublic: 0 when --isPublic 0 is provided');
 
   console.log(`optional numeric args test passed (${passed} assertions).`);
 } finally {

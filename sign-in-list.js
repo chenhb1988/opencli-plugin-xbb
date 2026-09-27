@@ -1,34 +1,9 @@
-import crypto from 'node:crypto';
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
 import { cli, Strategy } from './xbb-registry.js';
-import { readActiveConfig } from './xbb-config.js';
+import { getRuntimeConfig, requestGateway, createPagination } from './xbb-http.js';
 
-const CONFIG_FILE = path.join(os.homedir(), '.xbbcli', 'config.env');
-const API_URL = 'https://proapi.xbongbong.com/pro/v2/api/signIn/list';
-const DEFAULT_BASE_URL = 'https://proapi.xbongbong.com';
+const API_PATH = '/pro/v2/api/signIn/list';
 const MISSING_TOKEN_MESSAGE = '缺少 token；请先执行 xbbcli token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>';
-let lastPagination = null;
-
-function readConfig() {
-  return readActiveConfig();
-}
-
-function getRuntimeConfig() {
-  const config = readConfig();
-  return {
-    corpid: String(config.corpid || '').trim(),
-    token: String(config.token || '').trim(),
-    baseUrl: String(config.baseurl || DEFAULT_BASE_URL).trim(),
-    userId: String(config.userId || '').trim(),
-  };
-}
-
-function buildApiUrl(baseUrl, defaultUrl) {
-  const apiPath = new URL(defaultUrl).pathname;
-  return `${baseUrl.replace(/\/+$/, '')}${apiPath}`;
-}
+const pagination = createPagination();
 
 function parseArray(raw) {
   const text = String(raw ?? '').trim();
@@ -100,33 +75,30 @@ cli({
     { name: 'raw', type: 'bool', default: false, help: '输出接口返回的原文' },
   ],
   columns: ['rank', 'userId', 'userName', 'customerId', 'customerName', 'status', 'inTime', 'outTime', 'address', 'outAddress', 'data', 'code', 'msg'],
-  footerExtra: () => (lastPagination ? `totalCount ${lastPagination.totalCount} / totalPage ${lastPagination.totalPage}` : undefined),
+  footerExtra: pagination.footerExtra,
   func: async (kwargs) => {
     const debug = Boolean(kwargs.debug);
     const { corpid, token, baseUrl, userId } = getRuntimeConfig();
     const payload = buildPayload(kwargs, corpid);
-    const body = JSON.stringify(payload);
     if (!payload.corpid) return makeErrorRow('NO_CORPID', '缺少本地 corpid；请先执行 xbbcli token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>');
     if (!token) return makeErrorRow('NO_TOKEN', MISSING_TOKEN_MESSAGE);
     if (String(kwargs.signInUserIdIn ?? '').trim() && !Array.isArray(parseArray(kwargs.signInUserIdIn))) return makeErrorRow('INVALID_SIGNINUSERIDIN', '--signInUserIdIn 必须是 JSON 数组字符串');
     if (String(kwargs.signInCustomerIdIn ?? '').trim() && !Array.isArray(parseArray(kwargs.signInCustomerIdIn))) return makeErrorRow('INVALID_SIGNINCUSTOMERIDIN', '--signInCustomerIdIn 必须是 JSON 数组字符串');
-    const sign = crypto.createHash('sha256').update(body + token).digest('hex');
-    const headers = Object.assign({ 'Content-Type': 'application/json;charset=UTF-8', sign }, userId ? { userId } : {});
-    const apiUrl = buildApiUrl(baseUrl, API_URL);
-    if (debug) {
-      process.stderr.write(`[debug] URL: ${apiUrl}\n[debug] Headers: ${JSON.stringify(headers)}\n[debug] RequestBody: ${body}\n`);
+    const gateway = await requestGateway({
+      baseUrl,
+      apiPath: API_PATH,
+      payload,
+      token,
+      userId,
+      debug,
+    });
+    if (!gateway.ok) return makeErrorRow(gateway.code, gateway.msg);
+    pagination.update(gateway.data);
+    if (kwargs.raw) return [{ raw: gateway.responseBody }];
+    if (gateway.data.code !== 1) {
+      return makeErrorRow(gateway.data.code ?? '', gateway.data.msg ?? '未知错误');
     }
-    const resp = await fetch(apiUrl, { method: 'POST', headers, body });
-    if (!resp.ok) return makeErrorRow(resp.status, `HTTP ${resp.status} ${resp.statusText}`);
-    const data = await resp.json();
-    lastPagination = data?.code === 1 && data?.result?.totalCount != null && data?.result?.totalPage != null
-      ? { totalCount: data.result.totalCount, totalPage: data.result.totalPage }
-      : null;
-    const responseBody = JSON.stringify(data);
-    if (debug) process.stderr.write(`[debug] ResponseBody: ${responseBody}\n`);
-    if (kwargs.raw) return [{ raw: responseBody }];
-    if (data.code !== 1) return makeErrorRow(data.code ?? '', data.msg ?? '未知错误');
-    const list = Array.isArray(data.result?.signInList) ? data.result.signInList : [];
+    const list = Array.isArray(gateway.data.result?.signInList) ? gateway.data.result.signInList : [];
     if (!list.length) return makeErrorRow('NO_DATA', '接口成功，但 signInList 为空');
     return list.map((item, index) => ({ rank: index + 1, userId: item.userId || '', userName: item.userName || '', customerId: item.customerId || '', customerName: item.customerName || '', status: item.status ?? '', inTime: item.inTime || '', outTime: item.outTime || '', address: item.address || '', outAddress: item.outAddress || '', data: JSON.stringify(item || {}), code: '', msg: '' }));
   },

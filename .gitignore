@@ -33,3 +33,4 @@ docs/.vitepress/cache
 autoresearch/results/
 autoresearch-results.tsv
 .qoder/
+.github/

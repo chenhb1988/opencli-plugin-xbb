@@ -1,34 +1,8 @@
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
-import crypto from 'node:crypto';
 import { cli, Strategy } from './xbb-registry.js';
-import { readActiveConfig } from './xbb-config.js';
+import { getRuntimeConfig, requestGateway, createPagination } from './xbb-http.js';
 
-const CONFIG_DIR = path.join(os.homedir(), '.xbbcli');
-const CONFIG_FILE = path.join(CONFIG_DIR, 'config.env');
-const CUSTOMER_LIST_API_URL = 'https://proapi.xbongbong.com/pro/v2/api/customer/list';
-const DEFAULT_BASE_URL = 'https://proapi.xbongbong.com';
-let lastPagination = null;
-
-function readConfig() {
-  return readActiveConfig();
-}
-
-function getRuntimeConfig() {
-  const config = readConfig();
-  return {
-    corpid: String(config.corpid || '').trim(),
-    token: String(config.token || '').trim(),
-    baseUrl: String(config.baseurl || DEFAULT_BASE_URL).trim(),
-    userId: String(config.userId || '').trim(),
-  };
-}
-
-function buildApiUrl(baseUrl, defaultUrl) {
-  const apiPath = new URL(defaultUrl).pathname;
-  return `${baseUrl.replace(/\/+$/, '')}${apiPath}`;
-}
+const CUSTOMER_LIST_API_PATH = '/pro/v2/api/customer/list';
+const pagination = createPagination();
 
 function buildConditions(kwargs) {
   const conditions = kwargs.conditions;
@@ -106,7 +80,7 @@ cli({
     { name: 'raw', type: 'bool', default: false, help: '输出接口返回的原文' },
   ],
   columns: ['rank', 'dataId', 'formId', 'name', 'ownerId', 'mobile', 'addTime', 'updateTime', 'code', 'msg'],
-  footerExtra: () => (lastPagination ? `totalCount ${lastPagination.totalCount} / totalPage ${lastPagination.totalPage}` : undefined),
+  footerExtra: pagination.footerExtra,
   func: async (kwargs) => {
     const debug = Boolean(kwargs.debug);
     const { corpid, token, baseUrl, userId } = getRuntimeConfig();
@@ -120,7 +94,6 @@ cli({
       const detail = separatorIndex > 0 ? message.slice(separatorIndex + 1) : message;
       return makeErrorRow(code, detail);
     }
-    const body = JSON.stringify(payload);
 
     if (!payload.corpid) {
       return makeErrorRow('NO_CORPID', '缺少本地 corpid；请先执行 xbbcli token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>');
@@ -132,38 +105,22 @@ cli({
       return makeErrorRow('NO_TOKEN', '缺少 token；请先执行 xbbcli token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>');
     }
 
-    const sign = crypto.createHash('sha256').update(body + token).digest('hex');
-    const headers = Object.assign({
-      'Content-Type': 'application/json;charset=UTF-8',
-      sign,
-    }, userId ? { userId } : {});
-    if (debug) {
-      process.stderr.write(`[debug] URL: ${buildApiUrl(baseUrl, CUSTOMER_LIST_API_URL)}\n[debug] Headers: ${JSON.stringify(headers)}\n[debug] RequestBody: ${body}\n`);
-    }
-    const resp = await fetch(buildApiUrl(baseUrl, CUSTOMER_LIST_API_URL), {
-      method: 'POST',
-      headers,
-      body,
+    const gateway = await requestGateway({
+      baseUrl,
+      apiPath: CUSTOMER_LIST_API_PATH,
+      payload,
+      token,
+      userId,
+      debug,
     });
-
-    if (!resp.ok) {
-      const responseText = await resp.text();
-      if (debug) process.stderr.write(`[debug] ResponseBody: ${responseText}\n`);
-      return makeErrorRow(resp.status, `HTTP ${resp.status} ${resp.statusText}`);
+    if (!gateway.ok) return makeErrorRow(gateway.code, gateway.msg);
+    pagination.update(gateway.data);
+    if (kwargs.raw) return [{ raw: gateway.responseBody }];
+    if (gateway.data.code !== 1) {
+      return makeErrorRow(gateway.data.code ?? '', gateway.data.msg ?? '未知错误');
     }
 
-    const data = await resp.json();
-    lastPagination = data?.code === 1 && data?.result?.totalCount != null && data?.result?.totalPage != null
-      ? { totalCount: data.result.totalCount, totalPage: data.result.totalPage }
-      : null;
-    const responseBody = JSON.stringify(data);
-    if (debug) process.stderr.write(`[debug] ResponseBody: ${responseBody}\n`);
-    if (kwargs.raw) return [{ raw: responseBody }];
-    if (data.code !== 1) {
-      return makeErrorRow(data.code ?? '', data.msg ?? '未知错误');
-    }
-
-    const list = Array.isArray(data.result?.list) ? data.result.list : [];
+    const list = Array.isArray(gateway.data.result?.list) ? gateway.data.result.list : [];
     if (!list.length) {
       return makeErrorRow('NO_DATA', '接口成功，但 list 为空');
     }

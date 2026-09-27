@@ -1,33 +1,7 @@
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
-import crypto from 'node:crypto';
 import { cli, Strategy } from './xbb-registry.js';
-import { readActiveConfig } from './xbb-config.js';
+import { getRuntimeConfig, requestGateway } from './xbb-http.js';
 
-const CONFIG_DIR = path.join(os.homedir(), '.xbbcli');
-const CONFIG_FILE = path.join(CONFIG_DIR, 'config.env');
-const API_URL = 'https://proapi.xbongbong.com/pro/v2/api/paySheet/editRed';
-const DEFAULT_BASE_URL = 'https://proapi.xbongbong.com';
-
-function readConfig() {
-  return readActiveConfig();
-}
-
-function getRuntimeConfig() {
-  const config = readConfig();
-  return {
-    corpid: String(config.corpid || '').trim(),
-    token: String(config.token || '').trim(),
-    baseUrl: String(config.baseurl || DEFAULT_BASE_URL).trim(),
-    userId: String(config.userId || '').trim(),
-  };
-}
-
-function buildApiUrl(baseUrl, defaultUrl) {
-  const apiPath = new URL(defaultUrl).pathname;
-  return `${baseUrl.replace(/\/+$/, '')}${apiPath}`;
-}
+const API_PATH = '/pro/v2/api/paySheet/editRed';
 
 function makeErrorRow(code, msg) {
   return [{ dataId: '', resultCode: '', resultMsg: '', code, msg }];
@@ -74,34 +48,25 @@ cli({
     const parsedDataList = parseDataList(kwargs.dataList);
     if (parsedDataList) payload.dataList = parsedDataList;
 
-    const body = JSON.stringify(payload);
     if (!payload.corpid) return makeErrorRow('NO_CORPID', '缺少本地 corpid；请先执行 xbbcli token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>');
     if (!payload.dataId) return makeErrorRow('NO_DATAID', '缺少 --dataId');
     if (!token) return makeErrorRow('NO_TOKEN', '缺少 token；请先执行 xbbcli token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>');
     if (parsedDataList === null) return makeErrorRow('NO_DATALIST', '缺少 --dataList');
     if (parsedDataList === undefined) return makeErrorRow('INVALID_DATALIST', '--dataList 必须是 JSON 对象字符串');
 
-    const sign = crypto.createHash('sha256').update(body + token).digest('hex');
-    const headers = Object.assign({ 'Content-Type': 'application/json;charset=UTF-8', sign }, userId ? { userId } : {});
-    const apiUrl = buildApiUrl(baseUrl, API_URL);
-    if (debug) {
-      process.stderr.write(`[debug] URL: ${apiUrl}\n[debug] Headers: ${JSON.stringify(headers)}\n[debug] RequestBody: ${body}\n`);
-    }
-    const resp = await fetch(apiUrl, {
-      method: 'POST',
-      headers,
-      body,
+    const gateway = await requestGateway({
+      baseUrl,
+      apiPath: API_PATH,
+      payload,
+      token,
+      userId,
+      debug,
     });
-    if (!resp.ok) {
-      const errText = await resp.text();
-      if (debug) process.stderr.write(`[debug] ResponseBody: ${errText}\n`);
-      return makeErrorRow(resp.status, `HTTP ${resp.status} ${resp.statusText}`);
+    if (!gateway.ok) return makeErrorRow(gateway.code, gateway.msg);
+    if (gateway.data.code !== 1) {
+      return makeErrorRow(gateway.data.code ?? '', gateway.data.msg ?? '未知错误');
     }
-    const data = await resp.json();
-    const responseBody = JSON.stringify(data);
-    if (debug) process.stderr.write(`[debug] ResponseBody: ${responseBody}\n`);
-    if (data.code !== 1) return makeErrorRow(data.code ?? '', data.msg ?? '未知错误');
-    const result = data.result || {};
-    return [{ dataId: result.dataId || '', resultCode: result.code ?? '', resultMsg: result.msg || '', code: data.code ?? '', msg: data.msg || '' }];
+    const result = gateway.data.result || {};
+    return [{ dataId: result.dataId || '', resultCode: result.code ?? '', resultMsg: result.msg || '', code: gateway.data.code ?? '', msg: gateway.data.msg || '' }];
   },
 });

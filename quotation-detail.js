@@ -1,33 +1,8 @@
-import crypto from 'node:crypto';
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
 import { cli, Strategy } from './xbb-registry.js';
-import { readActiveConfig } from './xbb-config.js';
+import { getRuntimeConfig, requestGateway } from './xbb-http.js';
 
-const CONFIG_FILE = path.join(os.homedir(), '.opencli', 'xbb', 'config.env');
-const API_URL = 'https://proapi.xbongbong.com/pro/v2/api/quotation/detail';
-const DEFAULT_BASE_URL = 'https://proapi.xbongbong.com';
+const API_PATH = '/pro/v2/api/quotation/detail';
 const MISSING_TOKEN_MESSAGE = '缺少 token；请先执行 opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>';
-
-function readConfig() {
-  return readActiveConfig();
-}
-
-function getRuntimeConfig() {
-  const config = readConfig();
-  return {
-    corpid: String(config.corpid || '').trim(),
-    token: String(config.token || '').trim(),
-    baseUrl: String(config.baseurl || DEFAULT_BASE_URL).trim(),
-    userId: String(config.userId || '').trim(),
-  };
-}
-
-function buildApiUrl(baseUrl, apiUrl) {
-  const apiPath = new URL(apiUrl).pathname;
-  return `${baseUrl.replace(/\/+$/, '')}${apiPath}`;
-}
 
 function makeErrorRow(code, msg) {
   return [{ rank: '', dataId: '', formId: '', addTime: '', updateTime: '', data: '', code, msg }];
@@ -56,27 +31,22 @@ cli({
     payload.dataId = Number(kwargs.dataId || 0);
     if (String(kwargs.queryFlag ?? '') !== '') payload.queryFlag = Number(kwargs.queryFlag);
     if (runtimeUserId) payload.userId = runtimeUserId;
-    const requestBody = JSON.stringify(payload);
     if (!payload.corpid) return makeErrorRow('NO_CORPID', '缺少本地 corpid；请先执行 opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>');
     if (!payload.dataId) return makeErrorRow('NO_DATAID', '缺少 --dataId');
     if (!token) return makeErrorRow('NO_TOKEN', MISSING_TOKEN_MESSAGE);
-    const sign = crypto.createHash('sha256').update(requestBody + token).digest('hex');
-    const headers = Object.assign({ 'Content-Type': 'application/json;charset=UTF-8', sign }, runtimeUserId ? { userId: runtimeUserId } : {});
-    const apiUrl = buildApiUrl(baseUrl, API_URL);
-    if (debug) {
-      process.stderr.write(`[debug] URL: ${apiUrl}\n[debug] Headers: ${JSON.stringify(headers)}\n[debug] RequestBody: ${requestBody}\n`);
+    const gateway = await requestGateway({
+      baseUrl,
+      apiPath: API_PATH,
+      payload,
+      token,
+      userId: runtimeUserId,
+      debug,
+    });
+    if (!gateway.ok) return makeErrorRow(gateway.code, gateway.msg);
+    if (gateway.data.code !== 1) {
+      return makeErrorRow(gateway.data.code ?? '', gateway.data.msg ?? '未知错误');
     }
-    const resp = await fetch(apiUrl, { method: 'POST', headers, body: requestBody });
-    if (!resp.ok) {
-      const responseText = await resp.text();
-      if (debug) process.stderr.write(`[debug] ResponseBody: ${responseText}\n`);
-      return makeErrorRow(resp.status, `HTTP ${resp.status} ${resp.statusText}`);
-    }
-    const data = await resp.json();
-    const responseBody = JSON.stringify(data);
-    if (debug) process.stderr.write(`[debug] ResponseBody: ${responseBody}\n`);
-    if (data.code !== 1) return makeErrorRow(data.code ?? '', data.msg ?? '未知错误');
-    const result = data.result || {};
-    return [{ rank: 1, dataId: result.dataId || '', formId: result.formId || '', addTime: result.addTime || '', updateTime: result.updateTime || '', data: JSON.stringify(result.data || {}), code: data.code ?? '', msg: data.msg || '' }];
+    const result = gateway.data.result || {};
+    return [{ rank: 1, dataId: result.dataId || '', formId: result.formId || '', addTime: result.addTime || '', updateTime: result.updateTime || '', data: JSON.stringify(result.data || {}), code: gateway.data.code ?? '', msg: gateway.data.msg || '' }];
   },
 });

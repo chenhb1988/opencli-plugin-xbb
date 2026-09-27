@@ -1,34 +1,9 @@
-import crypto from 'node:crypto';
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
 import { cli, Strategy } from './xbb-registry.js';
-import { readActiveConfig } from './xbb-config.js';
+import { getRuntimeConfig, requestGateway, createPagination } from './xbb-http.js';
 
-const CONFIG_FILE = path.join(os.homedir(), '.xbbcli', 'config.env');
-const FORM_LIST_API_URL = 'https://proapi.xbongbong.com/pro/v2/api/form/list';
-const DEFAULT_BASE_URL = 'https://proapi.xbongbong.com';
+const FORM_LIST_API_PATH = '/pro/v2/api/form/list';
 const MISSING_TOKEN_MESSAGE = '缺少 token；请先执行 xbbcli token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>';
-let lastPagination = null;
-
-function readConfig() {
-  return readActiveConfig();
-}
-
-function getRuntimeConfig() {
-  const config = readConfig();
-  return {
-    corpid: String(config.corpid || '').trim(),
-    token: String(config.token || '').trim(),
-    baseUrl: String(config.baseurl || DEFAULT_BASE_URL).trim(),
-    userId: String(config.userId || '').trim(),
-  };
-}
-
-function buildApiUrl(baseUrl, defaultUrl) {
-  const apiPath = new URL(defaultUrl).pathname;
-  return `${baseUrl.replace(/\/+$/, '')}${apiPath}`;
-}
+const pagination = createPagination();
 
 function buildPayload(kwargs, corpid) {
   const payload = {
@@ -108,50 +83,33 @@ cli({
     { name: 'raw', type: 'bool', default: false, help: '输出接口返回的原文' },
   ],
   columns: ['rank', 'formId', 'appId', 'menuId', 'businessType', 'isProcessForm', 'name', 'code', 'msg'],
-  footerExtra: () => (lastPagination ? `totalCount ${lastPagination.totalCount} / totalPage ${lastPagination.totalPage}` : undefined),
+  footerExtra: pagination.footerExtra,
   func: async function (kwargs) {
     const debug = Boolean(kwargs.debug);
     const { corpid, token, baseUrl, userId } = getRuntimeConfig();
     const payload = buildPayload(kwargs, corpid);
-    const body = JSON.stringify(payload);
 
     const validationError = getValidationError(payload, token);
     if (validationError) {
       return makeErrorRow(validationError.code, validationError.msg);
     }
 
-    const sign = crypto.createHash('sha256').update(body + token).digest('hex');
-    const headers = Object.assign({
-      'Content-Type': 'application/json;charset=UTF-8',
-      sign,
-    }, userId ? { userId } : {});
-    if (debug) {
-      process.stderr.write(`[debug] URL: ${buildApiUrl(baseUrl, FORM_LIST_API_URL)}\n[debug] Headers: ${JSON.stringify(headers)}\n[debug] RequestBody: ${body}\n`);
-    }
-    const resp = await fetch(buildApiUrl(baseUrl, FORM_LIST_API_URL), {
-      method: 'POST',
-      headers,
-      body,
+    const gateway = await requestGateway({
+      baseUrl,
+      apiPath: FORM_LIST_API_PATH,
+      payload,
+      token,
+      userId,
+      debug,
     });
-
-    if (!resp.ok) {
-      const responseText = await resp.text();
-      if (debug) process.stderr.write(`[debug] ResponseBody: ${responseText}\n`);
-      return makeErrorRow(resp.status, `HTTP ${resp.status} ${resp.statusText}`);
+    if (!gateway.ok) return makeErrorRow(gateway.code, gateway.msg);
+    pagination.update(gateway.data);
+    if (kwargs.raw) return [{ raw: gateway.responseBody }];
+    if (gateway.data.code !== 1) {
+      return makeErrorRow(gateway.data.code ?? '', gateway.data.msg ?? '未知错误');
     }
 
-    const data = await resp.json();
-    lastPagination = data?.code === 1 && data?.result?.totalCount != null && data?.result?.totalPage != null
-      ? { totalCount: data.result.totalCount, totalPage: data.result.totalPage }
-      : null;
-    const responseBody = JSON.stringify(data);
-    if (debug) process.stderr.write(`[debug] ResponseBody: ${responseBody}\n`);
-    if (kwargs.raw) return [{ raw: responseBody }];
-    if (data.code !== 1) {
-      return makeErrorRow(data.code ?? '', data.msg ?? '未知错误');
-    }
-
-    const formList = Array.isArray(data.result?.formList) ? data.result.formList : [];
+    const formList = Array.isArray(gateway.data.result?.formList) ? gateway.data.result.formList : [];
     if (!formList.length) {
       return makeErrorRow('NO_DATA', '接口成功，但 formList 为空');
     }
