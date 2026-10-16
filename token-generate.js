@@ -4,6 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { cli, Strategy } from './xbb-registry.js';
 import { readActiveConfig } from './xbb-config.js';
+import { CLIENT_SOURCE_HEADER } from './xbb-http.js';
 
 const CONFIG_FILE = path.join(os.homedir(), '.xbbcli', 'config.env');
 const API_URL = 'https://proapi.xbongbong.com/pro/v2/api/user/generateToken';
@@ -83,7 +84,7 @@ cli({
     if (!payload.checkUserId) return makeErrorRow('NO_CHECKUSERID', '缺少 --checkUserId；未填则使用配置中的userId', baseUrl, payload.corpid);
     if (!token) return makeErrorRow('NO_TOKEN', MISSING_TOKEN_MESSAGE, baseUrl, payload.corpid);
     const sign = crypto.createHash('sha256').update(requestBody + token).digest('hex');
-    const headers = Object.assign({ 'Content-Type': 'application/json;charset=UTF-8', sign }, userId ? { userId } : {});
+    const headers = Object.assign({ 'Content-Type': 'application/json;charset=UTF-8', sign }, userId ? { userId } : {}, CLIENT_SOURCE_HEADER);
     if (debug) {
       process.stderr.write(`[debug] URL: ${buildApiUrl(baseUrl, API_URL)}\n[debug] Headers: ${JSON.stringify(headers)}\n[debug] RequestBody: ${requestBody}\n`);
     }

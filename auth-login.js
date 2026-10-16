@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import { cli, Strategy } from './xbb-registry.js';
 import { openBrowser, findBrowserExecutable, LOGIN_PAGE_URL } from './xbb-browser.js';
 import { saveCompanyCredentials } from './xbb-token-store.js';
+import { CLIENT_SOURCE_HEADER } from './xbb-http.js';
 
 const API_TOKEN_PATH = '/pro/v1/apiPersonalToken/generate';
 const PRO_GATEWAY_ORIGIN = 'https://progateway.xbongbong.com';
@@ -105,7 +106,7 @@ async function exchangeApiToken(session, loginSession, resetToken, debug) {
   const expression = `(async () => {
   const response = await fetch(${JSON.stringify(url)}, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json;charset=UTF-8', corpid: ${JSON.stringify(loginSession.corpid)}, sign: ${JSON.stringify(sign)} },
+    headers: { 'Content-Type': 'application/json;charset=UTF-8', corpid: ${JSON.stringify(loginSession.corpid)}, sign: ${JSON.stringify(sign)}, ...${JSON.stringify(CLIENT_SOURCE_HEADER)} },
     body: ${JSON.stringify(body)}
   });
   return await response.text();
