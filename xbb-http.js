@@ -3,6 +3,9 @@ import { readActiveConfig } from './xbb-config.js';
 
 const DEFAULT_BASE_URL = 'https://proapi.xbongbong.com';
 
+// 标记请求来源的自定义 header：所有服务端请求统一带上，值固定为 CLI 标识
+export const CLIENT_SOURCE_HEADER = { 'X-Client-Source': 'xbbcli' };
+
 // 业务命令统一的运行时配置：从 config.env 读取 enable=true 的公司并规范化字段
 export function getRuntimeConfig() {
   const config = readActiveConfig();
@@ -22,6 +25,7 @@ export async function requestGateway({ baseUrl, apiPath, payload, token, userId,
   const headers = Object.assign(
     { 'Content-Type': 'application/json;charset=UTF-8', sign },
     userId ? { userId } : {},
+    CLIENT_SOURCE_HEADER,
   );
   const apiUrl = `${String(baseUrl || DEFAULT_BASE_URL).replace(/\/+$/, '')}${apiPath}`;
 
