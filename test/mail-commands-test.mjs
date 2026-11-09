@@ -4,12 +4,13 @@ import fs from 'node:fs';
 import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 // 验证二级命令 mail send / mail list / mail detail / mail draft add / mail draft edit
 // 能被 bin/xbbcli.js 正确解析，并检查请求体字段、可选参数省略与输出行契约。
 // 用本地 mock HTTP 服务器接收请求，避免对真实邮件服务发起写操作。
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const { CLIENT_SOURCE_HEADER } = await import(pathToFileURL(path.join(repositoryRoot, 'xbb-http.js')).href);
 const temporaryHome = fs.mkdtempSync(path.join(os.tmpdir(), 'xbb-mail-test-'));
 fs.mkdirSync(path.join(temporaryHome, '.xbbcli'), { recursive: true });
 
@@ -142,7 +143,7 @@ try {
   assert.equal(Object.hasOwn(send.request.payload, 'ccRecipient'), false, 'ccRecipient must be omitted when --cc is not provided');
   assert.equal(Object.hasOwn(send.request.payload, 'attachment'), false, 'attachment must be omitted when --attachment is not provided');
   assert.equal(Object.hasOwn(send.request.payload, 'draftId'), false, 'draftId must be omitted when --draftId is not provided');
-  assert.equal(send.request.headers['x-client-source'], 'xbbcli');
+  assert.equal(send.request.headers['x-client-source'], CLIENT_SOURCE_HEADER['X-Client-Source']);
   report('mail send omits optional fields and carries X-Client-Source');
 
   // mail send：draftId 0 必须按数字写入

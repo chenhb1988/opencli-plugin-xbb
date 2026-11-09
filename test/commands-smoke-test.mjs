@@ -15,6 +15,14 @@ const temporaryHome = fs.mkdtempSync(path.join(os.tmpdir(), 'xbb-command-test-')
 const originalUserProfile = process.env.USERPROFILE;
 const originalHome = process.env.HOME;
 const originalFetch = globalThis.fetch;
+// v2.0-serv 的业务命令环境变量优先：清空 XBB_* 才能保证空参调用不发真实请求
+const originalXbbEnv = {};
+for (const name of Object.keys(process.env)) {
+  if (name.startsWith('XBB_')) {
+    originalXbbEnv[name] = process.env[name];
+    delete process.env[name];
+  }
+}
 
 process.env.USERPROFILE = temporaryHome;
 process.env.HOME = temporaryHome;
@@ -36,6 +44,7 @@ function restoreEnvironment() {
   }
 
   globalThis.fetch = originalFetch;
+  Object.assign(process.env, originalXbbEnv);
   fs.rmSync(temporaryHome, { recursive: true, force: true });
 }
 
