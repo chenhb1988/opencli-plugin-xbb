@@ -113,6 +113,7 @@ function makeSuccessRows(list) {
 cli({
   site: 'xbb',
   name: 'pay-plan-list',
+  group: 'pay-plan',
   description: '付款计划列表接口（businessType: 801）',
   strategy: Strategy.PUBLIC,
   access: 'read',

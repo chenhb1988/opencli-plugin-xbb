@@ -99,16 +99,16 @@ try {
   assert.equal(stageZero.reasonId, 0, '--reasonId 0 must be serialized as the number 0');
   report('stage-jump writes reasonId: 0 when --reasonId 0 is provided');
 
-  // workorder-handover：retainMainUser 可选
+  // work-order-handover：retainMainUser 可选
   const handoverArgs = ['--formId', '4885594', '--dataIdList', '[1]', '--businessUserId', 'test-user'];
-  const handoverDefault = await captureBody('workorder-handover default', ['workorder-handover', ...handoverArgs]);
+  const handoverDefault = await captureBody('work-order-handover default', ['work-order-handover', ...handoverArgs]);
   assert.equal(Object.hasOwn(handoverDefault, 'retainMainUser'), false, 'request body must not contain retainMainUser when --retainMainUser is omitted');
-  report('workorder-handover omits retainMainUser when --retainMainUser is not provided');
+  report('work-order-handover omits retainMainUser when --retainMainUser is not provided');
   assert.deepEqual(handoverDefault.dataIdList, [1]);
 
-  const handoverZero = await captureBody('workorder-handover retainMainUser=0', ['workorder-handover', ...handoverArgs, '--retainMainUser', '0']);
+  const handoverZero = await captureBody('work-order-handover retainMainUser=0', ['work-order-handover', ...handoverArgs, '--retainMainUser', '0']);
   assert.equal(handoverZero.retainMainUser, 0, '--retainMainUser 0 must be serialized as the number 0');
-  report('workorder-handover writes retainMainUser: 0 when --retainMainUser 0 is provided');
+  report('work-order-handover writes retainMainUser: 0 when --retainMainUser 0 is provided');
 
   // clue-list：isPublic 可选
   const clueDefault = await captureBody('clue-list default', ['clue-list', '--formId', '4885596']);

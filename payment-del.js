@@ -16,6 +16,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'payment-del',
+  group: 'payment',
   description: '删除应收款接口（businessType: 701）',
   strategy: Strategy.PUBLIC,
   access: 'write',

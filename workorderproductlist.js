@@ -65,6 +65,7 @@ function makeSuccessRows(list) {
 cli({
   site: 'xbb',
   name: 'workorderproductlist',
+  group: 'workorder',
   description: '工单配件接口（businessType: 2301）',
   strategy: Strategy.PUBLIC,
   access: 'read',

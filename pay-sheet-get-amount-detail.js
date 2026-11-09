@@ -10,6 +10,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'pay-sheet-get-amount-detail',
+  group: 'pay-sheet',
   description: '付款单金额明细接口（businessType: 802）',
   strategy: Strategy.PUBLIC,
   access: 'read',

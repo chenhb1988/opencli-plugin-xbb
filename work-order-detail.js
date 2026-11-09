@@ -93,6 +93,7 @@ function makeSuccessRow(data) {
 cli({
   site: 'xbb',
   name: 'work-order-detail',
+  group: 'work-order',
   description: '工单详情接口（businessType: 20300）',
   strategy: Strategy.PUBLIC,
   access: 'read',

@@ -133,6 +133,7 @@ function makeSuccessRows(list) {
 cli({
   site: 'xbb',
   name: 'work-order-list',
+  group: 'work-order',
   description: '工单列表接口（businessType: 20300；formId必填）',
   strategy: Strategy.PUBLIC,
   access: 'read',

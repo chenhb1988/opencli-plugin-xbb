@@ -382,70 +382,46 @@ note      以上取值来自环境变量 XBB_*（config.env 中没有启用公�
 
 ### 应收款操作
 
-- `payment-list`：应收款列表
-- `payment-add`：新建应收款
-- `payment-edit`：编辑应收款
-- `payment-detail`：应收款详情
-- `payment-del`：删除应收款
-- `payment-handover`：应收款移交
-- `payment-add-mainuser`：应收款添加负责人
-- `payment-delete-mainuser`：应收款删除负责人
-- `payment-add-couser`：应收款添加协同人
-- `payment-delete-couser`：应收款删除协同人
+- `xbbcli payment list` / `payment detail` / `payment del`：应收款列表、详情、删除
+- `xbbcli payment add` / `payment edit` / `payment handover`：新建、编辑、移交应收款
+- `xbbcli payment add-mainuser` / `add-couser` / `delete-mainuser` / `delete-couser`：应收款添加/删除负责人、协同人
 
 ### 回款与退款
 
-- `payment-sheet-list`：回款单列表
-- `payment-sheet-add-write-off`：新建核销回款单
-- `payment-sheet-edit-write-off`：编辑核销回款单
-- `payment-sheet-add-red`：新建红冲回款单
-- `payment-sheet-edit-red`：编辑红冲回款单
-- `payment-sheet-add-bad-debt`：新建坏账回款单
-- `payment-sheet-edit-bad-debt`：编辑坏账回款单
-- `payment-sheet-add-pre`：新建预收款回款单
-- `payment-sheet-get-amount-detail`：回款单金额明细
-- `payment-sheet-detail`：回款单详情
-- `payment-sheet-del`：删除回款单
-- `payment-sheet-handover`：回款单移交
-- `pay-plan-list`：付款计划列表
-- `pay-plan-detail`：付款计划详情
-- `pay-plan-add`：新增付款计划
-- `pay-plan-add-couser`：付款计划添加协同人
-- `pay-plan-add-mainuser`：付款计划添加负责人
-- `pay-plan-delete-couser`：付款计划删除协同人
-- `pay-plan-delete-mainuser`：付款计划删除负责人
-- `pay-sheet-list`：付款单列表
-- `pay-sheet-add-write-off`：新建付款单
-- `pay-sheet-edit-write-off`：编辑付款单
-- `pay-sheet-add-red`：新建核销付款单红冲
-- `pay-sheet-edit-red`：编辑核销付款单红冲
-- `pay-sheet-add-bad`：新建核销付款单坏账
-- `pay-sheet-edit-bad`：编辑核销付款单坏账
-- `pay-sheet-add-couser`：付款单添加协同人
-- `pay-sheet-add-mainuser`：付款单添加负责人
-- `pay-sheet-delete-couser`：付款单删除协同人
-- `pay-sheet-delete-mainuser`：付款单删除负责人
-- `pay-sheet-get-amount-detail`：付款单金额明细
-- `pay-sheet-detail`：付款单详情
-- `pay-sheet-del`：删除付款单
+- `xbbcli payment-sheet list` / `detail` / `del` / `handover`：回款单列表、详情、删除、移交
+- `xbbcli payment-sheet add-write-off` / `edit-write-off`：新建/编辑核销回款单
+- `xbbcli payment-sheet add-red` / `edit-red`：新建/编辑红冲回款单
+- `xbbcli payment-sheet add-bad-debt` / `edit-bad-debt`：新建/编辑坏账回款单
+- `xbbcli payment-sheet add-pre`：新建预收款回款单
+- `xbbcli payment-sheet get-amount-detail`：回款单金额明细
+- `xbbcli pay-plan list` / `pay-plan detail`：付款计划列表、详情
+- `xbbcli pay-plan add` / `pay-plan handover`：新增、移交付款计划
+- `xbbcli pay-plan add-couser` / `add-mainuser` / `delete-couser` / `delete-mainuser`：付款计划添加/删除协同人与负责人
+- `xbbcli pay-sheet list` / `pay-sheet detail` / `pay-sheet del`：付款单列表、详情、删除
+- `xbbcli pay-sheet add-write-off` / `edit-write-off`：新建/编辑付款单
+- `xbbcli pay-sheet add-red` / `edit-red`：新建/编辑核销付款单红冲
+- `xbbcli pay-sheet add-bad` / `edit-bad`：新建/编辑核销付款单坏账
+- `xbbcli pay-sheet get-amount-detail`：付款单金额明细
+- `xbbcli pay-sheet add-couser` / `add-mainuser` / `delete-couser` / `delete-mainuser`：付款单添加/删除协同人与负责人
 - `refund-list`：退货退款单列表
 - `refund-add`：新建退货退款单
 - `refund-edit`：编辑退货退款单
 - `refund-detail`：退货退款单详情
 - `refund-del`：删除退货退款单
 
-### 新版工单（服务云）
-- `work-order-list`：新版工单列表命令
-- `work-order-detail`：工单详情
-- `work-order-add`：新增工单
-- `work-order-edit`：编辑工单
-- `work-order-del`：删除工单
-- `work-order-operate`：工单流转
-- `work-order-template-list`：工单模板列表
-- `work-order-template-detail`：工单模板详情
-- `workorder-handover`：移交工单负责人
-- `workorder-add-couser`：添加工单协同人
-- `workorder-delete-couser`：删除工单协同人
+### 新版工单（服务云，二级命令）
+
+工单命令统一挂在 `work-order` 分组下：
+
+- `xbbcli work-order list`：新版工单列表；`xbbcli work-order detail`：工单详情
+- `xbbcli work-order add` / `work-order edit` / `work-order del` / `work-order operate`：新增、编辑、删除、流转
+- `xbbcli work-order dynamic list`：工单动态列表
+- `xbbcli work-order handover` / `work-order add-couser` / `work-order delete-couser`：移交负责人、添加/删除协同人
+- `xbbcli work-order asset list` / `asset detail` / `asset add` / `asset edit` / `asset del` / `asset handover`：工单资产增删改查与移交
+- `xbbcli work-order asset add-couser` / `asset add-mainuser` / `asset del-couser` / `asset del-mainuser`：资产添加/删除协同人与负责人
+- `workorder-template-list` / `workorder-template-detail`：工单模板列表与详情（归入 `workorder` 分组，不在 `work-order` 分组内）
+
+`xbbcli work-order --help` 查看全部子命令。
 
 
 ### 生产（二级命令）
@@ -512,11 +488,14 @@ note      以上取值来自环境变量 XBB_*（config.env 中没有启用公�
 - `stage-get`：阶段获取
 - `stage-jump`：阶段跳转
 
-### 旧工单（已过时，不建议使用）
-- `workorderlist`：旧版工单列表命令
-- `workorderproductlist`：工单配件列表
-- `worktimerecordlist`：工时记录列表
-- `worktimerecorddetail`：工时记录详情
+### 旧工单（已过时，不建议使用，workorder 分组）
+
+- `xbbcli workorderlist`：旧版工单列表命令
+- `xbbcli workorderproductlist`：工单配件列表
+- `xbbcli workorder template list`：工单模板列表
+- `xbbcli workorder template detail`：工单模板详情
+
+`xbbcli workorder -h` 可查看分组子命令。工时记录命令未归入该分组，仍按原命令名使用：`xbbcli worktimerecordlist`、`xbbcli worktimerecorddetail`。
 
 ## 命名说明
 
@@ -630,15 +609,15 @@ xbbcli product-category-list
 xbbcli product-category-update --dataId 306 --name 分类A
 xbbcli product-category-del --dataId 306
 
-xbbcli payment-list --attr serialNo --value PMO.API.0001
-xbbcli pay-plan-list --attr serialNo --value PPO.API.0001
-xbbcli pay-plan-detail --dataId 1071
-xbbcli payment-sheet-list --attr serialNo --value RMO.API.0001
-xbbcli payment-sheet-list --subBusinessType 702
-xbbcli payment-sheet-edit-write-off --dataId 1194 --dataList '{"text_7":"编辑备注"}'
-xbbcli payment-sheet-add-red --dataList '{"serialNo":"RMO.API.0001"}'
-xbbcli payment-sheet-edit-red --dataId 1198 --dataList '{"text_7":"编辑红冲备注"}'
-xbbcli payment-sheet-add-bad-debt --dataList '{"serialNo":"RMO.API.0002"}'
+xbbcli payment list --attr serialNo --value PMO.API.0001
+xbbcli pay-plan list --attr serialNo --value PPO.API.0001
+xbbcli pay-plan detail --dataId 1071
+xbbcli payment-sheet list --attr serialNo --value RMO.API.0001
+xbbcli payment-sheet list --subBusinessType 702
+xbbcli payment-sheet edit-write-off --dataId 1194 --dataList '{"text_7":"编辑备注"}'
+xbbcli payment-sheet add-red --dataList '{"serialNo":"RMO.API.0001"}'
+xbbcli payment-sheet edit-red --dataId 1198 --dataList '{"text_7":"编辑红冲备注"}'
+xbbcli payment-sheet add-bad-debt --dataList '{"serialNo":"RMO.API.0002"}'
 xbbcli refund-list --attr serialNo --value RFO.API.0001
 ```
 
@@ -688,8 +667,8 @@ xbbcli other-income del --dataId 87
 ```bash
 xbbcli workorderlist --formId 689 --attr serialNo --value WOO.20210616001
 xbbcli workorderproductlist --dataId 663
-xbbcli work-order-template-list
-xbbcli work-order-template-detail --formId 689
+xbbcli workorder-template-list
+xbbcli workorder-template-detail --formId 689
 
 xbbcli worktimerecordlist
 xbbcli worktimerecordlist --conditions "[{\"attr\":\"ownerId\",\"value\":[\"02415643151585\"],\"symbol\":\"equal\"}]"

@@ -24,6 +24,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'work-order-asset-add-mainuser',
+  group: 'work-order',
   description: '资产添加负责人接口（businessType: -1；workOrderV2 资产）',
   strategy: Strategy.PUBLIC,
   access: 'write',

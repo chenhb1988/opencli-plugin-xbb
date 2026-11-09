@@ -86,6 +86,7 @@ function makeSuccessRow(data) {
 cli({
   site: 'xbb',
   name: 'work-order-add',
+  group: 'work-order',
   description: '新增工单接口（businessType: 20300；formId必填）',
   strategy: Strategy.PUBLIC,
   access: 'write',

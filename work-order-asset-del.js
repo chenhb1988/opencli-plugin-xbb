@@ -11,6 +11,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'work-order-asset-del',
+  group: 'work-order',
   description: '资产删除接口（businessType: -1；workOrderV2 资产）',
   strategy: Strategy.PUBLIC,
   access: 'write',

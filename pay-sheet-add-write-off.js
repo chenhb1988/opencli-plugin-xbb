@@ -27,6 +27,7 @@ function parseDataList(raw) {
 cli({
   site: 'xbb',
   name: 'pay-sheet-add-write-off',
+  group: 'pay-sheet',
   description: '新建付款单接口（businessType: 802）',
   strategy: Strategy.PUBLIC,
   access: 'write',

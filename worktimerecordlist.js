@@ -95,7 +95,7 @@ function makeSuccessRows(list, kwargs) {
 cli({
   site: 'xbb',
   name: 'worktimerecordlist',
-  description: '工时记录列表接口（businessType: 2301）',
+  description: '工时记录列表接口（businessType: 21100）',
   strategy: Strategy.PUBLIC,
   access: 'read',
   browser: false,
