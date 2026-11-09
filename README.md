@@ -243,6 +243,23 @@ note      以上取值来自环境变量 XBB_*（config.env 中没有启用公�
 - `department-del`：删除部门
 - `role-list`：角色列表
 
+### 企业工商信息
+
+- `business-info-search`：按关键词搜索企业，返回企业准确全称与 `pid`（供 `business-info-detail` 使用）
+- `business-info-detail`：按 `pid` 查询企业工商登记信息，key/value 逐字段回显；`dateOfEstablishment` / `approvalDate` / `cancellationDate` 等时间戳转为 `YYYY-MM-DD`（UTC+8），`registeredAddress` / `shareholder` 为 JSON 字符串
+
+### 邮件（二级命令）
+
+邮件命令统一挂在 `mail` 分组下，用 `xbbcli mail <subcommand>` 调用（`xbbcli mail-send` 这种连字符写法同样可用）；`xbbcli -h` 顶层帮助只显示 `mail` 分组入口，子命令列表用 `xbbcli mail --help` 查看：
+
+- `xbbcli mail send`：发送邮件；`--to` 必填（收件人 JSON 数组），`--cc` / `--attachment` 可选，传 `--draftId` 可发送草稿
+- `xbbcli mail list`：按文件夹分页查看邮件；`--folderId` 必填（1 收件箱、2 已发送、3 草稿箱、4 已删除、5 垃圾邮件、6 未读），支持 `--page` / `--pageSize` / `--filterType` / `--raw`
+- `xbbcli mail detail`：查看邮件或草稿详情；`--id` 与 `--folderId` 必填，草稿详情传 `--folderId 3`；查看未读邮件会将其标记为已读
+- `xbbcli mail draft add`：新建草稿，允许内容未填写完整
+- `xbbcli mail draft edit`：编辑草稿；只传需要修改的字段（空数组 / `null` 不会清空旧值）
+
+收件人 / 抄送人格式：`[{"name":"张三","mailAddress":"zhangsan@example.com"}]`；附件格式：`[{"fileName":"报价单","attachIndex":"https://files.example.com/q.pdf","ext":"pdf","size":102400}]`（`attachIndex` 是邮件服务可访问的文件 URL）。单封邮件最多 20 个附件，收件人与抄送人合计最多 48 人。`xbbcli mail --help` 查看全部子命令。
+
 ### CRM 主数据
 
 - `customer-list`：客户列表
@@ -390,6 +407,8 @@ note      以上取值来自环境变量 XBB_*（config.env 中没有启用公�
 - `payment-sheet-detail`：回款单详情
 - `payment-sheet-del`：删除回款单
 - `payment-sheet-handover`：回款单移交
+- `pay-plan-list`：付款计划列表
+- `pay-plan-detail`：付款计划详情
 - `pay-plan-add`：新增付款计划
 - `pay-plan-add-couser`：付款计划添加协同人
 - `pay-plan-add-mainuser`：付款计划添加负责人
@@ -429,24 +448,64 @@ note      以上取值来自环境变量 XBB_*（config.env 中没有启用公�
 - `workorder-delete-couser`：删除工单协同人
 
 
-### 工作报告
+### 生产（二级命令）
 
-- `work-report-daily-list`：日报列表
-- `work-report-daily-detail`：日报详情
-- `work-report-daily-add`：新建日报
-- `work-report-daily-edit`：编辑日报
-- `work-report-daily-del`：删除日报
-- `work-report-daily-get-work-plan`：获取工作计划
-- `work-report-weekly-list`：周报列表
-- `work-report-weekly-detail`：周报详情
-- `work-report-weekly-add`：新建周报
-- `work-report-weekly-edit`：编辑周报
-- `work-report-weekly-del`：删除周报
-- `work-report-monthly-list`：月报列表
-- `work-report-monthly-detail`：月报详情
-- `work-report-monthly-add`：新建月报
-- `work-report-monthly-edit`：编辑月报
-- `work-report-monthly-del`：删除月报
+生产单 / 生产入库单 / 生产领料单统一挂在 `production` 分组下，用 `xbbcli production <subcommand>` 调用：
+
+- `xbbcli production order list`：生产单列表，支持 `--conditions` / `--attr`+`--value` / `--page` / `--pageSize` / `--viewApproval` / `--raw`
+- `xbbcli production order detail --dataId <ID>`：生产单详情，可选 `--queryFlag`（0 非审批、1 审批、2 全部）
+- `xbbcli production instock list`：生产入库单列表（参数同上）
+- `xbbcli production instock detail --dataId <ID>`：生产入库单详情
+- `xbbcli production materiel outstock list`：生产领料单列表（参数同上）
+- `xbbcli production materiel outstock detail --dataId <ID>`：生产领料单详情
+
+`xbbcli production --help` 查看全部子命令。
+
+### 其他收入单（二级命令）
+
+其他收入单命令统一挂在 `other-income` 分组下，用 `xbbcli other-income <subcommand>` 调用：
+
+- `xbbcli other-income list`：其他收入单列表，支持 `--conditions` / `--attr`+`--value` / `--page` / `--pageSize` / `--raw`
+- `xbbcli other-income detail --dataId <ID>`：其他收入单详情
+- `xbbcli other-income add --dataList '<JSON>'`：新建其他收入单
+- `xbbcli other-income edit --dataId <ID> --dataList '<JSON>'`：编辑其他收入单
+- `xbbcli other-income del --dataId <ID>`：删除其他收入单
+
+`xbbcli other-income --help` 查看全部子命令。
+
+### 标签（二级命令）
+
+标签与标签分组命令统一挂在 `label` 分组下：
+
+- `xbbcli label list`：标签列表；`xbbcli label all list`：表单标签列表
+- `xbbcli label add` / `label edit` / `label del` / `label del-completely` / `label reduction` / `label repeat`：标签增删改、彻底删除、还原、判重
+- `xbbcli label batch add` / `label batch remove`：批量打标签 / 移除标签
+- `xbbcli label group list` / `label group add` / `label group update` / `label group del`：标签分组列表、新建、编辑、删除
+
+`xbbcli label --help` 查看全部子命令。
+
+### 工作报告（二级命令）
+
+日报 / 周报 / 月报命令统一挂在 `work-report` 分组下：
+
+- `xbbcli work-report daily list`：日报列表
+- `xbbcli work-report daily detail --dataId <ID>`：日报详情
+- `xbbcli work-report daily add`：新建日报
+- `xbbcli work-report daily edit`：编辑日报
+- `xbbcli work-report daily del`：删除日报
+- `xbbcli work-report daily get work plan`：获取工作计划
+- `xbbcli work-report weekly list`：周报列表
+- `xbbcli work-report weekly detail --dataId <ID>`：周报详情
+- `xbbcli work-report weekly add`：新建周报
+- `xbbcli work-report weekly edit`：编辑周报
+- `xbbcli work-report weekly del`：删除周报
+- `xbbcli work-report monthly list`：月报列表
+- `xbbcli work-report monthly detail --dataId <ID>`：月报详情
+- `xbbcli work-report monthly add`：新建月报
+- `xbbcli work-report monthly edit`：编辑月报
+- `xbbcli work-report monthly del`：删除月报
+
+`xbbcli work-report --help` 查看全部子命令。
 
 ### 阶段流转
 
@@ -485,6 +544,7 @@ note      以上取值来自环境变量 XBB_*（config.env 中没有启用公�
 - 加 `--debug` 可以输出 `requestBody` 和 `responseBody`
 - 加 `--raw` 可以输出接口返回的原始 JSON 字符串（所有 list 命令均支持）
 - 在填充参数时不清楚参数含义/下拉框可选项值，调用 `form-get` 命令获取 form 解释
+- 邮件命令为二级命令：`xbbcli mail send`、`xbbcli mail draft add` 等；`xbbcli mail --help` 列出全部子命令
 - `xbbcli -v` / `xbbcli --version` 查看版本号（读取 `package.json` 的 `version`）
 
 ## 常用示例
@@ -528,6 +588,29 @@ xbbcli customer-detail --dataId 310992
 xbbcli customer-add-couser --dataId 310995 --businessUserIdList '["xbbTest002"]'
 ```
 
+### 企业工商信息
+
+```bash
+xbbcli business-info-search --keyword 杭州逍邦网络科技有限公司
+xbbcli business-info-detail --pid 5bb73e72a9ae9a0318fd95ce
+```
+
+### 邮件
+
+```bash
+xbbcli mail list --folderId 1
+xbbcli mail list --folderId 3 --pageSize 50
+xbbcli mail detail --id 12345 --folderId 1
+xbbcli mail detail --id 12345 --folderId 3
+
+xbbcli mail send --to '[{"name":"张三","mailAddress":"zhangsan@example.com"}]' --subject 项目报价 --data '<p>您好，附件是项目报价单。</p>'
+xbbcli mail send --to '[{"name":"张三","mailAddress":"zhangsan@example.com"}]' --subject 项目报价 --attachment '[{"fileName":"报价单","attachIndex":"https://files.example.com/quotation.pdf","ext":"pdf","size":102400}]'
+xbbcli mail send --to '[{"name":"张三","mailAddress":"zhangsan@example.com"}]' --subject 项目报价 --draftId 12345
+
+xbbcli mail draft add --to '[{"name":"张三","mailAddress":"zhangsan@example.com"}]' --subject 待确认的项目报价
+xbbcli mail draft edit --id 12345 --subject '项目报价（修订版）'
+```
+
 ### 表单模型/业务数据
 
 ```bash
@@ -548,6 +631,8 @@ xbbcli product-category-update --dataId 306 --name 分类A
 xbbcli product-category-del --dataId 306
 
 xbbcli payment-list --attr serialNo --value PMO.API.0001
+xbbcli pay-plan-list --attr serialNo --value PPO.API.0001
+xbbcli pay-plan-detail --dataId 1071
 xbbcli payment-sheet-list --attr serialNo --value RMO.API.0001
 xbbcli payment-sheet-list --subBusinessType 702
 xbbcli payment-sheet-edit-write-off --dataId 1194 --dataList '{"text_7":"编辑备注"}'
@@ -570,6 +655,32 @@ xbbcli work-order-edit --dataId 663 --dataList '{"text_1":"测试工单-更新"}
 xbbcli work-order-del --dataId 663
 xbbcli work-order-operate --dataId 663 --operateType 12 --userId "02415643151585"
 xbbcli work-order-operate --dataId 663 --operateType 1 --data '{"cancelReason":"测试取消"}'
+```
+
+### 生产单 / 生产入库单 / 生产领料单
+
+```bash
+xbbcli production order list --pageSize 10
+xbbcli production order list --attr serialNo --value PRO.API.001
+xbbcli production order detail --dataId 2529
+
+xbbcli production instock list --viewApproval 0
+xbbcli production instock detail --dataId 2529 --queryFlag 2
+
+xbbcli production materiel outstock list
+xbbcli production materiel outstock detail --dataId 2529
+```
+
+### 其他收入单
+
+```bash
+xbbcli other-income list --pageSize 10
+xbbcli other-income list --attr serialNo --value OIO.20260920003
+xbbcli other-income detail --dataId 87
+
+xbbcli other-income add --dataList '{"serialNo":"OIO.20260920004","num_1":100,"date_1":1789833600}'
+xbbcli other-income edit --dataId 87 --dataList '{"num_1":200}'
+xbbcli other-income del --dataId 87
 ```
 
 ### 工单旧命名与工时

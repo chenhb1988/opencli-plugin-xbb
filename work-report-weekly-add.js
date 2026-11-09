@@ -30,6 +30,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'work-report-weekly-add',
+  group: 'work-report',
   description: '新建周报接口（businessType: 2103）',
   strategy: Strategy.PUBLIC,
   access: 'write',

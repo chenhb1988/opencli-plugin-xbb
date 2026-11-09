@@ -6,7 +6,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 // 共享模块不注册命令，扫描命令文件时必须排除；新增共享模块时同步加入此列表
-const AUXILIARY_FILES = new Set(['xbb-registry.js', 'xbb-config.js', 'xbb-browser.js', 'xbb-token-store.js', 'xbb-http.js']);
+const AUXILIARY_FILES = new Set(['xbb-registry.js', 'xbb-config.js', 'xbb-browser.js', 'xbb-token-store.js', 'xbb-http.js', 'xbb-mail.js', 'xbb-production.js', 'xbb-other-income.js', 'xbb-groups.js']);
 // 空参调用会产生真实副作用的命令：只验证注册与元数据，不调用 func({})。
 // auth-login：会拉起真实浏览器并默认轮询等待 300s；
 // auth-logout：当 XBB_* 环境变量存在时会对真实用户级环境变量执行清除（reg delete）。
