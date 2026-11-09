@@ -52,12 +52,13 @@ export async function requestGateway({ baseUrl, apiPath, payload, token, userId,
 }
 
 // 分页 footer 骨架：update(data) 记录 totalCount/totalPage，footerExtra 交给 cli()
-// countOnly 用于只有顶层 totalCount 的接口（orginal-text-list 变体）
-export function createPagination({ countOnly = false } = {}) {
+// countOnly 用于只有顶层 totalCount 的接口（original-text-list 变体）
+// pick 用于分页信息不在 result 顶层的接口（mail-list 的 result.pageHelper）
+export function createPagination({ countOnly = false, pick } = {}) {
   let state = null;
   return {
     update(data) {
-      const result = data?.result;
+      const result = pick ? pick(data) : data?.result;
       const totalCount = countOnly
         ? (data?.totalCount ?? result?.totalCount)
         : (result?.totalCount ?? data?.totalCount);

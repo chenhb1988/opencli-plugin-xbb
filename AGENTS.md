@@ -4,7 +4,7 @@
 
 ## 仓库说明
 
-这是销帮帮 CRM（`xbb`）的命令行工具（npm 包 `@xbongbong/xbbcli`），入口 `bin/xbbcli.js`，开发目录中可直接用 `node bin/xbbcli.js <command>` 运行。每个顶层 `*.js` 命令文件通过 `xbb-registry.js` 的 `cli()` 注册一条命令（注册键为 `xbb/<command>`，`bin/xbbcli.js` 启动时全量加载）。无构建步骤、无 lint；测试为原生 Node 脚本（见「验证方式」）。
+这是销帮帮 CRM（`xbb`）的命令行工具（npm 包 `@xbongbong/xbbcli`），入口 `bin/xbbcli.js`，开发目录中可直接用 `node bin/xbbcli.js <command>` 运行。每个顶层 `*.js` 命令文件通过 `xbb-registry.js` 的 `cli()` 注册一条命令（注册键为 `xbb/<command>`，`bin/xbbcli.js` 启动时全量加载）。支持二级子命令：命令声明 `name: 'mail-send', group: 'mail'` 后，`bin/xbbcli.js` 会把 `xbbcli mail send`（以及 `xbbcli mail draft add`）的多个词依次用 `-` 连接去查找注册键，`xbbcli mail-send` 也仍可直接使用；`xbbcli mail --help` 会列出该 group 下全部子命令，顶层 `xbbcli -h` 只显示 `mail` 分组入口、不展开子命令。无构建步骤、无 lint；测试为原生 Node 脚本（见「验证方式」）。
 
 ## 安装
 
@@ -20,7 +20,7 @@ xbbcli auth-login
 
 ## 验证方式
 
-先跑离线冒烟测试 `npm test`（test/commands-smoke-test.mjs）：测试把 HOME 指向临时目录并 mock fetch，逐个加载全部命令文件，断言每个命令文件恰好注册一条命令、site/browser/args/columns 齐全；规范断言：list 命令必须提供 `--raw`/`--debug`，可选数值参数不得声明为 `type:'int', default:''`；并（除副作用命令外）以空参调用 `func({})` 要求返回非空数组（不抛异常、不发网络请求），且每行字段与 `columns` 完全一致。`npm run check`（test/check-syntax.mjs）对顶层命令文件、bin 与 test 脚本逐个执行 `node --check`。以上脚本连同 `npm run test:args` 可在本地依次执行（Node 18/20/22 兼容）。test/commands-smoke-test.mjs 顶部的 `SKIP_EMPTY_INVOKE` 列出「空参调用会产生真实副作用」的命令（`auth-login` 会拉起真实浏览器并轮询等待 300s；`auth-logout` 在 `XBB_*` 环境变量存在时会执行 `reg delete` 清除真实用户级变量）；新增此类命令必须同步加入，否则冒烟测试会卡住或产生真实副作用。可选数值参数（`type:'str', default:''`）的序列化契约由 `npm run test:args`（test/optional-numeric-args-test.mjs）回归：它把 baseurl 指向本地 mock HTTP 服务器，用真实 CLI 子进程验证「未传参不写入请求体、显式传 0 时写入数字 0」，覆盖 communicate-plan-add/stage-jump/workorder-handover/clue-list 等含可选数值字段的命令，不触达真实 API。真实 API 用例填好 test/real-api-cases.json 后可跑 `npm run test:real`（只允许 list/detail/get 结尾的只读命令），详见 test/REAL_API_TESTING.md。
+先跑离线冒烟测试 `npm test`（test/commands-smoke-test.mjs）：测试把 HOME 指向临时目录并 mock fetch，逐个加载全部命令文件，断言每个命令文件恰好注册一条命令、site/browser/args/columns 齐全；规范断言：list 命令必须提供 `--raw`/`--debug`，可选数值参数不得声明为 `type:'int', default:''`；并（除副作用命令外）以空参调用 `func({})` 要求返回非空数组（不抛异常、不发网络请求），且每行字段与 `columns` 完全一致。`npm run check`（test/check-syntax.mjs）对顶层命令文件、bin 与 test 脚本逐个执行 `node --check`。以上脚本连同 `npm run test:args`、`npm run test:mail` 可在本地依次执行（Node 18/20/22 兼容）。`npm run test:mail`（test/mail-commands-test.mjs）用本地 mock HTTP 服务器验证二级命令解析（`mail send` / `mail draft add`）、邮件请求体字段与可选参数省略、分页 footer 与帮助输出，不触达真实 API。`npm run test:mail:real`（test/mail-send-test.mjs）是 mail send 的真实接口用例：默认 dry-run 只打印收件人/主题/命令，必须显式加 `--execute` 才会真正发信，收件人通过 `XBB_TEST_MAIL_TO` 提供（JSON 数组或逗号分隔邮箱），可选 `XBB_TEST_MAIL_CC` / `XBB_TEST_MAIL_ATTACHMENT` / `XBB_TEST_MAIL_SUBJECT` / `XBB_TEST_MAIL_DATA` / `XBB_TEST_MAIL_DEBUG`；发送可能耗时 1 分钟以上，不要在生产租户随意执行。test/commands-smoke-test.mjs 顶部的 `SKIP_EMPTY_INVOKE` 列出「空参调用会产生真实副作用」的命令（`auth-login` 会拉起真实浏览器并轮询等待 300s；`auth-logout` 在 `XBB_*` 环境变量存在时会执行 `reg delete` 清除真实用户级变量）；新增此类命令必须同步加入，否则冒烟测试会卡住或产生真实副作用。可选数值参数（`type:'str', default:''`）的序列化契约由 `npm run test:args`（test/optional-numeric-args-test.mjs）回归：它把 baseurl 指向本地 mock HTTP 服务器，用真实 CLI 子进程验证「未传参不写入请求体、显式传 0 时写入数字 0」，覆盖 communicate-plan-add/stage-jump/workorder-handover/clue-list 等含可选数值字段的命令，不触达真实 API。真实 API 用例填好 test/real-api-cases.json 后可跑 `npm run test:real`（只允许 list/detail/get 结尾的只读命令），详见 test/REAL_API_TESTING.md。
 
 修改命令后，加 `--debug` 对真实 API 运行，检查序列化后的请求体和原始响应。
 
@@ -35,7 +35,7 @@ xbbcli auth-login
 - **仅使用 ESM** — `package.json` 中 `"type": "module"`，始终使用 `import`/`export`。
 - **Node 内置模块加 `node:` 前缀** — `node:fs`、`node:path`、`node:crypto` 等。
 - **所有命令从 `./xbb-registry.js` 导入 `cli` 与 `Strategy`**，不直接引用 `@jackwener/opencli`。
-- **同一改动需同时应用于 3 个及以上文件时必须抽取共享模块** — 重复代码只允许存在于 1-2 个文件中（跨文件优先复制，而非为 1-2 处抽象共享）。仓库现有的共享模块有四个，且都不注册命令：`xbb-config.js`（配置读取与环境变量读写，导出 `readActiveConfig()`/`readEnvConfig()`/`hasEnvConfig()`/`getEnvVarNames()`/`persistEnvVars()`/`clearEnvVars()`）、`xbb-token-store.js`（token-set/auth-login 落盘与 auth-refresh-cache 共用的缓存刷新 `refreshLocalCaches()`：写 config.env、表单缓存、命令映射、部门/员工缓存、环境变量）、`xbb-browser.js`（提供 `auth-login` 用的浏览器 + CDP 能力）、`xbb-http.js`（业务命令的共享 HTTP 网关：`getRuntimeConfig()` 读取运行时配置、`requestGateway()` 组装签名/headers/fetch/debug 输出、`createPagination()` 分页 footer）；`xbb-registry.js` 是命令注册中心，不属此列。新增共享模块后必须同步加入 test/commands-smoke-test.mjs 的 `AUXILIARY_FILES`，否则冒烟测试会把它误当命令文件。
+- **同一改动需同时应用于 3 个及以上文件时必须抽取共享模块** — 重复代码只允许存在于 1-2 个文件中（跨文件优先复制，而非为 1-2 处抽象共享）。仓库现有的共享模块有七个，且都不注册命令：`xbb-config.js`（配置读取与环境变量读写，导出 `readActiveConfig()`/`readEnvConfig()`/`hasEnvConfig()`/`getEnvVarNames()`/`persistEnvVars()`/`clearEnvVars()`）、`xbb-token-store.js`（token-set/auth-login 落盘与 auth-refresh-cache 共用的缓存刷新 `refreshLocalCaches()`：写 config.env、表单缓存、命令映射、部门/员工缓存、环境变量）、`xbb-browser.js`（提供 `auth-login` 用的浏览器 + CDP 能力）、`xbb-http.js`（业务命令的共享 HTTP 网关：`getRuntimeConfig()` 读取运行时配置、`requestGateway()` 组装签名/headers/fetch/debug 输出、`createPagination()` 分页 footer，可用 `pick` 指定分页信息所在位置）、`xbb-mail.js`（邮件命令共用：`parseMailArray()` 解析 JSON 数组参数、`formatMailParties()` 展示收件人、`stringifyMailValue()` 序列化对象列、`resolveMailUserId()` 解析操作人 userId）、`xbb-production.js`（生产单/生产入库单/生产领料单共用：`buildListPayload()`/`buildDetailPayload()` 组装请求体、`makeListRows()`/`makeDetailRow()` 映射输出行、`makeListErrorRow()`/`makeDetailErrorRow()` 错误行、`splitCodedError()` 拆分参数错误、`LIST_COLUMNS`/`DETAIL_COLUMNS` 列定义）、`xbb-other-income.js`（其他收入单共用：`parseDataList()` 解析表单 JSON、新建/编辑/删除/详情/列表的输出行与列定义）；`xbb-registry.js` 是命令注册中心（另提供 `registerGroup()`/`getGroups()` 维护分组元数据），`xbb-groups.js` 只注册分组描述、不注册命令，两者都不属此列。新增共享模块后必须同步加入 test/commands-smoke-test.mjs 的 `AUXILIARY_FILES`，否则冒烟测试会把它误当命令文件。
 
 ## 命令模块结构
 
@@ -46,7 +46,7 @@ xbbcli auth-login
 3. `buildPayload(kwargs)` — 忽略 `undefined` 字段，不发送未提供的参数
 4. `getValidationError(payload, token)` — 返回 `{code, msg}` 或 `null`
 5. `makeErrorRow(...)` / `makeSuccessRows(...)` — 返回对象数组（不抛异常）
-6. `cli({...})` — 注册时使用 `site: 'xbb'`、`strategy: Strategy.PUBLIC`、`browser: false`
+6. `cli({...})` — 注册时使用 `site: 'xbb'`、`strategy: Strategy.PUBLIC`、`browser: false`；二级子命令额外声明 `group`（如 `name: 'mail-send', group: 'mail'`），文件名仍与注册名保持一致（`mail-send.js`）
 7. HTTP 一律走 `requestGateway({ baseUrl, apiPath, payload, token, userId, debug })`：**新命令不得复制签名（SHA256(body + token)）/headers/fetch 骨架**。网关内部负责 POST JSON、`Content-Type: application/json;charset=UTF-8`、签名 header、`--debug` 四段输出（URL/Headers/RequestBody/ResponseBody）与 HTTP 失败分支（返回 `{ ok:false, code, msg }`；成功返回 `{ ok:true, data, responseBody }`）
 
 func 主流程的标准骨架：

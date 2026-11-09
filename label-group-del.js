@@ -11,6 +11,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'label-group-del',
+  group: 'label',
   description: '删除标签分组接口（businessType: -1；label 模块）',
   strategy: Strategy.PUBLIC,
   access: 'write',

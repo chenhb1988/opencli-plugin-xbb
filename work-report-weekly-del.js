@@ -11,6 +11,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'work-report-weekly-del',
+  group: 'work-report',
   description: '删除周报接口（businessType: 2103）',
   strategy: Strategy.PUBLIC,
   access: 'write',

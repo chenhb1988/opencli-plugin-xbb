@@ -11,6 +11,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'label-repeat',
+  group: 'label',
   description: '标签判重接口（businessType: -1；label 模块）',
   strategy: Strategy.PUBLIC,
   access: 'read',
