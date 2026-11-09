@@ -18,6 +18,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'pay-plan-detail',
+  group: 'pay-plan',
   description: '付款计划详情接口（businessType: 801）',
   strategy: Strategy.PUBLIC,
   access: 'read',

@@ -27,6 +27,7 @@ function parseDataList(raw) {
 cli({
   site: 'xbb',
   name: 'pay-sheet-add-bad',
+  group: 'pay-sheet',
   description: '新建核销付款单坏账接口（businessType: 802）',
   strategy: Strategy.PUBLIC,
   access: 'write',

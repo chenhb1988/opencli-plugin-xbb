@@ -10,6 +10,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'pay-plan-add-couser',
+  group: 'pay-plan',
   description: '付款计划添加协同人接口（businessType: 801）',
   strategy: Strategy.PUBLIC,
   access: 'write',

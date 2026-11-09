@@ -27,6 +27,7 @@ function parseDataList(raw) {
 cli({
   site: 'xbb',
   name: 'pay-plan-add',
+  group: 'pay-plan',
   description: '新增付款计划（businessType: 801）',
   strategy: Strategy.PUBLIC,
   access: 'write',

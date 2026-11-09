@@ -353,12 +353,12 @@
       "enabled": false
     },
     {
-      "command": "work-order-template-list",
+      "command": "workorder-template-list",
       "args": {},
       "enabled": true
     },
     {
-      "command": "work-order-template-detail",
+      "command": "workorder-template-detail",
       "args": {
         "formId": 7192698
       },

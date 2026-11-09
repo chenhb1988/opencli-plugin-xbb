@@ -15,6 +15,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'payment-add-mainuser',
+  group: 'payment',
   description: '应收款添加负责人接口（businessType: 701）',
   strategy: Strategy.PUBLIC,
   access: 'write',

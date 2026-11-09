@@ -14,8 +14,9 @@ function makeErrorRow(code, msg) {
 
 cli({
   site: 'xbb',
-  name: 'workorder-handover',
-  description: '移交工单负责人（businessType: 2301；formId必填）',
+  name: 'work-order-handover',
+  group: 'work-order',
+  description: '移交工单负责人（businessType: 20300；formId必填）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,

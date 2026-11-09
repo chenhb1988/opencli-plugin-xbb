@@ -1,7 +1,7 @@
 import { cli, Strategy } from './xbb-registry.js';
 import { getRuntimeConfig, requestGateway } from './xbb-http.js';
 
-const API_PATH = '/pro/v2/api/workOrderV2/addCoUser';
+const API_PATH = '/pro/v2/api/workOrderV2/deleteCoUser';
 
 function makeErrorRow(code, msg) {
   return [{
@@ -14,15 +14,16 @@ function makeErrorRow(code, msg) {
 
 cli({
   site: 'xbb',
-  name: 'workorder-add-couser',
-  description: '添加工单协同人（businessType: 2301）',
+  name: 'work-order-delete-couser',
+  group: 'work-order',
+  description: '删除工单协同人（businessType: 20300）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,
   domain: 'proapi.xbongbong.com',
   args: [
     { name: 'dataId', type: 'int', help: '工单id（必填）' },
-    { name: 'businessUserIdList', type: 'str', help: '需添加的协同人id列表，JSON数组字符串（必填）' },
+    { name: 'businessUserIdList', type: 'str', help: '需删除的协同人id列表，JSON数组字符串（必填）' },
     { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
   ],

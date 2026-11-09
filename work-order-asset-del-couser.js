@@ -24,6 +24,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'work-order-asset-del-couser',
+  group: 'work-order',
   description: '资产删除协同人接口（businessType: -1；workOrderV2 资产）',
   strategy: Strategy.PUBLIC,
   access: 'write',

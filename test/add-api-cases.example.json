@@ -61,7 +61,7 @@
     { "name": "自定义表单协同人", "command": "form-data-add-couser", "enable": false,"from": "form-data-add", "businessUserIdList": ["${userId}"] },
     { "name": "自定义表单负责人", "command": "form-data-add-mainuser","enable": false, "from": "form-data-add", "businessUserIdList": ["${userId}"] },
     { "name": "任务协同人", "command": "work-task-add-couser", "enable": false,"from": "work-task-add", "businessUserIdList": ["${userId}"] },
-    { "name": "工单协同人", "command": "workorder-add-couser","enable": false, "from": "work-order-add", "businessUserIdList": ["${userId}"] }
+    { "name": "工单协同人", "command": "work-order-add-couser","enable": false, "from": "work-order-add", "businessUserIdList": ["${userId}"] }
   ],
   "cleanupCases": [
     { "command": "clue-del", "enable": false,"from": "clue-add" },

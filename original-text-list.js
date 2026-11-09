@@ -83,7 +83,7 @@ function makeSuccessRows(list) {
 cli({
   site: 'xbb',
   name: 'original-text-list',
-  description: '对话/录音/通话原文',
+  description: 'AI转录原文数据列表，对话/录音/通话原文',
   strategy: Strategy.PUBLIC,
   access: 'read',
   browser: false,

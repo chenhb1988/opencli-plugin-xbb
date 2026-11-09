@@ -10,6 +10,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'pay-sheet-delete-couser',
+  group: 'pay-sheet',
   description: '付款单删除协同人接口（businessType: 802）',
   strategy: Strategy.PUBLIC,
   access: 'write',

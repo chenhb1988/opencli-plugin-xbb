@@ -72,7 +72,7 @@ function getHelpEntries() {
           name: group,
           group: true,
           description: registered?.description
-            ? `${registered.description}（xbbcli ${group} --help 查看全部子命令）`
+            ? `${registered.description}（xbbcli ${group} -h 查看子命令）`
             : '',
         });
       }
@@ -82,7 +82,7 @@ function getHelpEntries() {
   }
   for (const entry of entries.values()) {
     if (entry.group && !entry.description) {
-      entry.description = `子命令分组（xbbcli ${entry.name} --help 查看全部子命令）`;
+      entry.description = `子命令分组（xbbcli ${entry.name} -h 查看子命令）`;
     }
   }
   return [...entries.values()].sort((a, b) => a.name.localeCompare(b.name));
@@ -108,7 +108,7 @@ function printGroupHelp(group) {
   for (const command of commands) {
     process.stdout.write(`  ${groupSubcommandName(command, group).padEnd(width)} ${command.description || ''}\n`);
   }
-  process.stdout.write(`\n运行 xbbcli ${group} <subcommand> --help 查看子命令参数。\n`);
+  process.stdout.write(`\n运行 xbbcli ${group} <subcommand> -h 查看子命令参数。\n`);
 }
 
 function printCommandHelp(command) {

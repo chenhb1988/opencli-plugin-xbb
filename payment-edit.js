@@ -33,6 +33,7 @@ function parseDataList(raw) {
 cli({
   site: 'xbb',
   name: 'payment-edit',
+  group: 'payment',
   description: '编辑应收款接口（businessType: 701）',
   strategy: Strategy.PUBLIC,
   access: 'write',

@@ -105,6 +105,7 @@ function makeSuccessRows(list) {
 cli({
   site: 'xbb',
   name: 'payment-list',
+  group: 'payment',
   description: '应收款列表接口（businessType: 701）',
   strategy: Strategy.PUBLIC,
   access: 'read',
