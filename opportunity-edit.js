@@ -33,6 +33,7 @@ function parseDataList(raw) {
 cli({
   site: 'xbb',
   name: 'opportunity-edit',
+  group: 'opportunity',
   description: '编辑销售机会接口（businessType: 301）',
   strategy: Strategy.PUBLIC,
   access: 'write',

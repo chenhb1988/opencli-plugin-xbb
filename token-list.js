@@ -57,6 +57,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'token-list',
+  group: 'token',
   description: '列出本地保存的多家公司配置',
   strategy: Strategy.PUBLIC,
   access: 'read',

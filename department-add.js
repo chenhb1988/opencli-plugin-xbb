@@ -12,6 +12,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'department-add',
+  group: 'department',
   description: '新建部门接口（businessType: -1）',
   strategy: Strategy.PUBLIC,
   access: 'write',

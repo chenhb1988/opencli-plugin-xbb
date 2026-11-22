@@ -24,6 +24,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'invoice-cancel',
+  group: 'invoice',
   description: '销项发票作废接口（businessType: 901）',
   strategy: Strategy.PUBLIC,
   access: 'write',

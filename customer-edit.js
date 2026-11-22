@@ -89,6 +89,7 @@ function makeSuccessRow(data) {
 cli({
   site: 'xbb',
   name: 'customer-edit',
+  group: 'customer',
   description: '编辑客户接口（businessType: 100；formId必填）',
   strategy: Strategy.PUBLIC,
   access: 'write',

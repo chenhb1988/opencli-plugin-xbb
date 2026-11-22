@@ -24,6 +24,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'quotation-delete-mainuser',
+  group: 'quotation',
   description: '报价单删除负责人接口（businessType: 4700）',
   strategy: Strategy.PUBLIC,
   access: 'write',

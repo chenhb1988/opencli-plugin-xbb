@@ -59,6 +59,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'customer-list',
+  group: 'customer',
   description: '客户列表接口（businessType: 100；formId必填）',
   strategy: Strategy.PUBLIC,
   access: 'read',

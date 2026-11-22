@@ -179,6 +179,7 @@ function makeSuccessRow(data) {
 cli({
   site: 'xbb',
   name: 'work-task-add',
+  group: 'work-task',
   description: '新增任务接口（businessType: 21500）,{"text_1":"{任务名}","ownerId":["{执行人Id}"],"date_1":1788969600 ,"date_2":1789833600 ,"text_3":"{描述}"}',
   strategy: Strategy.PUBLIC,
   access: 'write',

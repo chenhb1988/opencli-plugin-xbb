@@ -50,6 +50,7 @@ function makeSuccessRow(payload, data) {
 cli({
   site: 'xbb',
   name: 'product-category-del',
+  group: 'product',
   description: '删除产品分类接口（businessType: 2401）',
   strategy: Strategy.PUBLIC,
   access: 'write',

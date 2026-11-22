@@ -46,6 +46,7 @@ function makeSuccessRow(data) {
 cli({
   site: 'xbb',
   name: 'product-category-add',
+  group: 'product',
   description: '新建产品分类接口（businessType: 2401）',
   strategy: Strategy.PUBLIC,
   access: 'write',

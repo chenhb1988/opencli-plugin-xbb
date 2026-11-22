@@ -34,6 +34,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'user-list',
+  group: 'user',
   description: '用户列表接口（businessType: -1）',
   strategy: Strategy.PUBLIC,
   access: 'read',

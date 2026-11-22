@@ -59,6 +59,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'opportunity-list',
+  group: 'opportunity',
   description: '销售机会列表接口（businessType: 301；formId必填）',
   strategy: Strategy.PUBLIC,
   access: 'read',

@@ -34,6 +34,7 @@ function formatTimestampSeconds(value) {
 cli({
   site: 'xbb',
   name: 'work-task-detail',
+  group: 'work-task',
   description: '工作任务详情接口（businessType: 21500）',
   strategy: Strategy.PUBLIC,
   access: 'read',

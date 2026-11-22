@@ -33,6 +33,7 @@ function parseDataList(raw) {
 cli({
   site: 'xbb',
   name: 'communicate-edit',
+  group: 'communicate',
   description: '编辑跟进记录接口（businessType: 501）',
   strategy: Strategy.PUBLIC,
   access: 'write',

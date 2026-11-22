@@ -11,6 +11,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'form-data-handover',
+  group: 'form-data',
   description: '自定义表单移交接口（businessType: 0）',
   strategy: Strategy.PUBLIC,
   access: 'write',

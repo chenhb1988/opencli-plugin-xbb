@@ -18,6 +18,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'communicate-detail',
+  group: 'communicate',
   description: '跟进记录详情接口（businessType: 501）',
   strategy: Strategy.PUBLIC,
   access: 'read',

@@ -11,6 +11,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'customer-invoice-info',
+  group: 'customer',
   description: '客户开票信息接口（businessType: 100）',
   strategy: Strategy.PUBLIC,
   access: 'read',

@@ -1,6 +1,6 @@
 {
   "name": "@xbongbong/xbbcli",
-"version": "4.6.3",
+  "version": "4.7.1",
   "description": "销帮帮 CRM 的独立命令行工具",
   "type": "module",
   "bin": {

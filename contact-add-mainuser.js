@@ -11,6 +11,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'contact-add-mainuser',
+  group: 'contact',
   description: '联系人添加负责人接口（businessType: 401）',
   strategy: Strategy.PUBLIC,
   access: 'write',

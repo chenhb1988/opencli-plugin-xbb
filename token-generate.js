@@ -55,6 +55,7 @@ function makeErrorRow(code, msg, baseUrl = '', corpid = '') {
 cli({
   site: 'xbb',
   name: 'token-generate',
+  group: 'token',
   description: '生成/获取个人token接口',
   strategy: Strategy.PUBLIC,
   access: 'write',

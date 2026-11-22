@@ -11,6 +11,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'quotation-detail',
+  group: 'quotation',
   description: '报价单详情接口（businessType: 4700）',
   strategy: Strategy.PUBLIC,
   access: 'read',

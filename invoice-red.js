@@ -24,6 +24,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'invoice-red',
+  group: 'invoice',
   description: '销项发票红冲接口（businessType: 901）',
   strategy: Strategy.PUBLIC,
   access: 'write',

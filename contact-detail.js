@@ -9,6 +9,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'contact-detail',
+  group: 'contact',
   description: '联系人详情接口（businessType: 401）',
   strategy: Strategy.PUBLIC,
   access: 'read',

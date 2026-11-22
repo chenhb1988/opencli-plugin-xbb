@@ -15,6 +15,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'opportunity-handover',
+  group: 'opportunity',
   description: '销售机会移交接口（businessType: 301）',
   strategy: Strategy.PUBLIC,
   access: 'write',

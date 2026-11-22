@@ -101,6 +101,7 @@ function makeSuccessRows(list, kwargs) {
 cli({
   site: 'xbb',
   name: 'product-list',
+  group: 'product',
   description: '产品列表接口（businessType: 2401）',
   strategy: Strategy.PUBLIC,
   access: 'read',

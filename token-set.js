@@ -4,6 +4,7 @@ import { saveCompanyCredentials } from './xbb-token-store.js';
 cli({
   site: 'xbb',
   name: 'token-set',
+  group: 'token',
   description: '保存token,corpid,formId清单等文件 到本地，需意图识别或找formId时，优先查命令映射文件(<corpid>.command-map.md)',
   strategy: Strategy.PUBLIC,
   access: 'write',

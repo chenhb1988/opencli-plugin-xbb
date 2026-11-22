@@ -88,17 +88,30 @@ function getHelpEntries() {
   return [...entries.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
 
-function printHelp() {
-  const entries = getHelpEntries();
-  const hasGroups = entries.some((entry) => entry.group);
+function getFlatHelpEntries() {
+  return [...getRegistry().values()]
+    .map((command) => ({
+      name: commandDisplayName(command),
+      description: command.description || '',
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function printHelp(options = {}) {
+  const all = Boolean(options.all);
+  const entries = all ? getFlatHelpEntries() : getHelpEntries();
+  const hasGroups = !all && entries.some((entry) => entry.group);
   const usageLines = ['Usage: xbbcli <command> [options]'];
   if (hasGroups) usageLines.push('       xbbcli <group> <subcommand> [options]');
   usageLines.push('       xbbcli -v | --version');
-  process.stdout.write(`${usageLines.join('\n')}\n\nCommands:\n`);
+  process.stdout.write(`${usageLines.join('\n')}\n\nCommands${all ? ' (all)' : ''}:\n`);
   for (const entry of entries) {
     process.stdout.write(`  ${entry.name.padEnd(34)} ${entry.description}\n`);
   }
   process.stdout.write(`\n  ${'-v, --version'.padEnd(34)} show version\n`);
+  if (!all) {
+    process.stdout.write(`  ${'xbbcli -h --all'.padEnd(34)} list all commands, including grouped ones\n`);
+  }
 }
 
 function printGroupHelp(group) {
@@ -185,8 +198,8 @@ const [commandName, ...argv] = process.argv.slice(2);
 if (commandName === '--version' || commandName === '-v') {
   process.stdout.write(`${readVersion()}\n`);
   process.exitCode = 0;
-} else if (!commandName || commandName === '--help' || commandName === '-h') {
-  printHelp();
+} else if (!commandName || commandName === '--help' || commandName === '-h' || commandName === '--all') {
+  printHelp({ all: commandName === '--all' || argv.includes('--all') });
   process.exitCode = 0;
 } else {
   const tokens = [commandName, ...argv];
