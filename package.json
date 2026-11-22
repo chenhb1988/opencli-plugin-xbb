@@ -1,6 +1,6 @@
 {
   "name": "@xbongbong/xbbcli",
-  "version": "2.5.4",
+  "version": "2.6.1",
   "description": "销帮帮 CRM 的独立命令行工具",
   "type": "module",
   "bin": {
@@ -31,6 +31,7 @@
   "scripts": {
     "test": "node test/commands-smoke-test.mjs",
     "test:args": "node test/optional-numeric-args-test.mjs",
+    "test:demo": "node test/add-demo-test.mjs",
     "test:mail": "node test/mail-commands-test.mjs",
     "test:mail:real": "node test/mail-send-test.mjs",
     "check": "node test/check-syntax.mjs",

@@ -2,7 +2,6 @@ import crypto from 'node:crypto';
 import { cli, Strategy } from './xbb-registry.js';
 import { openBrowser, findBrowserExecutable, LOGIN_PAGE_URL } from './xbb-browser.js';
 import { saveCompanyCredentials } from './xbb-token-store.js';
-import { CLIENT_SOURCE_HEADER } from './xbb-http.js';
 
 const API_TOKEN_PATH = '/pro/v1/apiPersonalToken/generate';
 const PRO_GATEWAY_ORIGIN = 'https://progateway.xbongbong.com';
@@ -99,21 +98,24 @@ async function readSession(session) {
 
 // 在页面内调用网关换取个人 token：CORS 全开，sign = SHA256(JSON body + xbbAccessToken)
 // resetToken=0 复用已有 token、1 重新生成；checkUserId 为目标人员，自助登录时与登录用户一致
+// 注意：appgateway/progateway 不携带 X-Client-Source（该来源标记只用于 proapi 业务接口，见 xbb-http.js）
 async function exchangeApiToken(session, loginSession, resetToken, debug) {
   const url = resolveGatewayUrl(loginSession.corpid);
   const body = JSON.stringify({ corpid: loginSession.corpid, userId: loginSession.userId, checkUserId: loginSession.userId, platform: PLATFORM, resetToken });
   const sign = buildSign(body, loginSession.accessToken);
+  // 网关请求头：只带 Content-Type/corpid/sign；同一对象既注入页面 fetch 也用于 debug，避免打印与实际发送不一致
+  const headers = { 'Content-Type': 'application/json;charset=UTF-8', corpid: loginSession.corpid, sign };
   const expression = `(async () => {
   const response = await fetch(${JSON.stringify(url)}, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json;charset=UTF-8', corpid: ${JSON.stringify(loginSession.corpid)}, sign: ${JSON.stringify(sign)}, ...${JSON.stringify(CLIENT_SOURCE_HEADER)} },
+    headers: ${JSON.stringify(headers)},
     body: ${JSON.stringify(body)}
   });
   return await response.text();
 })()`;
 
   if (debug) {
-    process.stderr.write(`[debug] Gateway: ${url}\n[debug] Headers: ${JSON.stringify({ 'Content-Type': 'application/json;charset=UTF-8', corpid: loginSession.corpid, sign })}\n[debug] RequestBody: ${body}\n[debug] SessionToken: ${maskSecret(loginSession.accessToken)}\n`);
+    process.stderr.write(`[debug] Gateway: ${url}\n[debug] Headers: ${JSON.stringify(headers)}\n[debug] RequestBody: ${body}\n[debug] SessionToken: ${maskSecret(loginSession.accessToken)}\n`);
   }
 
   const text = await session.evaluate(expression, { attempts: 3, delayMs: 200 });

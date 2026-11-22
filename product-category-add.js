@@ -1,5 +1,6 @@
 import { cli, Strategy } from './xbb-registry.js';
 import { getRuntimeConfig, requestGateway } from './xbb-http.js';
+import { DEMO_ARG, resolveDemoFormat, runAddDemo } from './xbb-form-example.js';
 
 const API_PATH = '/pro/v2/api/product/categoryAdd';
 const MISSING_TOKEN_MESSAGE = '缺少 token；请先执行 xbbcli token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>';
@@ -56,12 +57,25 @@ cli({
     { name: 'router', type: 'str', default: '', help: '路由（可选）' },
     { name: 'sort', type: 'str', default: '', help: '排序（可选）' },
     { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
+    DEMO_ARG,
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
   ],
   columns: ['dataId', 'code', 'msg'],
+  resolveFormat: resolveDemoFormat,
   func: async function (kwargs) {
     const debug = Boolean(kwargs.debug);
     const { corpid, token, baseUrl, userId } = getRuntimeConfig();
+    if (kwargs.demo) {
+      return runAddDemo({
+        config: { corpid, token, baseUrl, userId: String(kwargs.userId || userId || '').trim() },
+        formIdArg: kwargs.formId,
+        apiPath: '/pro/v2/api/product/categoryAdd',
+        businessType: '',
+        label: '产品分类',
+        omitFormId: true,
+        debug,
+      });
+    }
     const runtimeUserId = String(kwargs.userId || userId || '').trim();
     const payload = buildPayload(kwargs, corpid, runtimeUserId);
 

@@ -198,7 +198,12 @@ if (commandName === '--version' || commandName === '-v') {
       if (parsed.help) printCommandHelp(command);
       else {
         const rows = await command.func(parsed.kwargs);
-        outputRows(rows, command, parsed.format);
+        // 可选钩子：命令可覆盖 -f 输出格式（如 clue-add --demo 强制 JSON）
+        const override = typeof command.resolveFormat === 'function'
+          ? command.resolveFormat({ kwargs: parsed.kwargs, format: parsed.format })
+          : undefined;
+        const format = ['json', 'table', 'csv'].includes(override) ? override : parsed.format;
+        outputRows(rows, command, format);
       }
     } catch (error) {
       process.stderr.write(`${error.message || error}\n`);

@@ -1,5 +1,6 @@
 import { cli, Strategy } from './xbb-registry.js';
 import { getRuntimeConfig, requestGateway } from './xbb-http.js';
+import { DEMO_ARG, resolveDemoFormat, runAddDemo } from './xbb-form-example.js';
 
 const API_PATH = '/pro/v2/api/workReportDaily/add';
 const MISSING_TOKEN_MESSAGE = '缺少 token；请先执行 xbbcli token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>';
@@ -39,12 +40,25 @@ cli({
   args: [
     { name: 'dataList', type: 'str', help: '日报数据JSON字符串（必填）' },
     { name: 'userId', type: 'str', help: '工作报告提交人userId（必填）' },
+    DEMO_ARG,
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
   ],
   columns: ['dataId', 'code', 'msg'],
+  resolveFormat: resolveDemoFormat,
   func: async function (kwargs) {
     const debug = Boolean(kwargs.debug);
     const { corpid, token, baseUrl, userId } = getRuntimeConfig();
+    if (kwargs.demo) {
+      return runAddDemo({
+        config: { corpid, token, baseUrl, userId: String(kwargs.userId || userId || '').trim() },
+        formIdArg: kwargs.formId,
+        apiPath: '/pro/v2/api/workReportDaily/add',
+        businessType: '2102',
+        label: '日报表单',
+        omitFormId: true,
+        debug,
+      });
+    }
     const parsedDataList = parseDataList(kwargs.dataList);
     const payload = { corpid, userId: String(kwargs.userId || userId || '').trim() };
     if (parsedDataList) payload.dataList = parsedDataList;
