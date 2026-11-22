@@ -110,15 +110,15 @@ try {
   assert.equal(handoverZero.retainMainUser, 0, '--retainMainUser 0 must be serialized as the number 0');
   report('work-order-handover writes retainMainUser: 0 when --retainMainUser 0 is provided');
 
-  // clue-list：isPublic 可选
-  const clueDefault = await captureBody('clue-list default', ['clue-list', '--formId', '4885596']);
-  assert.equal(Object.hasOwn(clueDefault, 'isPublic'), false, 'request body must not contain isPublic when --isPublic is omitted');
-  report('clue-list omits isPublic when --isPublic is not provided');
-  assert.equal(clueDefault.formId, 4885596);
+  // lead-list：isPublic 可选
+  const leadDefault = await captureBody('lead-list default', ['lead-list', '--formId', '4885596']);
+  assert.equal(Object.hasOwn(leadDefault, 'isPublic'), false, 'request body must not contain isPublic when --isPublic is omitted');
+  report('lead-list omits isPublic when --isPublic is not provided');
+  assert.equal(leadDefault.formId, 4885596);
 
-  const clueZero = await captureBody('clue-list isPublic=0', ['clue-list', '--formId', '4885596', '--isPublic', '0']);
-  assert.equal(clueZero.isPublic, 0, '--isPublic 0 must be serialized as the number 0');
-  report('clue-list writes isPublic: 0 when --isPublic 0 is provided');
+  const leadZero = await captureBody('lead-list isPublic=0', ['lead-list', '--formId', '4885596', '--isPublic', '0']);
+  assert.equal(leadZero.isPublic, 0, '--isPublic 0 must be serialized as the number 0');
+  report('lead-list writes isPublic: 0 when --isPublic 0 is provided');
 
   console.log(`optional numeric args test passed (${passed} assertions).`);
 } finally {

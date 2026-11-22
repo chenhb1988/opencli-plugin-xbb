@@ -1,7 +1,7 @@
 import { cli, Strategy } from './xbb-registry.js';
 import { getRuntimeConfig, requestGateway } from './xbb-http.js';
 
-const API_PATH = '/pro/v2/api/clue/addCoUser';
+const API_PATH = '/pro/v2/api/clue/deleteMainUser';
 const MISSING_TOKEN_MESSAGE = '缺少 token；请先执行 xbbcli token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>';
 
 function makeErrorRow(code, msg) {
@@ -10,16 +10,16 @@ function makeErrorRow(code, msg) {
 
 cli({
   site: 'xbb',
-  name: 'clue-add-couser',
-  description: '线索添加协同人接口（businessType: 8000）',
+  name: 'lead-delete-mainuser',
+  group: 'lead',
+  description: '线索删除负责人接口（businessType: 8000）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,
   domain: 'proapi.xbongbong.com',
   args: [
     { name: 'dataId', type: 'int', help: '线索id（必填）' },
-    { name: 'businessUserIdList', type: 'str', help: '需添加的协同人id列表，JSON数组字符串（必填）' },
-    { name: 'mainUserId', type: 'str', default: '', help: '团队负责人id（可选）' },
+    { name: 'businessUserIdList', type: 'str', help: '需删除的负责人id列表，JSON数组字符串（必填）' },
     { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
   ],
@@ -29,7 +29,6 @@ cli({
     const { corpid, token, baseUrl, userId } = getRuntimeConfig();
     const payload = { dataId: Number(kwargs.dataId || 0), corpid };
     if (kwargs.userId) payload.userId = String(kwargs.userId);
-    if (String(kwargs.mainUserId || '').trim()) payload.mainUserId = String(kwargs.mainUserId);
     let businessUserIdList;
     try {
       businessUserIdList = JSON.parse(String(kwargs.businessUserIdList || ''));

@@ -122,6 +122,7 @@ async function authStatus(kwargs) {
 cli({
   site: 'xbb',
   name: 'auth-status',
+  group: 'auth',
   description: '回显当前激活的配置，并验证 token 是否有效',
   strategy: Strategy.PUBLIC,
   access: 'read',

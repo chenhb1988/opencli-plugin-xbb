@@ -1,41 +1,35 @@
 import { cli, Strategy } from './xbb-registry.js';
 import { getRuntimeConfig, requestGateway } from './xbb-http.js';
 
-const API_PATH = '/pro/v2/api/clue/back';
+const API_PATH = '/pro/v2/api/clue/del';
 const MISSING_TOKEN_MESSAGE = '缺少 token；请先执行 xbbcli token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>';
 
 function makeErrorRow(code, msg) {
-  return [{ resultType: '', resultMsg: '', code, msg }];
+  return [{ errorDataMemo: '', code, msg }];
 }
 
 cli({
   site: 'xbb',
-  name: 'clue-back',
-  description: '线索退回公海接口（businessType: 8000）',
+  name: 'lead-del',
+  group: 'lead',
+  description: '删除线索接口（businessType: 8000）',
   strategy: Strategy.PUBLIC,
   access: 'write',
   browser: false,
   domain: 'proapi.xbongbong.com',
   args: [
-    { name: 'dataIdList', type: 'str', help: '线索id列表，JSON数组字符串（必填）' },
+    { name: 'dataId', type: 'int', help: '线索id（必填）' },
     { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
   ],
-  columns: ['resultType', 'resultMsg', 'code', 'msg'],
-  func: async (kwargs) => {
+  columns: ['errorDataMemo', 'code', 'msg'],
+  func: async function (kwargs) {
     const debug = Boolean(kwargs.debug);
     const { corpid, token, baseUrl, userId } = getRuntimeConfig();
-    const payload = { corpid };
+    const payload = { corpid, dataId: Number(kwargs.dataId || 0) };
     if (kwargs.userId) payload.userId = String(kwargs.userId);
-    let dataIdList;
-    try {
-      dataIdList = JSON.parse(String(kwargs.dataIdList || ''));
-    } catch {
-      dataIdList = null;
-    }
-    if (Array.isArray(dataIdList)) payload.dataIdList = dataIdList;
     if (!payload.corpid) return makeErrorRow('NO_CORPID', '缺少本地 corpid；请先执行 xbbcli token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>');
-    if (!Array.isArray(dataIdList) || !dataIdList.length) return makeErrorRow('NO_DATAIDLIST', '缺少 --dataIdList 或格式不正确，需为JSON数组');
+    if (!payload.dataId) return makeErrorRow('NO_DATAID', '缺少 --dataId');
     if (!token) return makeErrorRow('NO_TOKEN', MISSING_TOKEN_MESSAGE);
     const gateway = await requestGateway({
       baseUrl,
@@ -49,6 +43,6 @@ cli({
     if (gateway.data.code !== 1) {
       return makeErrorRow(gateway.data.code ?? '', gateway.data.msg ?? '未知错误');
     }
-    return [{ resultType: gateway.data.result?.resultType || '', resultMsg: gateway.data.result?.resultMsg || '', code: gateway.data.code ?? '', msg: gateway.data.msg || '' }];
+    return [{ errorDataMemo: gateway.data.result?.errorDataMemo || '', code: gateway.data.code ?? '', msg: gateway.data.msg || '' }];
   },
 });

@@ -1,37 +1,48 @@
 import { cli, Strategy } from './xbb-registry.js';
 import { getRuntimeConfig, requestGateway } from './xbb-http.js';
 
-const API_PATH = '/pro/v2/api/clue/detail';
+const API_PATH = '/pro/v2/api/workTimeRecord/handover';
 const MISSING_TOKEN_MESSAGE = '缺少 token；请先执行 xbbcli token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>';
 
 function makeErrorRow(code, msg) {
-  return [{ dataId: '', formId: '', addTime: '', updateTime: '', data: '', code, msg }];
+  return [{ messageList: '', code, msg }];
 }
 
 cli({
   site: 'xbb',
-  name: 'clue-detail',
-  description: '线索详情接口（businessType: 8000）',
+  name: 'work-time-record-handover',
+  group: 'work-time-record',
+  description: '移交工时记录负责人（businessType: 21100）',
   strategy: Strategy.PUBLIC,
-  access: 'read',
+  access: 'write',
   browser: false,
   domain: 'proapi.xbongbong.com',
   args: [
-    { name: 'dataId', type: 'int', help: '线索id（必填）' },
+    { name: 'dataIdList', type: 'str', help: '需移交的工时记录id列表，JSON数组字符串（必填）' },
+    { name: 'businessUserId', type: 'str', help: '移交目标人员id（必填）' },
     { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
-    { name: 'queryFlag', type: 'str', default: '', help: '是否查询审批数据：0非审批数据，1审批数据，2全部' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
   ],
-  columns: ['dataId', 'formId', 'addTime', 'updateTime', 'data', 'code', 'msg'],
-  func: async function (kwargs) {
+  columns: ['messageList', 'code', 'msg'],
+  func: async (kwargs) => {
     const debug = Boolean(kwargs.debug);
     const { corpid, token, baseUrl, userId } = getRuntimeConfig();
-    const payload = { corpid, dataId: Number(kwargs.dataId || 0) };
+    const payload = { corpid, businessUserId: String(kwargs.businessUserId || '') };
     if (kwargs.userId) payload.userId = String(kwargs.userId);
-    if (String(kwargs.queryFlag ?? '') !== '') payload.queryFlag = Number(kwargs.queryFlag);
+
+    let dataIdList;
+    try {
+      dataIdList = JSON.parse(String(kwargs.dataIdList || ''));
+    } catch {
+      dataIdList = null;
+    }
+    if (Array.isArray(dataIdList)) payload.dataIdList = dataIdList;
+
     if (!payload.corpid) return makeErrorRow('NO_CORPID', '缺少本地 corpid；请先执行 xbbcli token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>');
-    if (!payload.dataId) return makeErrorRow('NO_DATAID', '缺少 --dataId');
+    if (!Array.isArray(dataIdList) || !dataIdList.length) return makeErrorRow('NO_DATAIDLIST', '缺少 --dataIdList 或格式不正确，需为JSON数组');
+    if (!payload.businessUserId) return makeErrorRow('NO_BUSINESSUSERID', '缺少 --businessUserId');
     if (!token) return makeErrorRow('NO_TOKEN', MISSING_TOKEN_MESSAGE);
+
     const gateway = await requestGateway({
       baseUrl,
       apiPath: API_PATH,
@@ -44,7 +55,10 @@ cli({
     if (gateway.data.code !== 1) {
       return makeErrorRow(gateway.data.code ?? '', gateway.data.msg ?? '未知错误');
     }
-    const result = gateway.data.result || {};
-    return [{ dataId: result.dataId || '', formId: result.formId || '', addTime: result.addTime || '', updateTime: result.updateTime || '', data: JSON.stringify(result.data || {}), code: gateway.data.code ?? '', msg: gateway.data.msg || '' }];
+    return [{
+      messageList: JSON.stringify(gateway.data.result?.messageList || []),
+      code: gateway.data.code ?? '',
+      msg: gateway.data.msg || '',
+    }];
   },
 });

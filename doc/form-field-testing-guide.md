@@ -16,7 +16,7 @@ xbbcli form-get --formId <FORM_ID> -f json
 - `fieldType` 用于判断数据形态，不能只根据中文字段名猜测。
 - `items` 非空表示字段有预设选项。
 
-更省事的方式：所有 `*-add` 命令都支持 `--demo`（`mail-draft-add`、`other-income-add` 除外），不写入数据、直接返回该接口的请求体示例（强制 JSON 输出；未指定 formId 时按 `businessType` 从表单缓存解析）。示例中 `dataList` 的每个字段值都是「字段名：xxx|是否必填|字段类型：xxx」提示串，选项字段会写明 `字段类型：单选/多选：选项列表`，子表（`subForm_N` / `array_N`）保留数组结构且内部字段同样加工；把提示串替换为实际值即可用于新建。例如 `xbbcli clue-add --demo`、`xbbcli customer-add --demo --formId 1969375`、`xbbcli contact-add --demo`。
+更省事的方式：所有 `*-add` 命令都支持 `--demo`（`mail-draft-add`、`other-income-add` 除外），不写入数据、直接返回该接口的请求体示例（强制 JSON 输出；未指定 formId 时按 `businessType` 从表单缓存解析）。示例中 `dataList` 的每个字段值都是「字段名：xxx|是否必填|字段类型：xxx」提示串，选项字段会写明 `字段类型：单选/多选：选项列表`，子表（`subForm_N` / `array_N`）保留数组结构且内部字段同样加工；把提示串替换为实际值即可用于新建。例如 `xbbcli lead add --demo`、`xbbcli customer-add --demo --formId 1969375`、`xbbcli contact-add --demo`。
 
 ## 2. 选项字段
 

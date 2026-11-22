@@ -6,7 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// 验证 clue-add / customer-add / product-add 的 --demo（共享模块 xbb-form-example.js）：
+// 验证 lead-add / customer-add / product-add 的 --demo（共享模块 xbb-form-example.js）：
 // 请求体、formId 缓存解析、提示串加工、强制 JSON、错误行形态，以及三条命令的普通新建回归。
 // 用本地 mock HTTP 服务器接收请求，避免对真实 API 发起写操作。
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -155,30 +155,30 @@ function report(label) {
 }
 
 try {
-  const explicit = await captureRequest('clue demo with formId', ['clue-add', '--demo', '--formId', '2795678']);
+  const explicit = await captureRequest('lead demo with formId', ['lead-add', '--demo', '--formId', '2795678']);
   assert.ok(explicit.request.url.endsWith('/pro/v2/api/customized/param/get'), 'demo must call customized/param/get');
   assert.deepEqual(explicit.request.body, { corpid, formId: 2795678, url: '/pro/v2/api/clue/add' });
   assert.deepEqual(explicit.rows, [demoOutput]);
   assert.equal(Object.hasOwn(explicit.rows[0], 'inputParameter'), false);
-  report('clue-add --demo sends exactly {corpid, formId, url} and returns hinted inputExample');
+  report('lead-add --demo sends exactly {corpid, formId, url} and returns hinted inputExample');
 
-  const cached = await captureRequest('clue demo without formId', ['clue-add', '--demo']);
+  const cached = await captureRequest('lead demo without formId', ['lead-add', '--demo']);
   assert.equal(cached.request.body.formId, 2795678, 'formId must be resolved from the form cache');
-  report('clue-add --demo resolves the only businessType=8000 form from the form cache');
+  report('lead-add --demo resolves the only businessType=8000 form from the form cache');
 
-  const forcedCsv = await captureRequest('clue demo with -f csv', ['clue-add', '--demo', '--formId', '2795678', '-f', 'csv']);
+  const forcedCsv = await captureRequest('lead demo with -f csv', ['lead-add', '--demo', '--formId', '2795678', '-f', 'csv']);
   assert.deepEqual(forcedCsv.rows, [demoOutput]);
   report('--demo forces JSON output even with -f csv');
 
   demoResponse = { code: 1, msg: 'ok', result: { inputExample: JSON.stringify(demoExample) } };
-  const noMetadata = await captureRequest('clue demo without inputParameter', ['clue-add', '--demo', '--formId', '2795678']);
+  const noMetadata = await captureRequest('lead demo without inputParameter', ['lead-add', '--demo', '--formId', '2795678']);
   assert.deepEqual(noMetadata.rows, [{ ...demoExample, corpid, userId: 'test-user-id' }]);
   report('--demo leaves inputExample unchanged when inputParameter is missing');
 
   demoResponse = { code: 1, msg: 'ok', result: { inputExample: JSON.stringify(demoExample), inputParameter: demoParameters } };
 
-  const ignored = await captureRequest('clue demo ignores dataList/userId', [
-    'clue-add', '--demo', '--formId', '2795678', '--dataList', '{"text_1":"ignored"}', '--userId', 'other',
+  const ignored = await captureRequest('lead demo ignores dataList/userId', [
+    'lead-add', '--demo', '--formId', '2795678', '--dataList', '{"text_1":"ignored"}', '--userId', 'other',
   ]);
   assert.deepEqual(ignored.request.body, { corpid, formId: 2795678, url: '/pro/v2/api/clue/add' });
   report('--demo ignores --dataList and --userId in the request body');
@@ -187,21 +187,21 @@ try {
     { formId: 2795678, name: '销售线索A', businessType: 8000 },
     { formId: 2875705, name: '销售线索B', businessType: 8000 },
   ]);
-  const ambiguous = await expectNoRequest('clue demo with multiple forms', ['clue-add', '--demo']);
+  const ambiguous = await expectNoRequest('lead demo with multiple forms', ['lead-add', '--demo']);
   assert.equal(ambiguous[0].code, 'MULTIPLE_FORM');
   assert.deepEqual(Object.keys(ambiguous[0]).sort(), ['code', 'msg'], 'demo error rows must expose only code/msg');
   assert.ok(String(ambiguous[0].msg).includes('2795678'));
   assert.ok(String(ambiguous[0].msg).includes('2875705'));
-  report('demo rejects multiple cached clue forms with a code/msg only error row');
+  report('demo rejects multiple cached lead forms with a code/msg only error row');
 
   writeFormlist([{ formId: 'abc', name: '线索X', businessType: 8000 }]);
-  const invalidId = await expectNoRequest('clue demo with non-numeric cached formId', ['clue-add', '--demo']);
+  const invalidId = await expectNoRequest('lead demo with non-numeric cached formId', ['lead-add', '--demo']);
   assert.equal(invalidId[0].code, 'INVALID_FORM_ID');
   assert.ok(String(invalidId[0].msg).includes('abc'));
   report('demo reports INVALID_FORM_ID instead of MULTIPLE_FORM for a single bad cached formId');
 
   fs.rmSync(formlistFile, { force: true });
-  const missingCache = await expectNoRequest('clue demo without form cache', ['clue-add', '--demo']);
+  const missingCache = await expectNoRequest('lead demo without form cache', ['lead-add', '--demo']);
   assert.equal(missingCache[0].code, 'NO_FORMID');
   report('demo returns NO_FORMID when the form cache is missing');
 
@@ -337,23 +337,23 @@ try {
   assert.ok(String(productRejectsFormId.stderr).includes('未知参数'));
   report('product-add drops its demo-only --formId and relies on cache resolution');
 
-  const normalWithoutFormId = await captureRequest('clue normal resolving formId from cache', [
-    'clue-add', '--dataList', '{"text_1":"a"}', '-f', 'json',
+  const normalWithoutFormId = await captureRequest('lead normal resolving formId from cache', [
+    'lead-add', '--dataList', '{"text_1":"a"}', '-f', 'json',
   ]);
   assert.ok(normalWithoutFormId.request.url.endsWith('/pro/v2/api/clue/add'), 'normal mode must still call clue/add');
   assert.equal(normalWithoutFormId.request.body.formId, 2795678, 'normal mode must resolve formId from the cache too');
-  const negative = await expectNoRequest('clue normal with negative formId', [
-    'clue-add', '--formId', '-5', '--dataList', '{"text_1":"a"}', '-f', 'json',
+  const negative = await expectNoRequest('lead normal with negative formId', [
+    'lead-add', '--formId', '-5', '--dataList', '{"text_1":"a"}', '-f', 'json',
   ]);
   assert.equal(negative[0].code, 'INVALID_FORM_ID');
-  report('normal clue-add resolves formId from cache and rejects a negative --formId');
+  report('normal lead-add resolves formId from cache and rejects a negative --formId');
 
-  const clueNormal = await captureRequest('clue normal add', [
-    'clue-add', '--formId', '2795678', '--dataList', '{"text_1":"a"}', '-f', 'json',
+  const leadNormal = await captureRequest('lead normal add', [
+    'lead-add', '--formId', '2795678', '--dataList', '{"text_1":"a"}', '-f', 'json',
   ]);
-  assert.deepEqual(clueNormal.request.body, { corpid, formId: 2795678, userId: 'test-user-id', dataList: { text_1: 'a' } });
-  assert.deepEqual(Object.keys(clueNormal.rows[0]).sort(), ['code', 'dataId', 'msg', 'resultCode', 'resultMsg']);
-  report('normal clue-add keeps its request body and row columns');
+  assert.deepEqual(leadNormal.request.body, { corpid, formId: 2795678, userId: 'test-user-id', dataList: { text_1: 'a' } });
+  assert.deepEqual(Object.keys(leadNormal.rows[0]).sort(), ['code', 'dataId', 'msg', 'resultCode', 'resultMsg']);
+  report('normal lead-add keeps its request body and row columns');
 
   const customerNormal = await captureRequest('customer normal add', [
     'customer-add', '--formId', '1969375', '--dataList', '{"text_1":"a"}', '-f', 'json',
@@ -370,7 +370,7 @@ try {
   report('normal product-add keeps its formId-free request body');
 
   demoResponse = { code: 2, msg: 'bad request', success: false };
-  const failed = await captureRequest('demo server error', ['clue-add', '--demo', '--formId', '2795678']);
+  const failed = await captureRequest('demo server error', ['lead-add', '--demo', '--formId', '2795678']);
   assert.equal(failed.rows[0].code, 2);
   assert.equal(failed.rows[0].msg, 'bad request');
   report('demo returns the server error as a code/msg row');
@@ -389,7 +389,7 @@ try {
   fs.writeFileSync(path.join(configDir, 'config.env'), JSON.stringify([
     { corpid, token: 'test-token', userId: 'test-user-id', baseurl: 'http://127.0.0.1:1', enable: true },
   ]));
-  for (const command of ['clue-add', 'customer-add', 'product-add', 'contact-add']) {
+  for (const command of ['lead-add', 'customer-add', 'product-add', 'contact-add']) {
     // 只有写请求体含 formId 的命令才声明 --formId，其余靠缓存解析
     const args = command === 'product-add' || command === 'contact-add' ? [command, '--demo'] : [command, '--demo', '--formId', '2795678'];
     const offline = await runCommand(args);

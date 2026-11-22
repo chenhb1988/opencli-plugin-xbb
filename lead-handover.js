@@ -23,7 +23,8 @@ function makeErrorRow(code, msg) {
 
 cli({
   site: 'xbb',
-  name: 'clue-handover',
+  name: 'lead-handover',
+  group: 'lead',
   description: '线索移交接口（businessType: 8000）',
   strategy: Strategy.PUBLIC,
   access: 'write',
