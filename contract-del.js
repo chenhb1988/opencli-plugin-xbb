@@ -16,6 +16,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'contract-del',
+  group: 'contract',
   description: '删除合同订单接口（businessType: 201）',
   strategy: Strategy.PUBLIC,
   access: 'write',

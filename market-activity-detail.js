@@ -10,6 +10,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'market-activity-detail',
+  group: 'market-activity',
   description: '市场活动详情接口（businessType: 8100）',
   strategy: Strategy.PUBLIC,
   access: 'read',

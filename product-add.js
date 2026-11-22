@@ -15,6 +15,7 @@ const MISSING_TOKEN_MESSAGE = '缺少 token；请先执行 xbbcli token-set --co
 cli({
   site: 'xbb',
   name: 'product-add',
+  group: 'product',
   description: '新建产品接口（businessType: 2401；--demo 可返回请求体示例）',
   strategy: Strategy.PUBLIC,
   access: 'write',

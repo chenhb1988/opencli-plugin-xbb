@@ -8,6 +8,96 @@ registerGroup({
 
 registerGroup({
   site: 'xbb',
+  name: 'communicate',
+  description: 'businessType: 501（拜访计划 601）；跟进记录：列表、详情、新建、编辑、删除；拜访计划：列表、详情、新建、取消、删除、延期',
+});
+
+registerGroup({
+  site: 'xbb',
+  name: 'contact',
+  description: 'businessType: 401；联系人：列表、详情、新建、编辑、删除、移交，添加/删除负责人/协同人',
+});
+
+registerGroup({
+  site: 'xbb',
+  name: 'contract',
+  description: 'businessType: 201（销售出库单 1504）；合同订单：列表、详情、新建、编辑、删除、移交，添加/删除负责人/协同人；销售出库单：列表、详情、新建、编辑、删除',
+});
+
+registerGroup({
+  site: 'xbb',
+  name: 'product',
+  description: 'businessType: 2401；产品：列表、详情、新建、编辑、删除、上下架，产品分类列表/新建/编辑/删除',
+});
+
+registerGroup({
+  site: 'xbb',
+  name: 'quotation',
+  description: 'businessType: 4700；报价单：列表、详情、新建、编辑、删除、移交，添加/删除负责人/协同人',
+});
+
+registerGroup({
+  site: 'xbb',
+  name: 'refund',
+  description: 'businessType: 202；退货退款单：列表、详情、新建、编辑、删除',
+});
+
+registerGroup({
+  site: 'xbb',
+  name: 'work-task',
+  description: 'businessType: 21500；工作任务：详情、新建、编辑、移交，添加/删除协同人',
+});
+
+registerGroup({
+  site: 'xbb',
+  name: 'opportunity',
+  description: 'businessType: 301；销售机会：列表、详情、新建、编辑、删除、移交，添加/删除负责人/协同人',
+});
+
+registerGroup({
+  site: 'xbb',
+  name: 'market-activity',
+  description: 'businessType: 8100；市场活动：列表、详情、新建、编辑、删除、移交',
+});
+
+registerGroup({
+  site: 'xbb',
+  name: 'department',
+  description: 'businessType: -1；部门：列表、新建、编辑、删除',
+});
+
+registerGroup({
+  site: 'xbb',
+  name: 'invoice',
+  description: 'businessType: 901；销项发票：列表、详情、新建、编辑、删除、作废、红冲、金额明细',
+});
+
+registerGroup({
+  site: 'xbb',
+  name: 'customer',
+  description: 'businessType: 100；客户：列表、详情、新建、编辑、删除、退回公海、分配、移交，添加/删除负责人/协同人，开票信息与开票地址',
+});
+
+registerGroup({
+  site: 'xbb',
+  name: 'form-data',
+  description: 'businessType: 0；自定义表单数据：列表、详情、新增、编辑、删除、移交，添加/删除负责人/协同人',
+});
+
+registerGroup({
+  site: 'xbb',
+  name: 'user',
+  description: 'businessType: -1；用户：列表、新建、编辑、删除、交接',
+});
+
+registerGroup({
+  site: 'xbb',
+  name: 'token',
+  description: '本地凭证配置（无 businessType）：保存/列出/切换/删除公司配置，生成个人 token',
+});
+
+registerGroup({
+  site: 'xbb',
   name: 'label',
   description: 'businessType: -1；标签/标签分组：标签增删改、彻底删除、还原、判重、批量打标/移除，分组增删改查',
 });

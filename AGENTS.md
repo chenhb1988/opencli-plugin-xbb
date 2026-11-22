@@ -4,7 +4,7 @@
 
 ## 仓库说明
 
-这是销帮帮 CRM（`xbb`）的命令行工具（npm 包 `@xbongbong/xbbcli`），入口 `bin/xbbcli.js`，开发目录中可直接用 `node bin/xbbcli.js <command>` 运行。每个顶层 `*.js` 命令文件通过 `xbb-registry.js` 的 `cli()` 注册一条命令（注册键为 `xbb/<command>`，`bin/xbbcli.js` 启动时全量加载）。支持二级子命令：命令声明 `name: 'mail-send', group: 'mail'` 后，`bin/xbbcli.js` 会把 `xbbcli mail send`（以及 `xbbcli mail draft add`）的多个词依次用 `-` 连接去查找注册键，`xbbcli mail-send` 也仍可直接使用；`xbbcli mail --help` 会列出该 group 下全部子命令，顶层 `xbbcli -h` 只显示 `mail` 分组入口、不展开子命令。无构建步骤、无 lint；测试为原生 Node 脚本（见「验证方式」）。
+这是销帮帮 CRM（`xbb`）的命令行工具（npm 包 `@xbongbong/xbbcli`），入口 `bin/xbbcli.js`，开发目录中可直接用 `node bin/xbbcli.js <command>` 运行。每个顶层 `*.js` 命令文件通过 `xbb-registry.js` 的 `cli()` 注册一条命令（注册键为 `xbb/<command>`，`bin/xbbcli.js` 启动时全量加载）。支持二级子命令：命令声明 `name: 'mail-send', group: 'mail'` 后，`bin/xbbcli.js` 会把 `xbbcli mail send`（以及 `xbbcli mail draft add`）的多个词依次用 `-` 连接去查找注册键，`xbbcli mail-send` 也仍可直接使用；`xbbcli mail --help` 会列出该 group 下全部子命令，顶层 `xbbcli -h` 只显示 `mail` 分组入口、不展开子命令；`xbbcli -h --all`（或 `xbbcli --all`）平铺列出全部分组内外的命令。无构建步骤、无 lint；测试为原生 Node 脚本（见「验证方式」）。
 
 ## 安装
 

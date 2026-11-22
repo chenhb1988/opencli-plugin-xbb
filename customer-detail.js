@@ -64,6 +64,7 @@ function makeSuccessRow(data) {
 cli({
   site: 'xbb',
   name: 'customer-detail',
+  group: 'customer',
   description: '客户详情接口（businessType: 100）',
   strategy: Strategy.PUBLIC,
   access: 'read',

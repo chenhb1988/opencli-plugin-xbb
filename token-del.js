@@ -127,6 +127,7 @@ async function delCompany(kwargs) {
 cli({
   site: 'xbb',
   name: 'token-del',
+  group: 'token',
   description: '删除指定的已保存公司配置',
   strategy: Strategy.PUBLIC,
   access: 'write',

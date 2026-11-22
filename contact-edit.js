@@ -23,6 +23,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'contact-edit',
+  group: 'contact',
   description: '编辑联系人接口（businessType: 401）',
   strategy: Strategy.PUBLIC,
   access: 'write',

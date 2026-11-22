@@ -11,6 +11,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'form-data-delete-mainuser',
+  group: 'form-data',
   description: '自定义表单删除负责人接口（businessType: 0）',
   strategy: Strategy.PUBLIC,
   access: 'write',

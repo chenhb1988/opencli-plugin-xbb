@@ -103,6 +103,7 @@ function makeSuccessRows(list) {
 cli({
   site: 'xbb',
   name: 'refund-list',
+  group: 'refund',
   description: '退货退款单列表接口（businessType: 202）',
   strategy: Strategy.PUBLIC,
   access: 'read',

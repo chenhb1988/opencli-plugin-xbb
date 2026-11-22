@@ -105,6 +105,7 @@ function makeSuccessRows(list) {
 cli({
   site: 'xbb',
   name: 'contact-list',
+  group: 'contact',
   description: '联系人列表接口（businessType: 401）',
   strategy: Strategy.PUBLIC,
   access: 'read',

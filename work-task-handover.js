@@ -11,6 +11,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'work-task-handover',
+  group: 'work-task',
   description: '工作任务移交接口（businessType: 21500）',
   strategy: Strategy.PUBLIC,
   access: 'write',

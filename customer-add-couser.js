@@ -101,6 +101,7 @@ function makeSuccessRow(data) {
 cli({
   site: 'xbb',
   name: 'customer-add-couser',
+  group: 'customer',
   description: '客户添加协同人接口（businessType: 100）',
   strategy: Strategy.PUBLIC,
   access: 'write',

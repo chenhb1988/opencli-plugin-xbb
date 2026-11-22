@@ -25,6 +25,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'invoice-add',
+  group: 'invoice',
   description: '新建销项发票接口（businessType: 901）',
   strategy: Strategy.PUBLIC,
   access: 'write',

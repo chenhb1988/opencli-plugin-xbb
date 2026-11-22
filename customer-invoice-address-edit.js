@@ -30,6 +30,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'customer-invoice-address-edit',
+  group: 'customer',
   description: '编辑客户开票地址接口（businessType: 100）',
   strategy: Strategy.PUBLIC,
   access: 'write',

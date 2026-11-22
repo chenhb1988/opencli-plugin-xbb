@@ -34,6 +34,7 @@ function parseDataList(raw) {
 cli({
   site: 'xbb',
   name: 'communicate-add',
+  group: 'communicate',
   description: '新建跟进记录接口（businessType: 501）',
   strategy: Strategy.PUBLIC,
   access: 'write',

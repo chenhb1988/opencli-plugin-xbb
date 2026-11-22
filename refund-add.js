@@ -20,6 +20,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'refund-add',
+  group: 'refund',
   description: '新建退货退款单接口（businessType: 202）',
   strategy: Strategy.PUBLIC,
   access: 'write',

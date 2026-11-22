@@ -26,6 +26,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'contract-outstock-list',
+  group: 'contract',
   description: '销售出库单列表接口（businessType: 1504）',
   strategy: Strategy.PUBLIC,
   access: 'read',

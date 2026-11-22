@@ -11,6 +11,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'invoice-get-amount-detail',
+  group: 'invoice',
   description: '销项发票金额明细接口（businessType: 901）',
   strategy: Strategy.PUBLIC,
   access: 'read',

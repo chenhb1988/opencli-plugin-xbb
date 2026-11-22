@@ -15,6 +15,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'opportunity-add-mainuser',
+  group: 'opportunity',
   description: '销售机会添加负责人接口（businessType: 301）',
   strategy: Strategy.PUBLIC,
   access: 'write',

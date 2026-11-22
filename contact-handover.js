@@ -11,6 +11,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'contact-handover',
+  group: 'contact',
   description: '联系人移交接口（businessType: 401）',
   strategy: Strategy.PUBLIC,
   access: 'write',

@@ -94,6 +94,7 @@ function makeSuccessRows(depList) {
 cli({
   site: 'xbb',
   name: 'department-list',
+  group: 'department',
   description: '部门列表接口（businessType: -1）',
   strategy: Strategy.PUBLIC,
   access: 'read',

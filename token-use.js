@@ -85,6 +85,7 @@ async function useCompany(kwargs) {
 cli({
   site: 'xbb',
   name: 'token-use',
+  group: 'token',
   description: '切换当前启用的公司（enable），保证仅且只有一个公司被启用',
   strategy: Strategy.PUBLIC,
   access: 'write',

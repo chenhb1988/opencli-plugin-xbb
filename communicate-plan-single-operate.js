@@ -11,6 +11,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'communicate-plan-single-operate',
+  group: 'communicate',
   description: '访客计划延期接口（businessType: 601）',
   strategy: Strategy.PUBLIC,
   access: 'write',

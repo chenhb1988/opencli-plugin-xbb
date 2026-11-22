@@ -10,6 +10,7 @@ function makeErrorRow(code, msg) {
 cli({
   site: 'xbb',
   name: 'market-activity-del',
+  group: 'market-activity',
   description: '删除市场活动接口（businessType: 8100）',
   strategy: Strategy.PUBLIC,
   access: 'write',

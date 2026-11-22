@@ -11,6 +11,8 @@ xbbcli --help
 
 开发目录中也可以直接运行 `node bin/xbbcli.js`。
 
+`xbbcli -h` 只展示顶层命令与分组入口；要一次查看全部命令，用 `xbbcli -h --all`（或 `xbbcli --all`），分组内命令会以 `分组 子命令` 形式平铺列出。
+
 需要升级时运行 `npm update -g @xbongbong/xbbcli`。
 
 
@@ -238,24 +240,37 @@ note      config.env 中存在 2 个 enable=true，仅第一条生效，请用 x
 - `auth-logout`：删除 `config.env` 中 `enable=true` 的那一条配置，删除前整份备份为 `~/.xbbcli/config.env.bak`；不自动把其他公司提升为启用；默认同时清除 `XBB_*` 环境变量（`--env 0` 跳过，返回 `envStored` / `envFile`）；既无启用公司又无环境变量时返回 `NO_ACTIVE_CONFIG` 且不改动文件
 - `auth-refresh-cache`：对当前启用公司重新拉取表单缓存、命令映射与部门/员工缓存，并回填 `corpName` / `userName`；失败时返回 `code=CACHE_REFRESH_FAILED`，`message` 注明中断步骤（`formlist` / `command-map` / `department-user` / `profile`），已完成的部分照常输出；支持 `--userId`、`--debug`
 - `auth permission`：查询员工（`--checkUserId`，与当前登录人无关）在指定业务（`--businessType`）下的权限项集合；SaaS 业务传 businessType（如 `100`/`201`/`301`/`401`/`8000`/`20300`），自定义表单传 `--businessType 0` 并附 `--formId`；返回 `permissions` 集合、`permissionCount` 与 `code` / `msg`
-- `token-set`：保存个人 token、`corpid`、`userId`、`baseurl`，并刷新本地表单缓存、命令映射文件与部门/员工缓存；传入的 token 不以 `user_` 开头时，会先为该 `userId` 刷新并保存个人 token；`--env` 控制存储方式：`0`（默认）仅写入本地文件，`1` 仅写入 `XBB_*` 环境变量（供外部系统使用，本 CLI 不读取；Windows 用 `setx`，其他平台写 `~/.xbbcli/env.sh`）且不写任何本地文件；返回 `envStored` / `envFile` 两列
-- `token-list`：同时列出环境变量行（`source=env`，仅 `XBB_CORPID` / `XBB_TOKEN` 有值时出现，`msg` 标注「仅供外部系统，业务命令不再读取」）与 `config.env` 中保存的全部公司（`source=config`，含 `corpName` 公司名称与 `userName` 操作人姓名），config 启用行在 `msg` 列标注「来源为 config.env，当前生效」；`--showToken` 显示完整 token（默认脱敏）；`--raw` 输出本地配置原文（token 仍按 `--showToken` 决定是否掩码）
-- `token-use`：切换当前启用的公司（`xbbcli token-use --corpid <CORPID>`），保证仅且只有一个公司被启用；只改动 `config.env`，不读写 `XBB_*` 环境变量
-- `token-del`：删除指定公司的本地配置（`xbbcli token-del --corpid <CORPID>`），并保证剩余配置中仅且只有一个公司被启用；默认同时删除 `XBB_*` 环境变量（`--env 0` 保留，返回 `envStored` / `envFile` 两列）
-- `token-generate`：生成/获取个人 token，`--resetToken 0` 获取（默认）、`1` 刷新；`--checkUserId` 未传则用配置中的 `userId`
+### 本地凭证（token 分组）
+
+本地凭证命令统一挂在 `token` 分组下，用 `xbbcli token <subcommand>` 调用（`xbbcli token-set` 等连字符写法同样可用；无 businessType）：
+
+- `xbbcli token set`：保存个人 token、`corpid`、`userId`、`baseurl`，并刷新本地表单缓存、命令映射文件与部门/员工缓存；传入的 token 不以 `user_` 开头时，会先为该 `userId` 刷新并保存个人 token；`--env` 控制存储方式：`0`（默认）仅写入本地文件，`1` 仅写入 `XBB_*` 环境变量（供外部系统使用，本 CLI 不读取；Windows 用 `setx`，其他平台写 `~/.xbbcli/env.sh`）且不写任何本地文件；返回 `envStored` / `envFile` 两列
+- `xbbcli token list`：同时列出环境变量行（`source=env`，仅 `XBB_CORPID` / `XBB_TOKEN` 有值时出现，`msg` 标注「仅供外部系统，业务命令不再读取」）与 `config.env` 中保存的全部公司（`source=config`，含 `corpName` 公司名称与 `userName` 操作人姓名），config 启用行在 `msg` 列标注「来源为 config.env，当前生效」；`--showToken` 显示完整 token（默认脱敏）；`--raw` 输出本地配置原文（token 仍按 `--showToken` 决定是否掩码）
+- `xbbcli token use`：切换当前启用的公司（`xbbcli token-use --corpid <CORPID>`），保证仅且只有一个公司被启用；只改动 `config.env`，不读写 `XBB_*` 环境变量
+- `xbbcli token del`：删除指定公司的本地配置（`xbbcli token-del --corpid <CORPID>`），并保证剩余配置中仅且只有一个公司被启用；默认同时删除 `XBB_*` 环境变量（`--env 0` 保留，返回 `envStored` / `envFile` 两列）
+- `xbbcli token generate`：生成/获取个人 token，`--resetToken 0` 获取（默认）、`1` 刷新；`--checkUserId` 未传则用配置中的 `userId`
+
+`xbbcli token --help` 查看全部子命令。
 
 ### 组织与人员
 
-- `user-list`：用户列表
-- `user-add`：新建用户
-- `user-edit`：编辑用户
-- `user-del`：删除用户
-- `user-handover`：用户交接
-- `department-list`：部门列表
-- `department-add`：新建部门
-- `department-edit`：编辑部门
-- `department-del`：删除部门
 - `role-list`：角色列表
+
+### 用户（二级命令）
+
+用户命令统一挂在 `user` 分组下，用 `xbbcli user <subcommand>` 调用（`xbbcli user-list` 等连字符写法同样可用）：
+
+- `xbbcli user list` / `add` / `edit` / `del` / `handover`：用户列表、新建、编辑、删除、交接
+
+`xbbcli user --help` 查看全部子命令。
+
+### 部门（二级命令）
+
+部门命令统一挂在 `department` 分组下，用 `xbbcli department <subcommand>` 调用（`xbbcli department-list` 等连字符写法同样可用）：
+
+- `xbbcli department list` / `add` / `edit` / `del`：部门列表、新建、编辑、删除
+
+`xbbcli department --help` 查看全部子命令。
 
 ### 企业工商信息
 
@@ -274,35 +289,25 @@ note      config.env 中存在 2 个 enable=true，仅第一条生效，请用 x
 
 收件人 / 抄送人格式：`[{"name":"张三","mailAddress":"zhangsan@example.com"}]`；附件格式：`[{"fileName":"报价单","attachIndex":"https://files.example.com/q.pdf","ext":"pdf","size":102400}]`（`attachIndex` 是邮件服务可访问的文件 URL）。单封邮件最多 20 个附件，收件人与抄送人合计最多 48 人。`xbbcli mail --help` 查看全部子命令。
 
-### CRM 主数据
+### 客户（二级命令）
 
-- `customer-list`：客户列表
-- `customer-detail`：客户详情
-- `customer-add`：新增客户（`--demo` 返回请求体示例；不传 `--formId` 时按表单缓存解析）
-- `customer-edit`：编辑客户
-- `customer-add-couser`：客户添加协同人
-- `customer-del`：删除客户
-- `customer-back`：客户退回公海
-- `customer-handover`：客户移交
-- `customer-distribution`：客户分配
-- `customer-delete-mainuser`：客户删除负责人
-- `customer-delete-couser`：客户删除协同人
-- `customer-invoice-info`：客户开票信息列表
-- `customer-invoice-info-add`：新增客户开票信息
-- `customer-invoice-info-edit`：编辑客户开票信息
-- `customer-invoice-address`：客户开票地址列表
-- `customer-invoice-address-add`：新增客户开票地址
-- `customer-invoice-address-edit`：编辑客户开票地址
-- `contact-list`：联系人列表
-- `contact-add`：新建联系人
-- `contact-edit`：编辑联系人
-- `contact-detail`：联系人详情
-- `contact-del`：删除联系人
-- `contact-add-couser`：联系人添加协同人
-- `contact-add-mainuser`：联系人添加负责人
-- `contact-delete-couser`：联系人删除协同人
-- `contact-delete-mainuser`：联系人删除负责人
-- `contact-handover`：联系人移交
+客户命令统一挂在 `customer` 分组下，用 `xbbcli customer <subcommand>` 调用（`xbbcli customer-add` 等连字符写法同样可用）：
+
+- `xbbcli customer list` / `detail` / `add` / `edit` / `del`：客户列表、详情、新增、编辑、删除（`add --demo` 返回请求体示例）
+- `xbbcli customer back` / `distribution` / `handover`：退回公海、分配、移交
+- `xbbcli customer add-mainuser` / `add-couser` / `delete-mainuser` / `delete-couser`：添加/删除负责人与协同人
+- `xbbcli customer invoice info` / `invoice info add` / `invoice info edit`：客户开票信息列表、新增、编辑
+- `xbbcli customer invoice address` / `invoice address add` / `invoice address edit`：客户开票地址列表、新增、编辑
+
+`xbbcli customer --help` 查看全部子命令。
+### 联系人（二级命令）
+
+联系人命令统一挂在 `contact` 分组下，用 `xbbcli contact <subcommand>` 调用（`xbbcli contact-add` 等连字符写法同样可用）：
+
+- `xbbcli contact list` / `detail` / `add` / `edit` / `del`：联系人列表、详情、新建、编辑、删除
+- `xbbcli contact add-couser` / `add-mainuser` / `delete-couser` / `delete-mainuser` / `handover`：添加/删除协同人与负责人、移交
+
+`xbbcli contact --help` 查看全部子命令。
 
 ### 线索（lead 分组，二级命令）
 
@@ -316,84 +321,82 @@ note      config.env 中存在 2 个 enable=true，仅第一条生效，请用 x
 
 `xbbcli lead --help` 查看全部子命令。
 
-### 销售机会操作
+### 销售机会（二级命令）
 
-- `opportunity-add`：新建销售机会
-- `opportunity-edit`：编辑销售机会
-- `opportunity-list`：销售机会列表
-- `opportunity-detail`：销售机会详情
-- `opportunity-del`：删除销售机会
-- `opportunity-handover`：销售机会移交
-- `opportunity-add-mainuser`：销售机会添加负责人
-- `opportunity-delete-mainuser`：销售机会删除负责人
-- `opportunity-add-couser`：销售机会添加协同人
-- `opportunity-delete-couser`：销售机会删除协同人
+销售机会命令统一挂在 `opportunity` 分组下，用 `xbbcli opportunity <subcommand>` 调用（`xbbcli opportunity-add` 等连字符写法同样可用）：
 
-### 合同订单操作
+- `xbbcli opportunity list` / `detail` / `add` / `edit` / `del` / `handover`：销售机会列表、详情、新建、编辑、删除、移交
+- `xbbcli opportunity add-mainuser` / `add-couser` / `delete-mainuser` / `delete-couser`：添加/删除负责人与协同人
 
-- `contract-add`：新建合同订单
-- `contract-edit`：编辑合同订单
-- `contract-list`：合同订单列表
-- `contract-detail`：合同订单详情
-- `contract-del`：删除合同订单
-- `contract-handover`：合同订单移交
-- `contract-add-mainuser`：合同订单添加负责人
-- `contract-outstock-add`：新建销售出库单
-- `contract-outstock-edit`：编辑销售出库单
-- `contract-outstock-detail`：销售出库单详情
-- `contract-outstock-del`：删除销售出库单
-- `contract-outstock-list`：销售出库单列表
-- `contract-delete-mainuser`：合同订单删除负责人
-- `contract-add-couser`：合同订单添加协同人
-- `contract-delete-couser`：合同订单删除协同人
+`xbbcli opportunity --help` 查看全部子命令。
 
-### 跟进记录操作
+### 合同订单与销售出库单（二级命令）
 
-- `communicate-add`：新建跟进记录
-- `communicate-edit`：编辑跟进记录
-- `communicate-list`：跟进记录列表
-- `communicate-detail`：跟进记录详情
-- `communicate-del`：删除跟进记录
-- `communicate-plan-list`：拜访计划列表
-- `communicate-plan-detail`：拜访计划详情
-- `communicate-plan-add`：拜访计划新建
-- `communicate-plan-cancel`：拜访计划取消
-- `communicate-plan-del`：拜访计划删除
-- `communicate-plan-single-operate`：拜访计划延期
-- `market-activity-list`：市场活动列表
-- `market-activity-add`：新建市场活动
-- `market-activity-edit`：编辑市场活动
-- `market-activity-detail`：市场活动详情
-- `market-activity-del`：删除市场活动
-- `market-activity-handover`：市场活动移交
+合同订单（businessType: 201）与销售出库单（businessType: 1504）统一挂在 `contract` 分组下，用 `xbbcli contract <subcommand>` 调用（`xbbcli contract-add` 等连字符写法同样可用）：
+
+- `xbbcli contract list` / `detail` / `add` / `edit` / `del`：合同订单列表、详情、新建、编辑、删除
+- `xbbcli contract add-mainuser` / `add-couser` / `delete-mainuser` / `delete-couser` / `handover`：添加/删除负责人与协同人、移交
+- `xbbcli contract outstock list` / `outstock detail` / `outstock add` / `outstock edit` / `outstock del`：销售出库单列表、详情、新建、编辑、删除
+
+`xbbcli contract --help` 查看全部子命令。
+
+### 跟进记录与拜访计划（二级命令）
+
+跟进记录（businessType: 501）与拜访计划（businessType: 601）统一挂在 `communicate` 分组下，用 `xbbcli communicate <subcommand>` 调用：
+
+- `xbbcli communicate list` / `detail` / `add` / `edit` / `del`：跟进记录列表、详情、新建、编辑、删除
+- `xbbcli communicate plan list` / `plan detail` / `plan add` / `plan cancel` / `plan del` / `plan single operate`：拜访计划列表、详情、新建、取消、删除、延期
+
+`xbbcli communicate --help` 查看全部子命令。
+
+### 市场活动（二级命令）
+
+市场活动命令统一挂在 `market-activity` 分组下，用 `xbbcli market-activity <subcommand>` 调用（`xbbcli market-activity-add` 等连字符写法同样可用）：
+
+- `xbbcli market-activity list` / `detail` / `add` / `edit` / `del` / `handover`：市场活动列表、详情、新建、编辑、删除、移交
+
+`xbbcli market-activity --help` 查看全部子命令。
 
 ### 表单相关
 
 - `form-list`：表单模板列表
 - `form-get`：表单模板字段定义，在填充参数时不清楚参数含义/下拉框可选项值，调用本接口获取 form 解释
-- `form-data-list`：自定义表单数据列表
-- `form-data-detail`：自定义表单数据详情
-- `form-data-add`：新增自定义表单数据
-- `form-data-edit`：编辑自定义表单数据
-- `form-data-del`：删除自定义表单数据
-- `form-data-add-mainuser`：自定义表单添加负责人
-- `form-data-delete-mainuser`：自定义表单删除负责人
-- `form-data-add-couser`：自定义表单添加协同人
-- `form-data-delete-couser`：自定义表单删除协同人
-- `form-data-handover`：自定义表单移交
 
-### 产品
+### 自定义表单数据（二级命令）
 
-- `product-list`：产品列表
-- `product-detail`：产品详情
-- `product-add`：新建产品（`--demo` 返回请求体示例；`--formId` 仅用于取示例）
-- `product-edit`：编辑产品
-- `product-del`：删除产品
-- `product-online`：产品上下架
-- `product-category-list`：产品分类列表
-- `product-category-add`：新建产品分类
-- `product-category-update`：编辑产品分类
-- `product-category-del`：删除产品分类
+自定义表单数据命令统一挂在 `form-data` 分组下，用 `xbbcli form-data <subcommand>` 调用（`xbbcli form-data-list` 等连字符写法同样可用）：
+
+- `xbbcli form-data list` / `detail` / `add` / `edit` / `del` / `handover`：数据列表、详情、新增、编辑、删除、移交
+- `xbbcli form-data add-mainuser` / `add-couser` / `delete-mainuser` / `delete-couser`：添加/删除负责人与协同人
+
+`xbbcli form-data --help` 查看全部子命令。
+
+### 产品（二级命令）
+
+产品命令统一挂在 `product` 分组下，用 `xbbcli product <subcommand>` 调用（`xbbcli product-add` 等连字符写法同样可用）：
+
+- `xbbcli product list` / `detail` / `add` / `edit` / `del` / `online`：产品列表、详情、新建、编辑、删除、上下架（`add --demo` 返回请求体示例）
+- `xbbcli product category list` / `category add` / `category update` / `category del`：产品分类列表、新建、编辑、删除
+
+`xbbcli product --help` 查看全部子命令。
+
+### 报价单（二级命令）
+
+报价单命令统一挂在 `quotation` 分组下，用 `xbbcli quotation <subcommand>` 调用（`xbbcli quotation-add` 等连字符写法同样可用）：
+
+- `xbbcli quotation list` / `detail` / `add` / `edit` / `del` / `handover`：报价单列表、详情、新建、编辑、删除、移交
+- `xbbcli quotation add-mainuser` / `add-couser` / `delete-mainuser` / `delete-couser`：添加/删除负责人与协同人
+
+`xbbcli quotation --help` 查看全部子命令。
+
+### 销项发票（二级命令）
+
+销项发票命令统一挂在 `invoice` 分组下，用 `xbbcli invoice <subcommand>` 调用（`xbbcli invoice-list` 等连字符写法同样可用）：
+
+- `xbbcli invoice list` / `detail` / `add` / `edit` / `del`：销项发票列表、详情、新建、编辑、删除
+- `xbbcli invoice cancel` / `invoice red` / `invoice get-amount-detail`：作废、红冲、金额明细
+
+`xbbcli invoice --help` 查看全部子命令。
 
 ### 应收款操作
 
@@ -419,11 +422,13 @@ note      config.env 中存在 2 个 enable=true，仅第一条生效，请用 x
 - `xbbcli pay-sheet add-bad` / `edit-bad`：新建/编辑核销付款单坏账
 - `xbbcli pay-sheet get-amount-detail`：付款单金额明细
 - `xbbcli pay-sheet add-couser` / `add-mainuser` / `delete-couser` / `delete-mainuser`：付款单添加/删除协同人与负责人
-- `refund-list`：退货退款单列表
-- `refund-add`：新建退货退款单
-- `refund-edit`：编辑退货退款单
-- `refund-detail`：退货退款单详情
-- `refund-del`：删除退货退款单
+### 退货退款单（二级命令）
+
+退货退款单命令统一挂在 `refund` 分组下，用 `xbbcli refund <subcommand>` 调用（`xbbcli refund-list` 等连字符写法同样可用）：
+
+- `xbbcli refund list` / `detail` / `add` / `edit` / `del`：退货退款单列表、详情、新建、编辑、删除
+
+`xbbcli refund --help` 查看全部子命令。
 
 ### 新版工单（服务云，二级命令）
 
@@ -502,6 +507,18 @@ note      config.env 中存在 2 个 enable=true，仅第一条生效，请用 x
 - `xbbcli work-time-record handover --dataIdList '[<ID>]' --businessUserId <USERID>`：移交负责人
 
 `xbbcli work-time-record --help` 查看全部子命令。
+
+### 工作任务（二级命令）
+
+工作任务命令统一挂在 `work-task` 分组下，用 `xbbcli work-task <subcommand>` 调用（`xbbcli work-task-add` 等连字符写法同样可用）：
+
+- `xbbcli work-task detail --dataId <ID>`：任务详情
+- `xbbcli work-task add --dataList '<JSON>'`：新建任务，支持 `--demo`
+- `xbbcli work-task edit --dataId <ID> --dataList '<JSON>'`：编辑任务
+- `xbbcli work-task add-couser` / `delete-couser --dataId <ID> --businessUserIdList '["<USERID>"]'`：添加/删除协同人
+- `xbbcli work-task handover --dataIdList '[<ID>]' --businessUserId <USERID>`：移交任务
+
+`xbbcli work-task --help` 查看全部子命令。
 
 ### 标签（二级命令）
 
