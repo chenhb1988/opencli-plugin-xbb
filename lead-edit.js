@@ -29,7 +29,8 @@ function makeErrorRow(code, msg) {
 
 cli({
   site: 'xbb',
-  name: 'clue-edit',
+  name: 'lead-edit',
+  group: 'lead',
   description: '编辑线索接口（businessType: 8000）',
   strategy: Strategy.PUBLIC,
   access: 'write',

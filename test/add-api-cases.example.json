@@ -11,7 +11,7 @@
   },
   "cases": [
     { "name": "客户", "command": "customer-add", "enable": false, "formId": 572924, "dataList": { "text_1": "OpenCLI 测试客户-${timestamp}", "text_9": "731d4922-615f-76cb-e4e1-686453a11cca", "text_16": "${userId}", "date_3": "${timestampSeconds}", "date_4": "${timestampSeconds}", "num_3": 0 } },
-    { "name": "线索", "command": "clue-add", "enable": false, "formId": 2795678, "dataList": { "text_1": "OpenCLI 测试线索-${timestamp}", "text_4": "线索自拓", "date_2": "${timestampSeconds}", "date_3": "${timestampSeconds}", "num_2": 0 } },
+    { "name": "线索", "command": "lead-add", "enable": false, "formId": 2795678, "dataList": { "text_1": "OpenCLI 测试线索-${timestamp}", "text_4": "线索自拓", "date_2": "${timestampSeconds}", "date_3": "${timestampSeconds}", "num_2": 0 } },
     { "name": "联系人", "command": "contact-add", "enable": false, "formId": 572932, "dataList": { "text_2": "${customerDataId}", "text_1": "OpenCLI 测试联系人-${timestamp}",  "num_5": 1 } },
     { "name": "销售机会", "command": "opportunity-add", "enable": false, "formId": 572930, "dataList": { "text_1": "OpenCLI 测试商机-${timestamp}", "serialNo": "OPP.OPENCLI.${timestamp}", "text_3": "${customerDataId}", "text_17": "了解需求", "text_18": "竟品赢单", "ownerId": ["${userId}"], "num_1": 1, "date_1": "${timestampSeconds}" } },
     { "name": "合同订单", "command": "contract-add", "enable": false, "formId": 4579303, "dataList": { "serialNo": "CON.OPENCLI.${timestamp}", "text_6": "已付款-需审批", "text_14": "新签", "text_23": "电销部", "text_2": "${customerDataId}", "text_4": "${opportunityDataId}", "text_33": "OpenCLI", "text_1": "OpenCLI", "text_15": "${corpid}", "text_24": "钉钉版代客支付-需走财务付款", "date_1": "${timestampSeconds}", "text_8": "${userId}", "array_4": [{"text_1":25430570,"num_3":1,"num_4":1,"num_6":1.5,"text_3":"自动化测试","text_5":"新签","date_1":1785513600,"date_2":1785513600,"text_2":0,"text_4":"是","text_6":"软件主产品"}], "text_17": "标准版", "num_46": 1, "num_1": 1, "text_70": "新签钉钉自拓（天元商机为钉钉自拓且新签）", "text_30": "自动化测试", "text_68": "云字符", "text_27": "否", "subForm_1": [], "num_12": 0, "text_32": "无", "num_16": 0, "num_17": 1, "text_34": "21天内", "date_4": "${timestampSeconds}", "num_35": 0, "ownerId": ["${userId}"] } },
@@ -44,7 +44,7 @@
     
     { "name": "客户开票地址", "command": "customer-invoice-address-add", "enable": false,"from": "customer-add", "dataList": { "text_1": "测试地址", "text_2": "OpenCLI" } },
     { "name": "客户开票信息", "command": "customer-invoice-info-add", "enable": false,"from": "customer-add", "dataList": { "text_1": "OpenCLI 测试开票单位", "text_2": "91330000OPENCLI001" } },
-    { "name": "线索协同人", "command": "clue-add-couser", "enable": false,"from": "clue-add", "businessUserIdList": ["${userId}"] },
+    { "name": "线索协同人", "command": "lead-add-couser", "enable": false,"from": "lead-add", "businessUserIdList": ["${userId}"] },
     { "name": "客户协同人", "command": "customer-add-couser","enable": false, "from": "customer-add", "businessUserIdList": ["${userId}"] },
     { "name": "联系人协同人", "command": "contact-add-couser","enable": false, "from": "contact-add", "businessUserIdList": ["${userId}"] },
     { "name": "联系人负责人", "command": "contact-add-mainuser","enable": false, "from": "contact-add", "businessUserIdList": ["${userId}"] },
@@ -64,7 +64,7 @@
     { "name": "工单协同人", "command": "work-order-add-couser","enable": false, "from": "work-order-add", "businessUserIdList": ["${userId}"] }
   ],
   "cleanupCases": [
-    { "command": "clue-del", "enable": false,"from": "clue-add" },
+    { "command": "lead-del", "enable": false,"from": "lead-add" },
     { "command": "customer-del", "enable": false,"from": "customer-add" },
     { "command": "contact-del", "enable": false,"from": "contact-add" },
     { "command": "opportunity-del","enable": false, "from": "opportunity-add" },

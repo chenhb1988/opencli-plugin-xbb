@@ -159,6 +159,20 @@ xbbcli user-list --pageSize 200 -f json
 - `corpid` 以 `ding` 开头，或包含 `$$ding` 时，使用 `https://proapi.xbongbong.com`
 - 其他 `corpid` 使用 `https://appapi.xbongbong.com`
 
+### 查询员工权限（auth permission）
+
+查询某员工在指定业务下的权限项集合（返回的是被查询员工实际拥有的权限，与当前登录人无关）：
+
+```bash
+xbbcli auth permission --checkUserId <USER_ID> --businessType 100                 # 客户管理（SaaS）
+xbbcli auth permission --checkUserId <USER_ID> --businessType 8000 -f json        # 线索（SaaS）
+xbbcli auth permission --checkUserId <USER_ID> --businessType 0 --formId 2040862  # 自定义表单（PaaS）
+```
+
+- `--checkUserId` 必填，为被查询员工 `userId`；`--businessType` 必填，`0` 表示自定义表单（此时 `--formId` 必填）
+- 输出列：`checkUserId`、`businessType`、`formId`、`permissionCount`、`permissions`、`code`、`msg`；`permissions` 在 JSON 格式下是数组
+- 错误码透传接口返回（如 `100001` 用户不存在、`100002` 参数无效），不抛异常
+
 ## 查看当前配置与登出
 
 ```bash
@@ -226,10 +240,13 @@ note      以上取值来自环境变量 XBB_*（config.env 中没有启用公�
 
 ### 配置
 
+认证与权限命令统一归入 `auth` 分组：`xbbcli auth login` / `auth logout` / `auth status` / `auth refresh-cache` / `auth permission`（`xbbcli auth -h` 查看子命令；`xbbcli auth-login` 等旧写法仍可直接使用）。
+
 - `auth-login`：拉起本地浏览器完成交互式登录（账号密码 / 短信 / 扫码均可），自动读取 Web 会话、换取 API token 并复用 `token-set` 落盘；支持 `--browser`、`--timeout`、`--corpid`、`--keepOpen`、`--env`、`--debug`、`--raw`
 - `auth-status`：以 `key` / `value` 两列回显当前激活配置的 `corpid`、`corpName`、`userName`、`userId`、`baseurl`、`token`（token 默认中间掩码，`--showToken` 出明文），并追加 `验证` 行（调用一次 `user-list --pageSize 1` 实测 token，`有效` / `无效-请重新配置token`）；来源与冲突提醒以 `note` 行追加，无生效配置时六个值留空并给出 `note`；`--debug` 在 stderr 输出配置文件路径、公司数量、生效的环境变量名与验证结果
 - `auth-logout`：删除 `config.env` 中 `enable=true` 的那一条配置，删除前整份备份为 `~/.xbbcli/config.env.bak`；不自动把其他公司提升为启用；默认同时清除 `XBB_*` 环境变量（`--env 0` 跳过，返回 `envStored` / `envFile`）；既无启用公司又无环境变量时返回 `NO_ACTIVE_CONFIG` 且不改动文件
 - `auth-refresh-cache`：对当前启用公司重新拉取表单缓存、命令映射与部门/员工缓存，并回填 `corpName` / `userName`；失败时返回 `code=CACHE_REFRESH_FAILED`，`message` 注明中断步骤（`formlist` / `command-map` / `department-user` / `profile`），已完成的部分照常输出；支持 `--userId`、`--debug`
+- `auth permission`：查询员工（`--checkUserId`，与当前登录人无关）在指定业务（`--businessType`）下的权限项集合；SaaS 业务传 businessType（如 `100`/`201`/`301`/`401`/`8000`/`20300`），自定义表单传 `--businessType 0` 并附 `--formId`；返回 `permissions` 集合、`permissionCount` 与 `code` / `msg`
 - `token-set`：保存个人 token、`corpid`、`userId`、`baseurl`，并刷新本地表单缓存、命令映射文件与部门/员工缓存；传入的 token 不以 `user_` 开头时，会先为该 `userId` 刷新并保存个人 token；`--env` 控制存储方式：`0`（默认）仅写入本地文件，`1` 仅写入 `XBB_*` 环境变量（Windows 用 `setx`，其他平台写 `~/.xbbcli/env.sh`）且不写任何本地文件；返回 `envStored` / `envFile` 两列
 - `token-list`：同时列出环境变量行（`source=env`，仅 `XBB_CORPID` / `XBB_TOKEN` 有值时出现）与 `config.env` 中保存的全部公司（`source=config`，含 `corpName` 公司名称与 `userName` 操作人姓名），`msg` 列标注各行当前状态（当前生效 / 被环境变量覆盖 / 被 `XBB_ENV_ONLY=1` 忽略）；`--showToken` 显示完整 token（默认脱敏）；`--raw` 输出本地配置原文（token 仍按 `--showToken` 决定是否掩码）
 - `token-use`：切换当前启用的公司（`xbbcli token-use --corpid <CORPID>`），保证仅且只有一个公司被启用；若环境变量 `XBB_*` 有值，同时把该公司凭证（`corpid`/`token`/`baseurl`/`userId`/`corpName`/`userName`，缺 `baseurl` 时按 `corpid` 推导）同步写回环境变量——Windows 用 `setx`（需重开终端）、macOS/Linux 写 `~/.xbbcli/env.sh`（需重新 `source`）；同步失败时返回 `status=partial`，目标公司缺 `token` 时返回错误且不改动任何配置
@@ -285,17 +302,6 @@ note      以上取值来自环境变量 XBB_*（config.env 中没有启用公�
 - `customer-invoice-address`：客户开票地址列表
 - `customer-invoice-address-add`：新增客户开票地址
 - `customer-invoice-address-edit`：编辑客户开票地址
-- `clue-list`：线索列表
-- `clue-add`：新建线索（`--demo` 只返回请求体示例，字段值替换为「字段名：xxx|是否必填|字段类型：xxx」提示，强制 JSON；未传 `--formId` 时从表单缓存解析线索表单，`--demo` 与正式新建一致）
-- `clue-edit`：编辑线索
-- `clue-detail`：线索详情
-- `clue-del`：删除线索
-- `clue-add-couser`：线索添加协同人
-- `clue-delete-couser`：线索删除协同人
-- `clue-delete-mainuser`：线索删除负责人
-- `clue-distribution`：线索分配
-- `clue-back`：线索退回公海
-- `clue-thorough-delete`：线索彻底删除
 - `contact-list`：联系人列表
 - `contact-add`：新建联系人
 - `contact-edit`：编辑联系人
@@ -306,6 +312,18 @@ note      以上取值来自环境变量 XBB_*（config.env 中没有启用公�
 - `contact-delete-couser`：联系人删除协同人
 - `contact-delete-mainuser`：联系人删除负责人
 - `contact-handover`：联系人移交
+
+### 线索（lead 分组，二级命令）
+
+线索命令统一挂在 `lead` 分组下，用 `xbbcli lead <subcommand>` 调用（`xbbcli lead-add` 这种连字符写法同样可用）；`xbbcli -h` 顶层帮助只显示 `lead` 分组入口，子命令列表用 `xbbcli lead --help` 查看：
+
+- `xbbcli lead list`：线索列表（`--formId` 必填）
+- `xbbcli lead add`：新建线索（`--demo` 只返回请求体示例，字段值替换为「字段名：xxx|是否必填|字段类型：xxx」提示，强制 JSON；未传 `--formId` 时从表单缓存解析线索表单，`--demo` 与正式新建一致）
+- `xbbcli lead edit` / `lead detail` / `lead del`：编辑、详情、删除线索
+- `xbbcli lead add-couser` / `lead delete-couser` / `lead delete-mainuser`：添加协同人、删除协同人、删除负责人
+- `xbbcli lead distribution` / `lead back` / `lead handover` / `lead thorough-delete`：分配、退回公海、移交、彻底删除
+
+`xbbcli lead --help` 查看全部子命令。
 
 ### 销售机会操作
 
@@ -400,6 +418,7 @@ note      以上取值来自环境变量 XBB_*（config.env 中没有启用公�
 - `xbbcli payment-sheet add-bad-debt` / `edit-bad-debt`：新建/编辑坏账回款单
 - `xbbcli payment-sheet add-pre`：新建预收款回款单
 - `xbbcli payment-sheet get-amount-detail`：回款单金额明细
+- `xbbcli payment-sheet add-couser` / `add-mainuser` / `delete-couser` / `delete-mainuser`：回款单添加/删除协同人与负责人
 - `xbbcli pay-plan list` / `pay-plan detail`：付款计划列表、详情
 - `xbbcli pay-plan add` / `pay-plan handover`：新增、移交付款计划
 - `xbbcli pay-plan add-couser` / `add-mainuser` / `delete-couser` / `delete-mainuser`：付款计划添加/删除协同人与负责人
@@ -455,6 +474,44 @@ note      以上取值来自环境变量 XBB_*（config.env 中没有启用公�
 
 `xbbcli other-income --help` 查看全部子命令。
 
+### 其他支出单（二级命令）
+
+其他支出单命令统一挂在 `other-expense` 分组下，用 `xbbcli other-expense <subcommand>` 调用：
+
+- `xbbcli other-expense list`：其他支出单列表，支持 `--conditions` / `--attr`+`--value` / `--page` / `--pageSize` / `--viewApproval` / `--raw`
+- `xbbcli other-expense detail --dataId <ID>`：其他支出单详情，可选 `--queryFlag`（0 非审批、1 审批、2 全部）
+- `xbbcli other-expense add --dataList '<JSON>'`：新建其他支出单，支持 `--demo`
+- `xbbcli other-expense edit --dataId <ID> --dataList '<JSON>'`：编辑其他支出单
+- `xbbcli other-expense del --dataId <ID>`：删除其他支出单
+
+`xbbcli other-expense --help` 查看全部子命令。
+
+### 回执单（二级命令）
+
+回执单命令统一挂在 `receipt-order` 分组下，用 `xbbcli receipt-order <subcommand>` 调用：
+
+- `xbbcli receipt-order list --formId <FORMID>`：回执单列表，支持 `--conditions` / `--attr`+`--value` / `--page` / `--pageSize` / `--viewApproval` / `--raw`
+- `xbbcli receipt-order detail --dataId <ID>`：回执单详情，可选 `--queryFlag`（0 非审批、1 审批、2 全部）
+- `xbbcli receipt-order add --formId <FORMID> --dataList '<JSON>'`：新建回执单，支持 `--demo`
+- `xbbcli receipt-order edit --dataId <ID> --dataList '<JSON>'`：编辑回执单
+- `xbbcli receipt-order del --dataId <ID>`：删除回执单
+
+`xbbcli receipt-order --help` 查看全部子命令。
+
+### 工时记录（二级命令）
+
+工时记录命令统一挂在 `work-time-record` 分组下，用 `xbbcli work-time-record <subcommand>` 调用：
+
+- `xbbcli work-time-record list`：工时记录列表，支持 `--conditions` / `--attr`+`--value` / `--page` / `--pageSize` / `--viewApproval` / `--raw`
+- `xbbcli work-time-record detail --dataId <ID>`：工时记录详情，可选 `--queryFlag`
+- `xbbcli work-time-record add --dataList '<JSON>'`：新增工时记录，支持 `--demo`
+- `xbbcli work-time-record edit --dataId <ID> --dataList '<JSON>'`：编辑工时记录
+- `xbbcli work-time-record del --dataId <ID>`：删除工时记录
+- `xbbcli work-time-record add-couser` / `add-mainuser` / `delete-couser` / `delete-mainuser --dataId <ID> --businessUserIdList '["<USERID>"]'`：添加/删除协同人、负责人
+- `xbbcli work-time-record handover --dataIdList '[<ID>]' --businessUserId <USERID>`：移交负责人
+
+`xbbcli work-time-record --help` 查看全部子命令。
+
 ### 标签（二级命令）
 
 标签与标签分组命令统一挂在 `label` 分组下：
@@ -501,7 +558,7 @@ note      以上取值来自环境变量 XBB_*（config.env 中没有启用公�
 - `xbbcli workorder template list`：工单模板列表
 - `xbbcli workorder template detail`：工单模板详情
 
-`xbbcli workorder -h` 可查看分组子命令。工时记录命令未归入该分组，仍按原命令名使用：`xbbcli worktimerecordlist`、`xbbcli worktimerecorddetail`。
+`xbbcli workorder -h` 可查看分组子命令。工时记录命令归入 `work-time-record` 分组，旧命令名 `worktimerecordlist` / `worktimerecorddetail` 已更名为 `work-time-record list` / `work-time-record detail`。
 
 ## 命名说明
 
@@ -579,10 +636,10 @@ xbbcli customer-add-couser --dataId 310995 --businessUserIdList '["xbbTest002"]'
 ### 线索
 
 ```bash
-xbbcli clue-add --demo                       # formId 从表单缓存自动解析
-xbbcli clue-add --demo --formId 2795678
-xbbcli clue-add --demo --formId 2795678 -f table   # 仍输出 JSON
-xbbcli clue-add --dataList '{"text_1":"测试线索"}'  # 正式新建同样会从缓存解析 formId
+xbbcli lead add --demo                       # formId 从表单缓存自动解析
+xbbcli lead add --demo --formId 2795678
+xbbcli lead add --demo --formId 2795678 -f table   # 仍输出 JSON
+xbbcli lead add --dataList '{"text_1":"测试线索"}'  # 正式新建同样会从缓存解析 formId
 ```
 
 ### 新建接口的请求体示例（--demo）
@@ -591,7 +648,7 @@ xbbcli clue-add --dataList '{"text_1":"测试线索"}'  # 正式新建同样会�
 
 - `--demo` 强制 JSON 输出（`-f table/csv` 会被忽略），错误行只有 `code` / `msg` 两列，成功行是示例对象本身；示例里的 `corpid` / `userId` 已换成当前生效配置，不会出现接口文档里的占位值。
 - 未传 `--formId` 时按 `businessType` 从表单缓存解析（线索 `8000`、客户 `100`、联系人 `401`、合同 `201`、工单 `20300` 等，具体见 `xbbcli <command> -h`）。缓存里同类型有多个表单时返回 `MULTIPLE_FORM` 并列出候选，此时用 `--formId` 指定（未声明该参数的命令见下一条）；唯一表单的 `formId` 非法时返回 `INVALID_FORM_ID`。
-- `--formId` 参数只在**写请求体真的接收 formId** 的命令上提供（`clue-add`、`customer-add`、`contract-add`、`opportunity-add`、`work-order-add`、`quotation-add`、`form-data-add`、`communicate-plan-add`、`label-*`）。写请求体不接收 formId 的命令（`contact-add`、`communicate-add`、`payment-add`、`product-add` 等）不声明该参数——这类业务按约定只有一个表单，demo 直接从缓存解析；示例里的 `formId` 字段会被剔除。若某租户确实有多个表单，demo 返回 `MULTIPLE_FORM`，可用 `xbbcli form-get --formId <ID>` 查看指定表单的字段。
+- `--formId` 参数只在**写请求体真的接收 formId** 的命令上提供（`lead-add`、`customer-add`、`contract-add`、`opportunity-add`、`work-order-add`、`quotation-add`、`form-data-add`、`communicate-plan-add`、`label-*`）。写请求体不接收 formId 的命令（`contact-add`、`communicate-add`、`payment-add`、`product-add` 等）不声明该参数——这类业务按约定只有一个表单，demo 直接从缓存解析；示例里的 `formId` 字段会被剔除。若某租户确实有多个表单，demo 返回 `MULTIPLE_FORM`，可用 `xbbcli form-get --formId <ID>` 查看指定表单的字段。
 - 非表单接口（`department-add`、`user-add`、`label-*`、`product-category-add`、`customer-invoice-*`）返回的是接口级参数示例，没有 `dataList`。
 - `form-data-add` 面向任意自定义表单，没有可自动匹配的表单类型，`--demo` 必须显式传 `--formId`。
 
@@ -654,6 +711,8 @@ xbbcli payment-sheet edit-write-off --dataId 1194 --dataList '{"text_7":"编辑�
 xbbcli payment-sheet add-red --dataList '{"serialNo":"RMO.API.0001"}'
 xbbcli payment-sheet edit-red --dataId 1198 --dataList '{"text_7":"编辑红冲备注"}'
 xbbcli payment-sheet add-bad-debt --dataList '{"serialNo":"RMO.API.0002"}'
+xbbcli payment-sheet add-couser --dataId 2206 --businessUserIdList '["xbbTest002"]'
+xbbcli payment-sheet delete-couser --dataId 2206 --businessUserIdList '["xbbTest002"]'
 xbbcli refund-list --attr serialNo --value RFO.API.0001
 ```
 
@@ -698,6 +757,32 @@ xbbcli other-income edit --dataId 87 --dataList '{"num_1":200}'
 xbbcli other-income del --dataId 87
 ```
 
+### 其他支出单
+
+```bash
+xbbcli other-expense list --pageSize 10
+xbbcli other-expense list --attr serialNo --value OEO.20250115003
+xbbcli other-expense detail --dataId 87 --queryFlag 2
+
+xbbcli other-expense add --demo
+xbbcli other-expense add --dataList '{"serialNo":"OEO.20251122001","num_1":100,"date_1":1789833600}'
+xbbcli other-expense edit --dataId 87 --dataList '{"num_1":200}'
+xbbcli other-expense del --dataId 87
+```
+
+### 回执单
+
+```bash
+xbbcli receipt-order list --formId 7226810 --pageSize 10
+xbbcli receipt-order list --formId 7226810 --attr serialNo --value RS.20230113003
+xbbcli receipt-order detail --dataId 341 --queryFlag 2
+
+xbbcli receipt-order add --demo
+xbbcli receipt-order add --formId 7226810 --dataList '{"serialNo":"RS.20251122001","text_3":"回执单ABC"}'
+xbbcli receipt-order edit --dataId 341 --dataList '{"text_3":"编辑后的回执单"}'
+xbbcli receipt-order del --dataId 341
+```
+
 ### 工单旧命名与工时
 
 ```bash
@@ -706,9 +791,16 @@ xbbcli workorderproductlist --dataId 663
 xbbcli workorder-template-list
 xbbcli workorder-template-detail --formId 689
 
-xbbcli worktimerecordlist
-xbbcli worktimerecordlist --conditions "[{\"attr\":\"ownerId\",\"value\":[\"02415643151585\"],\"symbol\":\"equal\"}]"
-xbbcli worktimerecorddetail --dataId 10001
+xbbcli work-time-record list
+xbbcli work-time-record list --conditions "[{\"attr\":\"ownerId\",\"value\":[\"02415643151585\"],\"symbol\":\"equal\"}]"
+xbbcli work-time-record detail --dataId 10001
+
+xbbcli work-time-record add --demo
+xbbcli work-time-record add --dataList '{"serialNo":"WR.20251122001","text_1":"工时记录名称","num_1":2}'
+xbbcli work-time-record edit --dataId 10001 --dataList '{"num_1":3}'
+xbbcli work-time-record del --dataId 10001
+xbbcli work-time-record add-couser --dataId 10001 --businessUserIdList '["02415643151585"]'
+xbbcli work-time-record handover --dataIdList '[10001]' --businessUserId 02415643151585
 ```
 
 ## 参数约定

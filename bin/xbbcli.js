@@ -198,7 +198,7 @@ if (commandName === '--version' || commandName === '-v') {
       if (parsed.help) printCommandHelp(command);
       else {
         const rows = await command.func(parsed.kwargs);
-        // 可选钩子：命令可覆盖 -f 输出格式（如 clue-add --demo 强制 JSON）
+        // 可选钩子：命令可覆盖 -f 输出格式（如 lead-add --demo 强制 JSON）
         const override = typeof command.resolveFormat === 'function'
           ? command.resolveFormat({ kwargs: parsed.kwargs, format: parsed.format })
           : undefined;

@@ -103,6 +103,7 @@ async function authRefreshCache(kwargs) {
 cli({
   site: 'xbb',
   name: 'auth-refresh-cache',
+  group: 'auth',
   description: '刷新当前启用公司的本地缓存（表单清单、命令映射等）',
   strategy: Strategy.PUBLIC,
   access: 'write',

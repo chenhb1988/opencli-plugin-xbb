@@ -1,43 +1,37 @@
 import { cli, Strategy } from './xbb-registry.js';
 import { getRuntimeConfig, requestGateway } from './xbb-http.js';
 
-const API_PATH = '/pro/v2/api/clue/deleteCoUser';
+const API_PATH = '/pro/v2/api/clue/detail';
 const MISSING_TOKEN_MESSAGE = '缺少 token；请先执行 xbbcli token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>';
 
 function makeErrorRow(code, msg) {
-  return [{ resultCode: '', resultMsg: '', messageList: '', code, msg }];
+  return [{ dataId: '', formId: '', addTime: '', updateTime: '', data: '', code, msg }];
 }
 
 cli({
   site: 'xbb',
-  name: 'clue-delete-couser',
-  description: '线索删除协同人接口（businessType: 8000）',
+  name: 'lead-detail',
+  group: 'lead',
+  description: '线索详情接口（businessType: 8000）',
   strategy: Strategy.PUBLIC,
-  access: 'write',
+  access: 'read',
   browser: false,
   domain: 'proapi.xbongbong.com',
   args: [
     { name: 'dataId', type: 'int', help: '线索id（必填）' },
-    { name: 'businessUserIdList', type: 'str', help: '需删除的协同人id列表，JSON数组字符串（必填）' },
     { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
+    { name: 'queryFlag', type: 'str', default: '', help: '是否查询审批数据：0非审批数据，1审批数据，2全部' },
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
   ],
-  columns: ['resultCode', 'resultMsg', 'messageList', 'code', 'msg'],
-  func: async (kwargs) => {
+  columns: ['dataId', 'formId', 'addTime', 'updateTime', 'data', 'code', 'msg'],
+  func: async function (kwargs) {
     const debug = Boolean(kwargs.debug);
     const { corpid, token, baseUrl, userId } = getRuntimeConfig();
-    const payload = { dataId: Number(kwargs.dataId || 0), corpid };
+    const payload = { corpid, dataId: Number(kwargs.dataId || 0) };
     if (kwargs.userId) payload.userId = String(kwargs.userId);
-    let businessUserIdList;
-    try {
-      businessUserIdList = JSON.parse(String(kwargs.businessUserIdList || ''));
-    } catch {
-      businessUserIdList = null;
-    }
-    if (Array.isArray(businessUserIdList)) payload.businessUserIdList = businessUserIdList;
-    if (!payload.dataId) return makeErrorRow('NO_DATAID', '缺少 --dataId');
+    if (String(kwargs.queryFlag ?? '') !== '') payload.queryFlag = Number(kwargs.queryFlag);
     if (!payload.corpid) return makeErrorRow('NO_CORPID', '缺少本地 corpid；请先执行 xbbcli token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>');
-    if (!Array.isArray(businessUserIdList) || !businessUserIdList.length) return makeErrorRow('NO_USERIDLIST', '缺少 --businessUserIdList 或格式不正确，需为JSON数组');
+    if (!payload.dataId) return makeErrorRow('NO_DATAID', '缺少 --dataId');
     if (!token) return makeErrorRow('NO_TOKEN', MISSING_TOKEN_MESSAGE);
     const gateway = await requestGateway({
       baseUrl,
@@ -51,6 +45,7 @@ cli({
     if (gateway.data.code !== 1) {
       return makeErrorRow(gateway.data.code ?? '', gateway.data.msg ?? '未知错误');
     }
-    return [{ resultCode: gateway.data.code ?? '', resultMsg: gateway.data.msg || '', messageList: JSON.stringify(gateway.data.result?.messageList || []), code: gateway.data.code ?? '', msg: gateway.data.msg || '' }];
+    const result = gateway.data.result || {};
+    return [{ dataId: result.dataId || '', formId: result.formId || '', addTime: result.addTime || '', updateTime: result.updateTime || '', data: JSON.stringify(result.data || {}), code: gateway.data.code ?? '', msg: gateway.data.msg || '' }];
   },
 });

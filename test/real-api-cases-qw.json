@@ -27,7 +27,7 @@
       "enabled": true
     },
     {
-      "command": "clue-list",
+      "command": "lead-list",
       "args": {
         "formId": 2281525,
         "page": "1",
@@ -36,7 +36,7 @@
       "enabled": true
     },
     {
-      "command": "clue-detail",
+      "command": "lead-detail",
       "args": {
         "dataId": 10348872
       },
@@ -417,7 +417,7 @@
       "enabled": false
     },
     {
-      "command": "worktimerecordlist",
+      "command": "work-time-record-list",
       "args": {
         "page": "1",
         "pageSize": "2"
@@ -425,7 +425,7 @@
       "enabled": true
     },
     {
-      "command": "worktimerecorddetail",
+      "command": "work-time-record-detail",
       "args": {
         "dataId": 11253
       },

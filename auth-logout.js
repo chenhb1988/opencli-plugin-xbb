@@ -160,6 +160,7 @@ async function authLogout(kwargs) {
 cli({
   site: 'xbb',
   name: 'auth-logout',
+  group: 'auth',
   description: '登出',
   strategy: Strategy.PUBLIC,
   access: 'write',

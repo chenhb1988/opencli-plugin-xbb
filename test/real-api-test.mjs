@@ -10,7 +10,7 @@ const defaultCasesFile = path.join(testDirectory, 'real-api-cases.json');
 const commandNamePattern = /(?:list|detail|get)$/;
 const detailCommandsByListCommand = new Map([
   ['customer-list', ['customer-detail']],
-  ['clue-list', ['clue-detail']],
+  ['lead-list', ['lead-detail']],
   ['communicate-list', ['communicate-detail']],
   ['communicate-plan-list', ['communicate-plan-detail']],
   ['contact-list', ['contact-detail']],
@@ -29,7 +29,7 @@ const detailCommandsByListCommand = new Map([
   ['work-report-daily-list', ['work-report-daily-detail']],
   ['work-report-monthly-list', ['work-report-monthly-detail']],
   ['work-report-weekly-list', ['work-report-weekly-detail']],
-  ['worktimerecordlist', ['worktimerecorddetail']],
+  ['work-time-record-list', ['work-time-record-detail']],
 ]);
 
 function getCasesFilePath() {

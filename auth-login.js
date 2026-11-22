@@ -317,6 +317,7 @@ async function authLogin(kwargs) {
 cli({
   site: 'xbb',
   name: 'auth-login',
+  group: 'auth',
   description: '打开浏览器完成销帮帮登录授权',
   strategy: Strategy.PUBLIC,
   access: 'write',

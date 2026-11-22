@@ -2,8 +2,20 @@ import { registerGroup } from './xbb-registry.js';
 
 registerGroup({
   site: 'xbb',
+  name: 'auth',
+  description: '登录授权/登出、回显当前配置并校验 token、刷新本地缓存、查询员工业务权限',
+});
+
+registerGroup({
+  site: 'xbb',
   name: 'label',
   description: 'businessType: -1；标签/标签分组：标签增删改、彻底删除、还原、判重、批量打标/移除，分组增删改查',
+});
+
+registerGroup({
+  site: 'xbb',
+  name: 'lead',
+  description: 'businessType: 8000；线索(别名clue)：列表/详情/新建/编辑/删除/彻底删除/分配/退回公海/移交，添加/删除协同人/负责人',
 });
 
 registerGroup({
@@ -16,6 +28,12 @@ registerGroup({
   site: 'xbb',
   name: 'other-income',
   description: 'businessType: 5710；其他收入单：新建、编辑、删除、详情、列表',
+});
+
+registerGroup({
+  site: 'xbb',
+  name: 'other-expense',
+  description: 'businessType: 5750；其他支出单：新建、编辑、删除、详情、列表',
 });
 
 registerGroup({
@@ -51,7 +69,7 @@ registerGroup({
 registerGroup({
   site: 'xbb',
   name: 'payment-sheet',
-  description: 'businessType: 702；回款单：列表、详情、删除、移交、金额明细，新建/编辑核销/红冲/坏账/预收款回款单',
+  description: 'businessType: 702；回款单：列表、详情、删除、移交、金额明细，新建/编辑核销/红冲/坏账/预收款回款单，添加/删除负责人/协同人',
 });
 
 registerGroup({
@@ -64,4 +82,16 @@ registerGroup({
   site: 'xbb',
   name: 'production',
   description: '生产单/生产领料单/生产入库单：各类单据的列表与详情',
+});
+
+registerGroup({
+  site: 'xbb',
+  name: 'receipt-order',
+  description: 'businessType: 20340；回执单：新建、编辑、删除、详情、列表',
+});
+
+registerGroup({
+  site: 'xbb',
+  name: 'work-time-record',
+  description: 'businessType: 21100；工时记录：列表、详情、新增、编辑、删除、移交给负责人，添加/删除负责人/协同人',
 });
