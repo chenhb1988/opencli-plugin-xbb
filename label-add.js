@@ -1,5 +1,6 @@
 import { cli, Strategy } from './xbb-registry.js';
 import { getRuntimeConfig, requestGateway } from './xbb-http.js';
+import { DEMO_ARG, resolveDemoFormat, runAddDemo } from './xbb-form-example.js';
 
 const API_PATH = '/pro/v2/api/label/add';
 const MISSING_TOKEN_MESSAGE = '缺少 token；请先执行 opencli xbb token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>';
@@ -24,12 +25,25 @@ cli({
     { name: 'name', type: 'str', help: '标签名称（必填）' },
     { name: 'color', type: 'str', help: '标签颜色，如 #F3B563（必填）' },
     { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
+    DEMO_ARG,
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
   ],
   columns: ['code', 'msg'],
+  resolveFormat: resolveDemoFormat,
   func: async function (kwargs) {
     const debug = Boolean(kwargs.debug);
     const { corpid, token, baseUrl, userId } = getRuntimeConfig();
+    if (kwargs.demo) {
+      return runAddDemo({
+        config: { corpid, token, baseUrl, userId: String(kwargs.userId || userId || '').trim() },
+        formIdArg: kwargs.formId,
+        apiPath: '/pro/v2/api/label/add',
+        businessType: '',
+        label: '标签',
+        omitFormId: false,
+        debug,
+      });
+    }
     const runtimeUserId = String(kwargs.userId || userId || '').trim();
     const payload = { corpid };
     payload.businessType = Number(kwargs.businessType || 0);

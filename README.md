@@ -93,6 +93,12 @@ xbbcli auth-login --keepOpen      # 登录成功后保留浏览器窗口（默�
 
 执行后与 `token-set` 等价：`--env 0`（默认）写入 `~/.xbbcli/config.env`、刷新表单缓存、命令映射与部门/员工缓存（不写环境变量）；`--env 1` 仅写入 `XBB_*` 环境变量，不写任何本地文件。
 
+在容器 / AI 客户端沙箱里启动浏览器：Linux 下以 root 运行时自动追加 `--no-sandbox`（否则 Chrome 会直接退出）；如果以非 root 运行但被 seccomp / user namespace 限制，可显式指定 `XBB_CHROME_NO_SANDBOX=1` 强制追加该参数，例如：
+
+```bash
+XBB_CHROME_NO_SANDBOX=1 xbbcli auth-login --timeout 600
+```
+
 技术实现：零依赖，用 `node:child_process` 以 `--remote-debugging-pipe` 启动浏览器（fd3 写 / fd4 读 CDP，**不开任何调试端口**），profile 固定为 `~/.xbbcli/browser-profile`（与日常浏览器隔离，登录态可复用）；CLI 读取页面 `localStorage` 的 `{corpid, userId, xbbAccessToken}`，再在页面内 `fetch` 网关 `apiPersonalToken/generate` 换取个人 token。只支持 Chromium 内核浏览器（Chrome / Edge / Chromium），更多细节见 [`doc/auth-login-command-design.md`](doc/auth-login-command-design.md)。
 
 - `--debug` 输出请求体、返回体与浏览器信息（密钥只显示掩码），`--raw` 输出换取 API token 接口的原始响应
@@ -264,7 +270,7 @@ note      以上取值来自环境变量 XBB_*（config.env 中没有启用公�
 
 - `customer-list`：客户列表
 - `customer-detail`：客户详情
-- `customer-add`：新增客户
+- `customer-add`：新增客户（`--demo` 返回请求体示例；不传 `--formId` 时按表单缓存解析）
 - `customer-edit`：编辑客户
 - `customer-add-couser`：客户添加协同人
 - `customer-del`：删除客户
@@ -280,7 +286,7 @@ note      以上取值来自环境变量 XBB_*（config.env 中没有启用公�
 - `customer-invoice-address-add`：新增客户开票地址
 - `customer-invoice-address-edit`：编辑客户开票地址
 - `clue-list`：线索列表
-- `clue-add`：新建线索
+- `clue-add`：新建线索（`--demo` 只返回请求体示例，字段值替换为「字段名：xxx|是否必填|字段类型：xxx」提示，强制 JSON；未传 `--formId` 时从表单缓存解析线索表单，`--demo` 与正式新建一致）
 - `clue-edit`：编辑线索
 - `clue-detail`：线索详情
 - `clue-del`：删除线索
@@ -371,7 +377,7 @@ note      以上取值来自环境变量 XBB_*（config.env 中没有启用公�
 
 - `product-list`：产品列表
 - `product-detail`：产品详情
-- `product-add`：新建产品
+- `product-add`：新建产品（`--demo` 返回请求体示例；`--formId` 仅用于取示例）
 - `product-edit`：编辑产品
 - `product-del`：删除产品
 - `product-online`：产品上下架
@@ -519,9 +525,10 @@ note      以上取值来自环境变量 XBB_*（config.env 中没有启用公�
 - 当前公司名称存在 `~/.xbbcli/config.env` 的 `corpName` 字段（取部门 `id` 为 `1` 的部门名称），操作人姓名存在 `userName` 字段（按 `userId` 匹配员工列表）
 - 未传入的可选参数不会进入请求体
 - `--attr` 和 `--value` 只有同时提供时才会拼入查询条件
-- 失败时返回的是带 `code` / `msg` 的结果行，不抛异常
+- 失败时返回的是带 `code` / `msg` 的结果行，不抛异常；网络不可达时返回 `NETWORK_ERROR` 行（不会抛 `fetch failed`）
 - 加 `--debug` 可以输出 `requestBody` 和 `responseBody`
 - 加 `--raw` 可以输出接口返回的原始 JSON 字符串（所有 list 命令均支持）
+- 所有以 `-add` 结尾的命令都支持 `--demo`（`mail-draft-add`、`other-income-add` 除外）：不写入数据，只返回新建接口的请求体示例，`dataList` 的字段值被替换为提示串 `字段名：企业名称|必填|字段类型：文本`，选项字段为 `字段名：线索来源|选填|字段类型：单选：选项1/选项2`（`array_` 多选字段为 `多选`），子表保留数组结构并加工内部字段，地址/附件/负责人等复杂结构保留原示例值；未传 `--formId` 时从表单缓存按 `businessType` 自动解析，且强制 JSON 输出（忽略 `-f table/csv`）；`--demo` 的错误行只有 `code` / `msg` 两列
 - 在填充参数时不清楚参数含义/下拉框可选项值，调用 `form-get` 命令获取 form 解释
 - 邮件命令为二级命令：`xbbcli mail send`、`xbbcli mail draft add` 等；`xbbcli mail --help` 列出全部子命令
 - `xbbcli -v` / `xbbcli --version` 查看版本号（读取 `package.json` 的 `version`）
@@ -561,10 +568,38 @@ xbbcli form-get --formId 19277 --subBusinessType 100
 xbbcli customer-list --formId 12345
 xbbcli customer-list --formId 12345 --attr text_1 --value apiTest.001
 
+xbbcli customer-add --demo                       # 不写数据，只返回请求体示例
+xbbcli customer-add --demo --formId 1969375      # 缓存里有多个客户表单时用它指定
 xbbcli customer-add --formId 19274 --dataList '{"text_1":"apiTest.001"}'
 xbbcli customer-edit --formId 19274 --dataId 310992 --dataList '{"text_1":"apiTest.001-编辑"}'
 xbbcli customer-detail --dataId 310992
 xbbcli customer-add-couser --dataId 310995 --businessUserIdList '["xbbTest002"]'
+```
+
+### 线索
+
+```bash
+xbbcli clue-add --demo                       # formId 从表单缓存自动解析
+xbbcli clue-add --demo --formId 2795678
+xbbcli clue-add --demo --formId 2795678 -f table   # 仍输出 JSON
+xbbcli clue-add --dataList '{"text_1":"测试线索"}'  # 正式新建同样会从缓存解析 formId
+```
+
+### 新建接口的请求体示例（--demo）
+
+**所有以 `-add` 结尾的命令都支持 `--demo`**（`mail-draft-add`、`other-income-add` 除外，平台示例接口 `customized/param/get` 不支持这两个 url，会返回 `100063 网络请求失败`）：不写入任何数据，只返回该接口的请求体示例。表单型接口的 `dataList` 中每个字段值都是提示串，例如 `"text_1": "字段名：企业名称|必填|字段类型：文本"`、`"text_4": "字段名：线索来源|选填|字段类型：单选：名片/展会/客户介绍/官网/推广"`；把提示串替换为实际值即可得到可以直接使用的 `--dataList`。子表（`subForm_N` / `array_N`）保留数组结构且内部字段同样是提示串，地址、附件、负责人/协同人等复杂字段保留原示例结构。
+
+- `--demo` 强制 JSON 输出（`-f table/csv` 会被忽略），错误行只有 `code` / `msg` 两列，成功行是示例对象本身；示例里的 `corpid` / `userId` 已换成当前生效配置，不会出现接口文档里的占位值。
+- 未传 `--formId` 时按 `businessType` 从表单缓存解析（线索 `8000`、客户 `100`、联系人 `401`、合同 `201`、工单 `20300` 等，具体见 `xbbcli <command> -h`）。缓存里同类型有多个表单时返回 `MULTIPLE_FORM` 并列出候选，此时用 `--formId` 指定（未声明该参数的命令见下一条）；唯一表单的 `formId` 非法时返回 `INVALID_FORM_ID`。
+- `--formId` 参数只在**写请求体真的接收 formId** 的命令上提供（`clue-add`、`customer-add`、`contract-add`、`opportunity-add`、`work-order-add`、`quotation-add`、`form-data-add`、`communicate-plan-add`、`label-*`）。写请求体不接收 formId 的命令（`contact-add`、`communicate-add`、`payment-add`、`product-add` 等）不声明该参数——这类业务按约定只有一个表单，demo 直接从缓存解析；示例里的 `formId` 字段会被剔除。若某租户确实有多个表单，demo 返回 `MULTIPLE_FORM`，可用 `xbbcli form-get --formId <ID>` 查看指定表单的字段。
+- 非表单接口（`department-add`、`user-add`、`label-*`、`product-category-add`、`customer-invoice-*`）返回的是接口级参数示例，没有 `dataList`。
+- `form-data-add` 面向任意自定义表单，没有可自动匹配的表单类型，`--demo` 必须显式传 `--formId`。
+
+```bash
+xbbcli customer-add --demo --formId 1969375   # 客户有多个表单，需要指定
+xbbcli product-add --demo                    # 产品表单唯一，直接解析
+xbbcli contact-add --demo                    # 联系人只有一个表单，直接解析
+xbbcli department-add --demo                 # 非表单接口，返回 name/parentId 等参数示例
 ```
 
 ### 企业工商信息
@@ -603,6 +638,7 @@ xbbcli form-data-del --dataId 310992
 ### 产品、回款、退款
 
 ```bash
+xbbcli product-add --demo                    # 产品表单唯一，formId 直接解析
 xbbcli product-list --attr serialNo --value CP.API.0001
 xbbcli product-detail --dataId 10001
 xbbcli product-category-list

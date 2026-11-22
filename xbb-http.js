@@ -18,7 +18,7 @@ export function getRuntimeConfig() {
 }
 
 // 网关 POST：序列化、SHA256 签名、headers 组装、debug 输出与 HTTP 层错误处理
-// 成功返回 { ok: true, data, responseBody }；HTTP 失败返回 { ok: false, code, msg }
+// 成功返回 { ok: true, data, responseBody }；HTTP/网络失败返回 { ok: false, code, msg }
 export async function requestGateway({ baseUrl, apiPath, payload, token, userId, debug }) {
   const body = JSON.stringify(payload);
   const sign = crypto.createHash('sha256').update(body + token).digest('hex');
@@ -33,11 +33,18 @@ export async function requestGateway({ baseUrl, apiPath, payload, token, userId,
     process.stderr.write(`[debug] URL: ${apiUrl}\n[debug] Headers: ${JSON.stringify(headers)}\n[debug] RequestBody: ${body}\n`);
   }
 
-  const resp = await fetch(apiUrl, {
-    method: 'POST',
-    headers,
-    body,
-  });
+  // 网络层异常（DNS/连接失败/超时）不能穿透成未捕获异常，统一转成 error code 让命令返回结果行
+  let resp;
+  try {
+    resp = await fetch(apiUrl, {
+      method: 'POST',
+      headers,
+      body,
+    });
+  } catch (error) {
+    if (debug) process.stderr.write(`[debug] RequestError: ${error?.message || error}\n`);
+    return { ok: false, code: 'NETWORK_ERROR', msg: `请求失败：${error?.message || error}` };
+  }
 
   if (!resp.ok) {
     const responseText = await resp.text();
@@ -45,7 +52,13 @@ export async function requestGateway({ baseUrl, apiPath, payload, token, userId,
     return { ok: false, code: resp.status, msg: `HTTP ${resp.status} ${resp.statusText}` };
   }
 
-  const data = await resp.json();
+  let data;
+  try {
+    data = await resp.json();
+  } catch (error) {
+    if (debug) process.stderr.write(`[debug] ResponseError: ${error?.message || error}\n`);
+    return { ok: false, code: 'INVALID_JSON', msg: '响应不是合法 JSON' };
+  }
   const responseBody = JSON.stringify(data);
   if (debug) process.stderr.write(`[debug] ResponseBody: ${responseBody}\n`);
   return { ok: true, data, responseBody };

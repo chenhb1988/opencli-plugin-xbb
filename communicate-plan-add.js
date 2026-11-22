@@ -1,5 +1,6 @@
 import { cli, Strategy } from './xbb-registry.js';
 import { getRuntimeConfig, requestGateway } from './xbb-http.js';
+import { DEMO_ARG, resolveDemoFormat, runAddDemo } from './xbb-form-example.js';
 
 const API_PATH = '/pro/v2/api/communicatePlan/add';
 const MISSING_TOKEN_MESSAGE = '缺少 token；请先执行 xbbcli token-set --corpid <CORPID> --token <TOKEN> --userId <USERID>';
@@ -39,12 +40,25 @@ cli({
     { name: 'dataList', type: 'str', help: '访客计划数据JSON字符串（必填）' },
     { name: 'formId', type: 'str', default: '', help: '表单模板id（可选）' },
     { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
+    DEMO_ARG,
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
   ],
   columns: ['dataId', 'resultCode', 'resultMsg', 'code', 'msg'],
+  resolveFormat: resolveDemoFormat,
   func: async function (kwargs) {
     const debug = Boolean(kwargs.debug);
     const { corpid, token, baseUrl, userId } = getRuntimeConfig();
+    if (kwargs.demo) {
+      return runAddDemo({
+        config: { corpid, token, baseUrl, userId: String(kwargs.userId || userId || '').trim() },
+        formIdArg: kwargs.formId,
+        apiPath: '/pro/v2/api/communicatePlan/add',
+        businessType: '601',
+        label: '访客计划表单',
+        omitFormId: false,
+        debug,
+      });
+    }
     const parsedDataList = parseDataList(kwargs.dataList);
     const payload = { corpid };
     const runtimeUserId = String(kwargs.userId || userId || '').trim();

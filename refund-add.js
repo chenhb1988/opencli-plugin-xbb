@@ -1,5 +1,6 @@
 import { cli, Strategy } from './xbb-registry.js';
 import { getRuntimeConfig, requestGateway } from './xbb-http.js';
+import { DEMO_ARG, resolveDemoFormat, runAddDemo } from './xbb-form-example.js';
 
 const API_PATH = '/pro/v2/api/refund/add';
 function parseDataList(raw) {
@@ -27,12 +28,25 @@ cli({
   args: [
     { name: 'dataList', type: 'str', help: '表单数据JSON字符串（必填）' },
     { name: 'userId', type: 'str', default: '', help: '操作人id（可选）' },
+    DEMO_ARG,
     { name: 'debug', type: 'bool', default: false, help: '输出请求体和返回体调试信息' },
   ],
   columns: ['dataId', 'resultCode', 'resultMsg', 'code', 'msg'],
+  resolveFormat: resolveDemoFormat,
   func: async (kwargs) => {
     const debug = Boolean(kwargs.debug);
     const { corpid, token, baseUrl, userId } = getRuntimeConfig();
+    if (kwargs.demo) {
+      return runAddDemo({
+        config: { corpid, token, baseUrl, userId: String(kwargs.userId || userId || '').trim() },
+        formIdArg: kwargs.formId,
+        apiPath: '/pro/v2/api/refund/add',
+        businessType: '202',
+        label: '退货退款单表单',
+        omitFormId: true,
+        debug,
+      });
+    }
     const payload = { corpid };
     const runtimeUserId = String(kwargs.userId || userId || '').trim();
     if (runtimeUserId) payload.userId = runtimeUserId;

@@ -179,6 +179,12 @@ export async function openBrowser(options = {}) {
     '--no-service-autorun',
     `--user-data-dir=${userDataDir}`,
   ];
+  // root 环境下 Chrome 强制要求 --no-sandbox，否则进程直接退出（容器/AI 客户端沙箱里常见）；
+  // 非 root 但被 seccomp/namespace 限制的沙箱可用 XBB_CHROME_NO_SANDBOX=1 强制开启
+  const isLinuxRoot = process.platform === 'linux' && typeof process.getuid === 'function' && process.getuid() === 0;
+  if (isLinuxRoot || process.env.XBB_CHROME_NO_SANDBOX === '1') {
+    args.push('--no-sandbox');
+  }
   if (options.headless) args.push('--headless=new');
   args.push('--new-window', String(options.url || LOGIN_PAGE_URL));
 
