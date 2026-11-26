@@ -290,7 +290,7 @@ function getCommandBusinessType(command) {
     return normalizeBusinessType(command.businessType);
   }
   const description = String(command.description || '');
-  const match = description.match(/businessType\s*:\s*(\d+)/i);
+  const match = description.match(/businessType\s*:\s*(-?\d+)/i);
   return match ? normalizeBusinessType(match[1]) : '';
 }
 
@@ -329,7 +329,10 @@ function writeCommandMap(corpid) {
 
   for (const command of commands) {
     const commandBusinessType = getCommandBusinessType(command);
-    const matchedForms = forms.filter((form) => String(form.businessType ?? '').trim() === commandBusinessType);
+    // 只有正数 businessType 才对应业务表单；'' / -1 / 0 等非表单命令（auth、部门、标签、自定义表单通用接口）不列 formId
+    const matchedForms = Number(commandBusinessType) > 0
+      ? forms.filter((form) => String(form.businessType ?? '').trim() === commandBusinessType)
+      : [];
     const formIds = [...new Set(matchedForms.map((form) => form.formId).filter(Boolean))];
     const businessTypes = [...new Set(matchedForms.map((form) => form.businessType).filter(Boolean))];
     const options = (command.command_options || []).map(optionDescription).join('<br>');
